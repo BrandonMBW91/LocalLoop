@@ -20,7 +20,7 @@ import SkeletonList from '../../src/components/SkeletonCard';
 import EmptyState from '../../src/components/EmptyState';
 import { useApp } from '../../src/context/AppContext';
 import { CATEGORIES } from '../../src/data/events';
-import { daysFromNow } from '../../src/utils/dates';
+import { daysFromNow, isThisWeekend } from '../../src/utils/dates';
 import { buildTimeSections } from '../../src/utils/grouping';
 import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 
@@ -57,6 +57,8 @@ export default function EventsScreen() {
           ? true
           : activeCat === 'Today'
           ? daysFromNow(e.start) === 0
+          : activeCat === 'Weekend'
+          ? isThisWeekend(e.start)
           : e.category === activeCat;
       const matchesQuery =
         !q ||
@@ -155,6 +157,11 @@ export default function EventsScreen() {
             label="Today"
             selected={activeCat === 'Today'}
             onPress={() => setActiveCat('Today')}
+          />
+          <CategoryChip
+            label="Weekend"
+            selected={activeCat === 'Weekend'}
+            onPress={() => setActiveCat('Weekend')}
           />
           {CATEGORIES.map((cat) => (
             <CategoryChip

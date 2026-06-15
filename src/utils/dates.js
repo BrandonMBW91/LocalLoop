@@ -95,6 +95,25 @@ export function isOver(start, end, now = new Date()) {
   return s.getTime() + 3 * 60 * 60 * 1000 <= now.getTime();
 }
 
+// The current/upcoming weekend window (Fri 00:00 → Sun 23:59). On Sat/Sun it's
+// the weekend in progress; Mon–Fri it's the one coming up.
+export function thisWeekendRange(now = new Date()) {
+  const dow = now.getDay(); // 0=Sun … 6=Sat
+  let toFri;
+  if (dow === 0) toFri = -2; // Sunday → Friday was 2 days ago
+  else if (dow === 6) toFri = -1; // Saturday → Friday was yesterday
+  else toFri = 5 - dow; // Mon–Fri → the coming Friday
+  const fri = new Date(now.getFullYear(), now.getMonth(), now.getDate() + toFri, 0, 0, 0);
+  const sunEnd = new Date(fri.getFullYear(), fri.getMonth(), fri.getDate() + 2, 23, 59, 59);
+  return [fri, sunEnd];
+}
+
+export function isThisWeekend(value, now = new Date()) {
+  const t = parse(value).getTime();
+  const [a, b] = thisWeekendRange(now);
+  return t >= a.getTime() && t <= b.getTime();
+}
+
 // Number of whole days from `now` to a date (0 = today, 1 = tomorrow).
 export function daysFromNow(value, now = new Date()) {
   const d = parse(value);

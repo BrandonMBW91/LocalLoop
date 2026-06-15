@@ -1,7 +1,7 @@
 // Pure-logic tests for the functions that decide dates, pricing, and grouping.
 // Run: node tests/logic.test.mjs
 import assert from 'node:assert';
-import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel, isOver } from '../src/utils/dates.js';
+import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel, isOver, isThisWeekend } from '../src/utils/dates.js';
 import { rateForUsers, PRICING_TIERS } from '../src/data/pricing.js';
 
 // Mirror of grouping.bucketForDays (can't import it directly — it uses a
@@ -51,6 +51,26 @@ t('isOver: all-day (noon) earlier today = not over', () => {
 t('isOver: all-day yesterday = over', () => {
   const now = new Date(2026, 5, 15, 19, 3);
   assert.equal(isOver(new Date(2026, 5, 14, 12, 0), null, now), true);
+});
+
+// --- isThisWeekend (2026-06-15 is a Monday; weekend = Fri 19 – Sun 21) ---
+t('isThisWeekend: coming Saturday from Monday', () => {
+  const mon = new Date(2026, 5, 15, 9, 0);
+  assert.equal(isThisWeekend('2026-06-19', mon), true); // Fri
+  assert.equal(isThisWeekend('2026-06-21', mon), true); // Sun
+});
+t('isThisWeekend: weekdays are not weekend', () => {
+  const mon = new Date(2026, 5, 15, 9, 0);
+  assert.equal(isThisWeekend('2026-06-15', mon), false);
+  assert.equal(isThisWeekend('2026-06-17', mon), false);
+});
+t('isThisWeekend: next weekend excluded', () => {
+  const mon = new Date(2026, 5, 15, 9, 0);
+  assert.equal(isThisWeekend('2026-06-26', mon), false); // next Friday
+});
+t('isThisWeekend: on Saturday, includes Sunday', () => {
+  const sat = new Date(2026, 5, 20, 14, 0);
+  assert.equal(isThisWeekend('2026-06-21', sat), true);
 });
 
 t('daysFromNow: future days', () => {
