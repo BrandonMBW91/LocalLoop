@@ -127,11 +127,14 @@ export default function SignInScreen() {
             </ThemedText>
             <TextInput
               value={code}
-              onChangeText={setCode}
+              onChangeText={(t) => setCode(t.replace(/[^0-9]/g, ''))}
               placeholder="123456"
               placeholderTextColor={colors.textMuted}
               style={[styles.input, styles.codeInput, { fontSize: inputFontSize }]}
               keyboardType="number-pad"
+              inputMode="numeric"
+              textContentType="oneTimeCode"
+              autoComplete="sms-otp"
               autoFocus
               maxLength={6}
               accessibilityLabel="Verification code"
