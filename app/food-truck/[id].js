@@ -53,7 +53,9 @@ export default function FoodTruckDetailScreen() {
   }
 
   const openMaps = () => {
-    const q = encodeURIComponent(truck.address || truck.locationName);
+    const loc = (truck.address || truck.locationName || '').trim();
+    if (!loc) return;
+    const q = encodeURIComponent(loc);
     const url = Platform.select({
       ios: `maps:0,0?q=${q}`,
       android: `geo:0,0?q=${q}`,
@@ -64,7 +66,7 @@ export default function FoodTruckDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${truck.locationName}, ${truck.address}\n\nFound on Local Loop.`,
+      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}\n\nFound on Local Loop.`,
     }).catch(() => {});
   };
 

@@ -52,7 +52,9 @@ export default function GarageSaleDetailScreen() {
   }
 
   const openMaps = () => {
-    const q = encodeURIComponent(sale.address);
+    const loc = (sale.address || '').trim();
+    if (!loc) return;
+    const q = encodeURIComponent(loc);
     const url = Platform.select({
       ios: `maps:0,0?q=${q}`,
       android: `geo:0,0?q=${q}`,

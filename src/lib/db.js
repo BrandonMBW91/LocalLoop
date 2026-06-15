@@ -12,25 +12,27 @@ function isFeatured(r) {
 // ---- Mappers: database rows (snake_case) <-> app objects (camelCase) ----
 
 function rowToEvent(r) {
+  // Default every text field the UI may search or call string methods on, so a
+  // row with a missing field can never crash a card or the search filter.
   return {
     id: r.id,
     cityId: r.city_id,
-    title: r.title,
-    category: r.category,
+    title: r.title || 'Untitled event',
+    category: r.category || 'Community',
     emoji: r.emoji,
     start: r.start_at,
     end: r.end_at,
-    venue: r.venue,
-    address: r.address,
-    price: r.price,
-    host: r.host,
+    venue: r.venue || '',
+    address: r.address || '',
+    price: r.price || 'See details',
+    host: r.host || 'Community submission',
     featured: isFeatured(r),
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
     lat: r.lat,
     lng: r.lng,
     pending: r.status !== 'approved',
-    description: r.description,
+    description: r.description || '',
   };
 }
 
@@ -56,22 +58,22 @@ function rowToSale(r) {
   return {
     id: r.id,
     cityId: r.city_id,
-    title: r.title,
-    type: r.type,
+    title: r.title || 'Garage sale',
+    type: r.type || 'Garage Sale',
     start: r.start_date,
     end: r.end_date,
     dailyStart: r.daily_start,
     dailyEnd: r.daily_end,
-    address: r.address,
-    neighborhood: r.neighborhood,
+    address: r.address || '',
+    neighborhood: r.neighborhood || '',
     items: r.items || [],
     images: r.images || [],
     featured: isFeatured(r),
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
-    host: r.host,
+    host: r.host || 'Community submission',
     pending: r.status !== 'approved',
-    note: r.note,
+    note: r.note || '',
   };
 }
 
@@ -97,19 +99,19 @@ function rowToTruck(r) {
   return {
     id: r.id,
     cityId: r.city_id,
-    name: r.name,
-    cuisine: r.cuisine,
+    name: r.name || 'Food truck',
+    cuisine: r.cuisine || 'Other',
     date: r.date,
-    startTime: r.start_time,
-    endTime: r.end_time,
-    locationName: r.location_name,
-    address: r.address,
+    startTime: r.start_time || '',
+    endTime: r.end_time || '',
+    locationName: r.location_name || '',
+    address: r.address || '',
     featured: isFeatured(r),
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
-    host: r.host,
+    host: r.host || 'Community submission',
     pending: r.status !== 'approved',
-    note: r.note,
+    note: r.note || '',
   };
 }
 

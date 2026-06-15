@@ -58,7 +58,9 @@ export default function EventDetailScreen() {
   const saved = savedIds.includes(event.id);
 
   const openMaps = () => {
-    const q = encodeURIComponent(event.address || event.venue);
+    const loc = (event.address || event.venue || '').trim();
+    if (!loc) return;
+    const q = encodeURIComponent(loc);
     const url = Platform.select({
       ios: `maps:0,0?q=${q}`,
       android: `geo:0,0?q=${q}`,
@@ -71,7 +73,7 @@ export default function EventDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${event.venue}, ${event.address}\n\nFound on Local Loop.`,
+      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}\n\nFound on Local Loop.`,
     }).catch(() => {});
   };
 
@@ -80,7 +82,7 @@ export default function EventDetailScreen() {
       title: event.title,
       start: event.start,
       end: event.end,
-      location: `${event.venue}, ${event.address}`,
+      location: [event.venue, event.address].filter(Boolean).join(', '),
       details: event.description,
     });
     Linking.openURL(url).catch(() => {});
