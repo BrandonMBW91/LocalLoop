@@ -61,6 +61,34 @@ Stopped at Google Play Console **device verification** — Google requires a rea
 
 ---
 
+## Post-launch prep (2026-06-15)
+
+### ✅ Done & live
+- **SEO event pages** — `web/generate-events.mjs` builds branded, Google-indexable pages
+  (hub + 18 town pages with schema.org Event JSON-LD), plus `sitemap.xml` + `robots.txt`.
+  Live at `…/events/`. **This is your free organic-growth engine.**
+  - Regenerate when events change: `node web/generate-events.mjs && netlify deploy --prod --dir=site`
+  - TODO (optional): automate daily via GitHub Action — needs a `NETLIFY_AUTH_TOKEN` repo secret.
+  - After the app is LIVE: the event pages' "Download" button already points at the App Store URL.
+  - Submit the sitemap to **Google Search Console** (free) to speed up indexing.
+
+### 🟡 Staged — committed, NOT live yet
+- **Product analytics** (`supabase/app_events.sql` + `src/lib/analytics.js` + `logEvent`).
+  - **You:** run `supabase/app_events.sql` in the Supabase SQL editor.
+  - **Claude:** after iOS is approved, `eas update` to ship it (held back so it doesn't touch
+    the in-review binary). Then view results in Supabase: `app_events_daily`, `app_top_searches`.
+  - Tracks: change_city, save_event, search, open_map, view_event.
+
+### ⬜ Pending a decision / account / next rebuild
+- **Crash reporting (Sentry)** — recommended. Needs: a free sentry.io account → its DSN →
+  `npx expo install @sentry/react-native` + init → **goes in the NEXT rebuild** (native module).
+- **Domain** — pick the web identity for SEO/branding: use **findlayevents.com** (already owned)
+  or buy a Local Loop domain, then point it at the Netlify site (better ranking than netlify.app).
+- **Retention features** (OTA-able, build when ready): personalized weekend push, follow a
+  category/venue, a "This weekend" view, month calendar view.
+- **Monetization** — Stripe is built + in test mode; flip to live + deploy the webhook/digest
+  edge functions only once a town has real audience.
+
 ## Key reference
 - **Site (live):** https://local-loop-nwohio.netlify.app · privacy `…/privacy.html` · advertise `…/advertise.html`
   - Redeploy: `netlify deploy --prod --dir=site` (logged in as bwsandbox91@gmail.com)
