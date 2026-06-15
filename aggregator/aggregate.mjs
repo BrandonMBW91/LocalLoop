@@ -9,6 +9,7 @@
 //
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (service-role key — keep secret)
 
+import { createHash } from 'node:crypto';
 import ical from 'node-ical';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
@@ -68,21 +69,29 @@ async function fetchICS(url) {
   return res.text();
 }
 
-function makeRow(ev, source, start, end, uid) {
+function makeRow(ev, source, start, end) {
   const { venue, address } = deriveVenue(ev.location, source.name);
+  const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
+  const startIso = start.toISOString();
+  // Dedup key from the event's CONTENT, not the feed's UID — many feeds (WhoFi)
+  // hand out a fresh UID on every fetch, which caused duplicate inserts.
+  const source_uid = createHash('sha1')
+    .update(`${source.city_id}|${title}|${startIso}|${venue}|${address}`)
+    .digest('hex')
+    .slice(0, 24);
   return {
     city_id: source.city_id,
-    title: cleanText(ev.summary || 'Untitled').slice(0, 200),
+    title,
     category: source.default_category || 'Community',
     emoji: EMOJI[source.default_category] || '📅',
-    start_at: start.toISOString(),
+    start_at: startIso,
     end_at: end ? end.toISOString() : null,
     venue,
     address,
     price: 'See details',
     host: source.name,
     description: cleanText(ev.description) || `From ${source.name}.`,
-    source_uid: uid,
+    source_uid,
   };
 }
 
@@ -123,10 +132,7 @@ async function pullSource(source) {
       const endT = durationMs ? t + durationMs : t;
       if (endT < floor || t > cutoff) continue;
       const end = durationMs ? new Date(t + durationMs) : null;
-      const uid = ev.rrule
-        ? `${ev.uid}-${start.toISOString().slice(0, 10)}`
-        : String(ev.uid);
-      rows.push(makeRow(ev, source, start, end, uid));
+      rows.push(makeRow(ev, source, start, end));
     }
   }
 
