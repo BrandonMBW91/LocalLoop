@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://local-loop-nwohio.netlify.app/sitemap.xml
