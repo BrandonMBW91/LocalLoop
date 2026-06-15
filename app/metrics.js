@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchMetrics } from '../src/lib/db';
+import { fetchMetrics, fetchCityUsers } from '../src/lib/db';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 const KIND_LABEL = { event: 'Events', garage_sale: 'Garage sales', food_truck: 'Food trucks' };
@@ -27,12 +27,15 @@ export default function MetricsScreen() {
   const router = useRouter();
   const { isAdmin, city, cityId } = useApp();
   const [data, setData] = useState(null);
+  const [users, setUsers] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchMetrics(cityId));
+      const [m, u] = await Promise.all([fetchMetrics(cityId), fetchCityUsers(cityId)]);
+      setData(m);
+      setUsers(u);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -81,6 +84,7 @@ export default function MetricsScreen() {
 
       {/* Headline numbers */}
       <View style={styles.grid}>
+        <StatCard icon="people" value={users} label="Active users (30d)" color={colors.success} />
         <StatCard icon="eye" value={m.totalViews ?? 0} label="Total views" color={colors.primary} />
         <StatCard icon="list" value={m.totalListings ?? 0} label="Live listings" color={colors.text} />
         <StatCard icon="star" value={m.featuredCount ?? 0} label="Featured now" color={colors.accent} />

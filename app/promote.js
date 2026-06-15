@@ -3,8 +3,8 @@ import { View, ScrollView, StyleSheet, Pressable, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchCityReach } from '../src/lib/db';
-import { rateForReach } from '../src/data/pricing';
+import { fetchCityUsers } from '../src/lib/db';
+import { rateForUsers } from '../src/data/pricing';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 function Benefit({ icon, title, body }) {
@@ -36,13 +36,13 @@ function RateRow({ label, sub, price, last }) {
 export default function PromoteScreen() {
   const { city, cityId, backendEnabled } = useApp();
   const email = 'michabw91@gmail.com';
-  const [reach, setReach] = useState(0);
+  const [users, setUsers] = useState(0);
 
   useEffect(() => {
-    if (backendEnabled) fetchCityReach(cityId).then(setReach).catch(() => {});
+    if (backendEnabled) fetchCityUsers(cityId).then(setUsers).catch(() => {});
   }, [cityId, backendEnabled]);
 
-  const rate = rateForReach(reach);
+  const rate = rateForUsers(users);
 
   return (
     <ScrollView
@@ -97,7 +97,7 @@ export default function PromoteScreen() {
           {rate.name} tier
         </ThemedText>
         <ThemedText size="small" color={colors.textMuted}>
-          · {reach.toLocaleString()} community views
+          · {users.toLocaleString()} active {users === 1 ? 'neighbor' : 'neighbors'} this month
         </ThemedText>
       </View>
       <View style={styles.rateCard}>

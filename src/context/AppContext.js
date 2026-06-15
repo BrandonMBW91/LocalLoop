@@ -31,6 +31,7 @@ import {
   fetchSponsors,
   fetchDeals,
   savePushToken,
+  recordDeviceActivity,
 } from '../lib/db';
 
 // The email that gets moderator powers (matches is_admin() in the database).
@@ -49,7 +50,13 @@ const STORAGE_KEYS = {
   submittedSales: '@fe/submittedGarageSales',
   submittedTrucks: '@fe/submittedFoodTrucks',
   rulesAccepted: '@fe/rulesAccepted',
+  deviceId: '@fe/deviceId',
 };
+
+// A stable, anonymous per-install id (no personal data) for active-user counts.
+function makeDeviceId() {
+  return 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
 
 export function AppProvider({ children }) {
   const [cityId, setCityId] = useState('findlay');
@@ -59,6 +66,7 @@ export function AppProvider({ children }) {
   const [submittedSales, setSubmittedSales] = useState([]); // local fallback (no backend)
   const [submittedTrucks, setSubmittedTrucks] = useState([]); // local fallback (no backend)
   const [rulesAccepted, setRulesAccepted] = useState(false); // accepted community rules
+  const [deviceId, setDeviceId] = useState(null); // anonymous per-install id
   const [hydrated, setHydrated] = useState(false);
 
   // Live data shown in the app (from the backend, or sample data as fallback).
@@ -87,6 +95,12 @@ export function AppProvider({ children }) {
         if (map[STORAGE_KEYS.submittedSales]) setSubmittedSales(JSON.parse(map[STORAGE_KEYS.submittedSales]));
         if (map[STORAGE_KEYS.submittedTrucks]) setSubmittedTrucks(JSON.parse(map[STORAGE_KEYS.submittedTrucks]));
         if (map[STORAGE_KEYS.rulesAccepted] === 'true') setRulesAccepted(true);
+        let did = map[STORAGE_KEYS.deviceId];
+        if (!did) {
+          did = makeDeviceId();
+          AsyncStorage.setItem(STORAGE_KEYS.deviceId, did).catch(() => {});
+        }
+        setDeviceId(did);
       } catch (e) {
         // Non-fatal: fall back to defaults.
       } finally {
@@ -194,6 +208,12 @@ export function AppProvider({ children }) {
       }
     })();
   }, [cityId]);
+
+  // Record this device as active in the current town (anonymous) — powers
+  // user-based ad pricing.
+  useEffect(() => {
+    if (isSupabaseEnabled && deviceId && cityId) recordDeviceActivity(deviceId, cityId);
+  }, [deviceId, cityId]);
 
   // Submit handlers: write to the backend when configured, otherwise keep a
   // local pending copy so the prototype works with no backend. Both throw on

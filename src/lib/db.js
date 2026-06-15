@@ -468,10 +468,33 @@ export async function savePushToken(token, cityId, platform) {
   }
 }
 
-// A town's total reach (sum of listing views) — drives reach-based ad pricing.
+// A town's total reach (sum of listing views).
 export async function fetchCityReach(cityId) {
   try {
     const { data, error } = await supabase.rpc('city_reach', { p_city: cityId });
+    if (error) throw error;
+    return data || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// Record that this device is active in a town (anonymous; powers user-based ad
+// pricing). Fire-and-forget.
+export async function recordDeviceActivity(deviceId, cityId) {
+  try {
+    await supabase
+      .from('device_activity')
+      .upsert({ device_id: deviceId, city_id: cityId, last_seen: new Date().toISOString() }, { onConflict: 'device_id' });
+  } catch (e) {
+    // non-fatal
+  }
+}
+
+// Monthly active users in a town — drives ad pricing by actual users.
+export async function fetchCityUsers(cityId) {
+  try {
+    const { data, error } = await supabase.rpc('city_active_users', { p_city: cityId });
     if (error) throw error;
     return data || 0;
   } catch (e) {
