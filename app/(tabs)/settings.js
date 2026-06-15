@@ -273,7 +273,7 @@ export default function SettingsScreen() {
         <View style={[styles.row, styles.rowBorder]}>
           <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
           <View style={{ flex: 1, marginLeft: spacing.sm }}>
-            <ThemedText size="body">Version {APP_VERSION} (build {BUILD})</ThemedText>
+            <ThemedText size="body">Version {APP_VERSION} (rev {BUILD})</ThemedText>
             <ThemedText size="small" color={colors.textMuted}>{updateLabel()}</ThemedText>
           </View>
         </View>
