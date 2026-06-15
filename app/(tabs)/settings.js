@@ -2,9 +2,22 @@ import React from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Updates from 'expo-updates';
 import ThemedText from '../../src/components/ThemedText';
 import { useApp } from '../../src/context/AppContext';
 import { textScaleOptions, colors, spacing, radius } from '../../src/theme/theme';
+
+// Which over-the-air update is actually running — handy for confirming a fix
+// has reached the device (vs. the original embedded build).
+function updateLabel() {
+  try {
+    if (Updates.isEmbeddedLaunch || !Updates.updateId) return 'base build (no update yet)';
+    const when = Updates.createdAt ? Updates.createdAt.toLocaleString() : '';
+    return `update …${Updates.updateId.slice(-6)}${when ? ' · ' + when : ''}`;
+  } catch {
+    return '';
+  }
+}
 
 function SectionTitle({ children }) {
   return (
@@ -258,9 +271,10 @@ export default function SettingsScreen() {
         </Pressable>
         <View style={[styles.row, styles.rowBorder]}>
           <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
-          <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
-            Version 1.0.0
-          </ThemedText>
+          <View style={{ flex: 1, marginLeft: spacing.sm }}>
+            <ThemedText size="body">Version 1.0.0</ThemedText>
+            <ThemedText size="small" color={colors.textMuted}>{updateLabel()}</ThemedText>
+          </View>
         </View>
       </View>
 

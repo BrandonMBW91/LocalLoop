@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -31,6 +31,24 @@ export default function SignInScreen() {
 
   const inputFontSize = Math.round(baseFont.title * scale);
 
+  // When we move to the code step, the email keyboard is still open. If we focus
+  // the code field while it's open, iOS reuses the alphabetic keyboard instead
+  // of switching to numeric. So we dismiss it (in sendCode) and only focus the
+  // code field once the keyboard has FULLY hidden — then it opens fresh numeric.
+  useEffect(() => {
+    if (step !== 'code') return undefined;
+    const sub = Keyboard.addListener('keyboardDidHide', () => {
+      codeRef.current?.focus();
+      sub.remove();
+    });
+    // Fallback if no keyboard was open to hide.
+    const t = setTimeout(() => codeRef.current?.focus(), 500);
+    return () => {
+      sub.remove();
+      clearTimeout(t);
+    };
+  }, [step]);
+
   const sendCode = async () => {
     const clean = email.trim().toLowerCase();
     if (!EMAIL_RE.test(clean)) {
@@ -42,11 +60,9 @@ export default function SignInScreen() {
       const { error } = await requestOtp(clean);
       if (error) throw error;
       setStep('code');
-      // Close the email keyboard, then focus the code field fresh — otherwise
-      // iOS keeps the already-open alphabetic keyboard instead of switching to
-      // the numeric pad for the code.
+      // Close the email keyboard; the keyboardDidHide effect then focuses the
+      // code field once it's fully hidden, so a fresh numeric keypad opens.
       Keyboard.dismiss();
-      setTimeout(() => codeRef.current?.focus(), 250);
     } catch (e) {
       Alert.alert('Could not send code', e?.message || 'Please try again in a moment.');
     } finally {
@@ -141,8 +157,6 @@ export default function SignInScreen() {
               style={[styles.input, styles.codeInput, { fontSize: inputFontSize }]}
               keyboardType="number-pad"
               inputMode="numeric"
-              textContentType="oneTimeCode"
-              autoComplete="sms-otp"
               maxLength={6}
               accessibilityLabel="Verification code"
             />
