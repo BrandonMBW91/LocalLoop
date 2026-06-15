@@ -32,6 +32,8 @@ function icalVariants(u) {
     `${base}/?post_type=tribe_events&ical=1&eventDisplay=list`,
     `${url.origin}/events/?ical=1`,
     `${url.origin}/?post_type=tribe_events&ical=1&eventDisplay=list`,
+    `${base}?format=ical`, // Squarespace events collection
+    `${url.origin}/common/modules/iCalendar/iCalendar.aspx?feed=calendar`, // CivicPlus / CivicEngage
   ];
 }
 

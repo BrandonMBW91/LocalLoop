@@ -91,6 +91,10 @@ insert into public.event_sources (city_id, name, url, type, default_category, en
   -- Owens CC endpoint is unreachable (DNS/plugin removed) — disabled to stop per-run fetch errors.
   ('findlay', 'Owens Community College', 'https://www.owens.edu/events/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true', 'ical', 'Education', false),
   ('fostoria', 'Kaubisch Memorial Public Library', 'https://kaubisch-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('fostoria', 'Fostoria Area Chamber', 'https://fostoriachamber.com/visitors-bureau-community-calendar/?ical=1', 'ical', 'Community', true),
+  ('van-wert', 'Visit Van Wert', 'https://visitvanwert.com/events-calendar/?ical=1', 'ical', 'Community', true),
+  ('lima', 'Allen County Fairgrounds', 'https://allencofair.com/year-round-events/?ical=1', 'ical', 'Community', true),
+  ('bellefontaine', 'Holland Theatre', 'https://thehollandtheatre.org/calendar/?ical=1', 'ical', 'Arts', true),
   ('leipsic', 'Leipsic Public Library', 'https://putnam-leipsic-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
   ('lima', 'Lima Public Library', 'https://lima-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
   ('north-baltimore', 'North Baltimore Public Library', 'https://nbpl-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
