@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -26,6 +27,7 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const codeRef = useRef(null);
 
   const inputFontSize = Math.round(baseFont.title * scale);
 
@@ -40,6 +42,11 @@ export default function SignInScreen() {
       const { error } = await requestOtp(clean);
       if (error) throw error;
       setStep('code');
+      // Close the email keyboard, then focus the code field fresh — otherwise
+      // iOS keeps the already-open alphabetic keyboard instead of switching to
+      // the numeric pad for the code.
+      Keyboard.dismiss();
+      setTimeout(() => codeRef.current?.focus(), 250);
     } catch (e) {
       Alert.alert('Could not send code', e?.message || 'Please try again in a moment.');
     } finally {
@@ -126,6 +133,7 @@ export default function SignInScreen() {
               We sent a code to {email.trim().toLowerCase()}.
             </ThemedText>
             <TextInput
+              ref={codeRef}
               value={code}
               onChangeText={(t) => setCode(t.replace(/[^0-9]/g, ''))}
               placeholder="123456"
@@ -135,7 +143,6 @@ export default function SignInScreen() {
               inputMode="numeric"
               textContentType="oneTimeCode"
               autoComplete="sms-otp"
-              autoFocus
               maxLength={6}
               accessibilityLabel="Verification code"
             />
