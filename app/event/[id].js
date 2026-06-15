@@ -130,7 +130,7 @@ export default function EventDetailScreen() {
         <View style={styles.actions}>
           <Pressable
             style={[styles.actionBtn, saved && { backgroundColor: colors.danger }]}
-            onPress={() => toggleSaved(event.id)}
+            onPress={() => toggleSaved(event.id, event)}
           >
             <Ionicons
               name={saved ? 'heart' : 'heart-outline'}

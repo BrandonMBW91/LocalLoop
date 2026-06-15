@@ -1,26 +1,37 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/theme/theme';
+import { useApp } from '../../src/context/AppContext';
 
 // Big, clearly-labeled bottom tabs. Only three destinations to keep
 // navigation simple for every age group.
 export default function TabsLayout() {
+  const { hydrated, onboarded, scale } = useApp();
+
+  // Don't flash the tabs before we know whether to show the welcome screen.
+  if (!hydrated) return null;
+  if (!onboarded) return <Redirect href="/welcome" />;
+
+  // Honor the user's Text Size setting on the nav itself (the app's headline
+  // accessibility feature), capped so 5 labels still fit on narrow phones.
+  const navScale = Math.min(scale, 1.25);
+
   return (
     <Tabs
       screenOptions={{
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: colors.textInverse,
-        headerTitleStyle: { fontWeight: '700', fontSize: 22 },
+        headerTitleStyle: { fontWeight: '700', fontSize: Math.round(22 * navScale) },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          height: 68,
+          height: Math.round(68 * navScale),
           paddingBottom: 10,
           paddingTop: 6,
           borderTopColor: colors.border,
         },
-        tabBarLabelStyle: { fontSize: 13, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: Math.round(13 * navScale), fontWeight: '600' },
       }}
     >
       <Tabs.Screen

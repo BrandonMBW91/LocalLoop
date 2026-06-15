@@ -27,7 +27,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 export default function GarageSalesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, scale, garageSales, loadingData, refresh, backendEnabled, signedIn } = useApp();
+  const { city, scale, garageSales, sponsors, loadingData, refresh, backendEnabled, signedIn } = useApp();
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) {
@@ -39,7 +39,7 @@ export default function GarageSalesScreen() {
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [activeItem, setActiveItem] = useState('All');
-  const [weekendOnly, setWeekendOnly] = useState(false);
+  const [thisWeekOnly, setThisWeekOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -54,7 +54,7 @@ export default function GarageSalesScreen() {
     const q = deferredQuery.trim().toLowerCase();
     return sales.filter((s) => {
       const matchesItem = activeItem === 'All' || (s.items || []).includes(activeItem);
-      const matchesWeekend = !weekendOnly || daysFromNow(s.start) <= 7;
+      const matchesWeekend = !thisWeekOnly || daysFromNow(s.start) <= 7;
       const matchesQuery =
         !q ||
         s.title.toLowerCase().includes(q) ||
@@ -63,7 +63,7 @@ export default function GarageSalesScreen() {
         (s.items || []).join(' ').toLowerCase().includes(q);
       return matchesItem && matchesWeekend && matchesQuery;
     });
-  }, [sales, deferredQuery, activeItem, weekendOnly]);
+  }, [sales, deferredQuery, activeItem, thisWeekOnly]);
 
   // A multi-day sale that's running across today counts as "Today"; otherwise
   // group by its start date.
@@ -80,8 +80,9 @@ export default function GarageSalesScreen() {
         getDays: saleDays,
         isFeatured: (s) => s.featured,
         toRenderItem: (s) => ({ type: 'sale', sale: s, key: s.id }),
+        injectAds: sponsors.length > 0,
       }),
-    [filtered]
+    [filtered, sponsors.length]
   );
 
   return (
@@ -135,20 +136,20 @@ export default function GarageSalesScreen() {
           contentContainerStyle={styles.filterContent}
         >
           <Pressable
-            onPress={() => setWeekendOnly((v) => !v)}
-            style={[styles.weekendChip, weekendOnly && styles.weekendChipOn]}
+            onPress={() => setThisWeekOnly((v) => !v)}
+            style={[styles.weekendChip, thisWeekOnly && styles.weekendChipOn]}
             accessibilityRole="button"
-            accessibilityState={{ selected: weekendOnly }}
+            accessibilityState={{ selected: thisWeekOnly }}
           >
             <Ionicons
               name="sunny"
               size={18}
-              color={weekendOnly ? colors.textInverse : colors.garageSale}
+              color={thisWeekOnly ? colors.textInverse : colors.garageSale}
             />
             <ThemedText
               size="small"
               weight="bold"
-              color={weekendOnly ? colors.textInverse : colors.garageSale}
+              color={thisWeekOnly ? colors.textInverse : colors.garageSale}
             >
               This Week
             </ThemedText>

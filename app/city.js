@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { CITIES } from '../src/data/cities';
@@ -9,7 +9,8 @@ import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 
 export default function CityPickerScreen() {
   const router = useRouter();
-  const { cityId, setCity, scale } = useApp();
+  const { onboarding } = useLocalSearchParams();
+  const { cityId, setCity, scale, completeOnboarding } = useApp();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -22,7 +23,13 @@ export default function CityPickerScreen() {
 
   const choose = (id) => {
     setCity(id);
-    router.back();
+    if (onboarding) {
+      // Came from the first-launch welcome — finish onboarding and land in the app.
+      completeOnboarding();
+      router.replace('/');
+    } else {
+      router.back();
+    }
   };
 
   return (

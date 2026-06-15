@@ -26,7 +26,7 @@ function Field({ label, hint, children, required }) {
     <View style={styles.field}>
       <ThemedText size="body" weight="semibold">
         {label}
-        {required ? <ThemedText color={colors.danger}> *</ThemedText> : null}
+        {required ? <ThemedText size="small" weight="semibold" color={colors.danger}> (required)</ThemedText> : null}
       </ThemedText>
       {hint ? (
         <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 4 }}>

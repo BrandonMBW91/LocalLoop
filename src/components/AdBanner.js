@@ -10,10 +10,11 @@ import { colors, spacing, radius } from '../theme/theme';
 // a windowed list re-mounts AdBanner repeatedly as it scrolls in/out of view.
 const countedImpressions = new Set();
 
-// Shows a real local sponsor when one is booked for the current city, otherwise
-// a friendly placeholder that doubles as a "your ad here" prompt. Pass `index`
-// in a list so multiple slots rotate through the available sponsors.
-export default function AdBanner({ index = 0, label = 'Local Business Ad' }) {
+// Shows a real local sponsor when one is booked for the current city. Renders
+// nothing when there's no sponsor — we don't clutter the public feed with a
+// "your ad could be here" placeholder (that pitch lives on the Advertise screen).
+// Pass `index` in a list so multiple slots rotate through the available sponsors.
+export default function AdBanner({ index = 0 }) {
   const { sponsors = [], backendEnabled } = useApp();
   const sponsor = sponsors.length ? sponsors[index % sponsors.length] : null;
 
@@ -67,39 +68,13 @@ export default function AdBanner({ index = 0, label = 'Local Business Ad' }) {
     );
   }
 
-  return (
-    <View style={styles.wrap}>
-      <View style={styles.banner}>
-        <ThemedText size="tiny" color={colors.textMuted} style={styles.tag}>
-          SPONSORED
-        </ThemedText>
-        <ThemedText size="small" weight="semibold" color={colors.textMuted}>
-          {label}
-        </ThemedText>
-        <ThemedText size="tiny" color={colors.textMuted}>
-          Your ad could be here — supports local events
-        </ThemedText>
-      </View>
-    </View>
-  );
+  return null;
 }
 
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  banner: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
   },
   sponsor: {
     flexDirection: 'row',

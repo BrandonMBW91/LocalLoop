@@ -27,7 +27,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 export default function FoodTrucksScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, scale, foodTrucks, loadingData, refresh, backendEnabled, signedIn } = useApp();
+  const { city, scale, foodTrucks, sponsors, loadingData, refresh, backendEnabled, signedIn } = useApp();
 
   // Require sign-in before reaching a post form when a backend is configured.
   const goPost = (path) => {
@@ -70,8 +70,9 @@ export default function FoodTrucksScreen() {
         getDays: (t) => daysFromNow(t.date),
         isFeatured: (t) => t.featured,
         toRenderItem: (t) => ({ type: 'truck', truck: t, key: t.id }),
+        injectAds: sponsors.length > 0,
       }),
-    [filtered]
+    [filtered, sponsors.length]
   );
 
   return (

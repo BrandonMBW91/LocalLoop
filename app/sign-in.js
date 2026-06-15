@@ -104,7 +104,12 @@ export default function SignInScreen() {
               disabled={busy}
             >
               {busy ? (
-                <ActivityIndicator color={colors.textInverse} />
+                <View style={styles.btnBusy}>
+                  <ActivityIndicator color={colors.textInverse} />
+                  <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
+                    Sending…
+                  </ThemedText>
+                </View>
               ) : (
                 <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
                   Email me a code
@@ -137,7 +142,12 @@ export default function SignInScreen() {
               disabled={busy}
             >
               {busy ? (
-                <ActivityIndicator color={colors.textInverse} />
+                <View style={styles.btnBusy}>
+                  <ActivityIndicator color={colors.textInverse} />
+                  <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
+                    Verifying…
+                  </ThemedText>
+                </View>
               ) : (
                 <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
                   Confirm & continue
@@ -198,6 +208,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 56,
     marginTop: spacing.sm,
+  },
+  btnBusy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   linkBtn: {
     alignItems: 'center',

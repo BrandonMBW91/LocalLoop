@@ -51,6 +51,7 @@ const STORAGE_KEYS = {
   submittedTrucks: '@fe/submittedFoodTrucks',
   rulesAccepted: '@fe/rulesAccepted',
   deviceId: '@fe/deviceId',
+  onboarded: '@fe/onboarded',
 };
 
 // A stable, anonymous per-install id (no personal data) for active-user counts.
@@ -67,6 +68,7 @@ export function AppProvider({ children }) {
   const [submittedTrucks, setSubmittedTrucks] = useState([]); // local fallback (no backend)
   const [rulesAccepted, setRulesAccepted] = useState(false); // accepted community rules
   const [deviceId, setDeviceId] = useState(null); // anonymous per-install id
+  const [onboarded, setOnboarded] = useState(false); // finished first-launch welcome
   const [hydrated, setHydrated] = useState(false);
 
   // Live data shown in the app (from the backend, or sample data as fallback).
@@ -95,6 +97,7 @@ export function AppProvider({ children }) {
         if (map[STORAGE_KEYS.submittedSales]) setSubmittedSales(JSON.parse(map[STORAGE_KEYS.submittedSales]));
         if (map[STORAGE_KEYS.submittedTrucks]) setSubmittedTrucks(JSON.parse(map[STORAGE_KEYS.submittedTrucks]));
         if (map[STORAGE_KEYS.rulesAccepted] === 'true') setRulesAccepted(true);
+        if (map[STORAGE_KEYS.onboarded] === 'true') setOnboarded(true);
         let did = map[STORAGE_KEYS.deviceId];
         if (!did) {
           did = makeDeviceId();
@@ -176,7 +179,10 @@ export function AppProvider({ children }) {
     AsyncStorage.setItem(STORAGE_KEYS.textScale, key).catch(() => {});
   };
 
-  const toggleSaved = (eventId) => {
+  // Pass the event object when you have it (e.g. from a card or detail screen)
+  // so the reminder can be scheduled even for an event saved from another city
+  // that isn't in the currently-loaded list.
+  const toggleSaved = (eventId, eventObj) => {
     setSavedIds((prev) => {
       const wasSaved = prev.includes(eventId);
       const next = wasSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId];
@@ -187,7 +193,7 @@ export function AppProvider({ children }) {
         // Saving an event sets a local reminder a few hours before it starts,
         // and (if they allow notifications) registers this device for the
         // weekend digest.
-        const ev = findEventById(eventId);
+        const ev = eventObj || findEventById(eventId);
         if (ev) {
           scheduleEventReminder(ev);
           if (isSupabaseEnabled) getPushToken().then((t) => t && savePushToken(t, cityId, Platform.OS));
@@ -274,6 +280,11 @@ export function AppProvider({ children }) {
     AsyncStorage.setItem(STORAGE_KEYS.rulesAccepted, 'true').catch(() => {});
   };
 
+  const completeOnboarding = () => {
+    setOnboarded(true);
+    AsyncStorage.setItem(STORAGE_KEYS.onboarded, 'true').catch(() => {});
+  };
+
   // Lookups for the detail screens: prefer the loaded list, fall back to seed.
   const findEventById = useCallback(
     (id) => events.find((e) => e.id === id) || getEventById(id, submittedEvents),
@@ -355,6 +366,8 @@ export function AppProvider({ children }) {
     reportListing,
     rulesAccepted,
     acceptRules,
+    onboarded,
+    completeOnboarding,
 
     // Auth / backend
     backendEnabled: isSupabaseEnabled,

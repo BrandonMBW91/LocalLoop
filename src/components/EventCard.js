@@ -61,7 +61,7 @@ export default function EventCard({ event }) {
       </Pressable>
 
       <Pressable
-        onPress={() => toggleSaved(event.id)}
+        onPress={() => toggleSaved(event.id, event)}
         hitSlop={12}
         style={styles.saveBtn}
         accessibilityRole="button"

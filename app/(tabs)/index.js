@@ -27,7 +27,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 export default function EventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, scale, events, deals, loadingData, refresh, backendEnabled, signedIn } = useApp();
+  const { city, scale, events, deals, sponsors, loadingData, refresh, backendEnabled, signedIn } = useApp();
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) {
@@ -75,8 +75,9 @@ export default function EventsScreen() {
         getDays: (e) => daysFromNow(e.start),
         isFeatured: (e) => e.featured,
         toRenderItem: (e) => ({ type: 'event', event: e, key: e.id }),
+        injectAds: sponsors.length > 0,
       }),
-    [filtered]
+    [filtered, sponsors.length]
   );
 
   return (
@@ -96,11 +97,14 @@ export default function EventsScreen() {
         </View>
         <Pressable
           onPress={() => router.push('/map')}
-          style={styles.mapBtn}
+          style={styles.changeCity}
           accessibilityRole="button"
           accessibilityLabel="Map view"
         >
           <Ionicons name="map" size={20 * Math.min(scale, 1.2)} color={colors.primary} />
+          <ThemedText size="small" weight="semibold" color={colors.primary}>
+            Map
+          </ThemedText>
         </Pressable>
         <Pressable
           onPress={() => router.push('/city')}
@@ -243,14 +247,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radius.pill,
     minHeight: 44,
-  },
-  mapBtn: {
-    backgroundColor: colors.surface,
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   searchWrap: {
     flexDirection: 'row',

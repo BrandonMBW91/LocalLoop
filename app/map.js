@@ -28,7 +28,7 @@ export default function MapScreen() {
       <EmptyState
         icon="map-outline"
         title="No mapped events yet"
-        body={`Events in ${city.name} show up on the map once their addresses are geocoded.`}
+        body={`Events in ${city.name} show up on the map once we know their exact address.`}
         accent={colors.primary}
       />
     );
@@ -49,10 +49,14 @@ map.addControl(new mapboxgl.NavigationControl(),'top-right');
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 pts.forEach(function(p){
   var el=document.createElement('div');
-  el.style.cssText='width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer;background:'+p.color;
-  var html='<div style="font:14px -apple-system,sans-serif;max-width:190px"><b>'+esc(p.title)+'</b><br>'
-    +'<a href="#" onclick="window.ReactNativeWebView.postMessage(\\''+p.id+'\\');return false;" style="color:#1F6F54;font-weight:600">View details &rsaquo;</a></div>';
-  new mapboxgl.Marker(el).setLngLat([p.lng,p.lat]).setPopup(new mapboxgl.Popup({offset:14}).setHTML(html)).addTo(map);
+  // 40px transparent hit area with a centered 24px dot — big enough for shaky taps.
+  el.style.cssText='width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  var dot=document.createElement('div');
+  dot.style.cssText='width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);background:'+p.color;
+  el.appendChild(dot);
+  var html='<div style="font:16px -apple-system,sans-serif;max-width:220px;padding:2px 0"><b>'+esc(p.title)+'</b><br>'
+    +'<a href="#" onclick="window.ReactNativeWebView.postMessage(\\''+p.id+'\\');return false;" style="display:inline-block;margin-top:6px;color:#1F6F54;font-weight:700;font-size:16px">View details &rsaquo;</a></div>';
+  new mapboxgl.Marker(el).setLngLat([p.lng,p.lat]).setPopup(new mapboxgl.Popup({offset:18}).setHTML(html)).addTo(map);
 });
 </script></body></html>`;
 

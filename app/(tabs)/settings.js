@@ -84,7 +84,7 @@ export default function SettingsScreen() {
                   <ThemedText
                     weight="bold"
                     color={selected ? colors.textInverse : colors.text}
-                    style={{ fontSize: 14 + opt.scale * 6 }}
+                    style={{ fontSize: Math.round(18 * opt.scale) }}
                   >
                     A
                   </ThemedText>

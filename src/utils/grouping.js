@@ -18,7 +18,10 @@ export function bucketForDays(d) {
 //   getDays      - (item) => whole days from now (0 = today)
 //   isFeatured   - (item) => boolean (optional)
 //   toRenderItem - (item) => the card render object (must include a unique `key`)
-export function buildTimeSections({ items, getDays, isFeatured, toRenderItem }) {
+//   injectAds    - interleave ad slots after every 4 cards (default false; the
+//                  caller passes true only when a real sponsor exists, so we
+//                  never leave an empty slot where the placeholder used to be)
+export function buildTimeSections({ items, getDays, isFeatured, toRenderItem, injectAds = false }) {
   const featured = [];
   const buckets = { Today: [], Tomorrow: [], 'This Week': [], 'Next Week': [], Later: [] };
   items.forEach((it) => {
@@ -31,7 +34,7 @@ export function buildTimeSections({ items, getDays, isFeatured, toRenderItem }) 
     const out = [];
     arr.forEach((it, i) => {
       out.push(toRenderItem(it));
-      if ((i + 1) % 4 === 0 && i !== arr.length - 1) {
+      if (injectAds && (i + 1) % 4 === 0 && i !== arr.length - 1) {
         out.push({ type: 'ad', key: `ad-${adIndex}`, adIndex });
         adIndex += 1;
       }
