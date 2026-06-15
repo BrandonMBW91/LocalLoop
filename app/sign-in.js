@@ -157,6 +157,8 @@ export default function SignInScreen() {
               style={[styles.input, styles.codeInput, { fontSize: inputFontSize }]}
               keyboardType="number-pad"
               inputMode="numeric"
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
               maxLength={6}
               accessibilityLabel="Verification code"
             />
