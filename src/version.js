@@ -3,4 +3,4 @@
 // screen always shows which revision is actually live. The store version
 // (app.json `version`) only changes on a full rebuild.
 export const APP_VERSION = '1.0.0';
-export const BUILD = 23;
+export const BUILD = 24;

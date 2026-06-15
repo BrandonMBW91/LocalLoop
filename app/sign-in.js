@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,10 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  AppState,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
@@ -27,9 +29,34 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [clipCode, setClipCode] = useState(''); // a 6-digit code found on the clipboard
   const codeRef = useRef(null);
 
   const inputFontSize = Math.round(baseFont.title * scale);
+
+  // Look for a 6-digit code on the clipboard so we can offer a one-tap paste
+  // (the user copies it from their email and comes back). Best-effort + never
+  // throws — if anything fails we just don't show the paste chip.
+  const checkClipboard = useCallback(async () => {
+    try {
+      const s = await Clipboard.getStringAsync();
+      const m = (s || '').match(/\b\d{6}\b/);
+      setClipCode(m ? m[0] : '');
+    } catch {
+      setClipCode('');
+    }
+  }, []);
+
+  // On the code step, check the clipboard now and again whenever the app returns
+  // to the foreground (e.g. after switching to Mail to copy the code).
+  useEffect(() => {
+    if (step !== 'code') return undefined;
+    checkClipboard();
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') checkClipboard();
+    });
+    return () => sub.remove();
+  }, [step, checkClipboard]);
 
   // When we move to the code step, the email keyboard is still open. If we focus
   // the code field while it's open, iOS reuses the alphabetic keyboard instead
@@ -148,6 +175,22 @@ export default function SignInScreen() {
             <ThemedText size="body" color={colors.textMuted} style={styles.center}>
               We sent a code to {email.trim().toLowerCase()}.
             </ThemedText>
+            {clipCode && clipCode !== code ? (
+              <Pressable
+                onPress={() => {
+                  setCode(clipCode);
+                  Keyboard.dismiss();
+                }}
+                style={styles.pasteChip}
+                accessibilityRole="button"
+                accessibilityLabel={`Paste code ${clipCode}`}
+              >
+                <Ionicons name="clipboard-outline" size={18} color={colors.primary} />
+                <ThemedText size="body" weight="bold" color={colors.primary}>
+                  Paste {clipCode}
+                </ThemedText>
+              </Pressable>
+            ) : null}
             <TextInput
               ref={codeRef}
               value={code}
@@ -245,5 +288,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minHeight: 44,
     justifyContent: 'center',
+  },
+  pasteChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+    marginTop: spacing.md,
+    minHeight: 48,
   },
 });
