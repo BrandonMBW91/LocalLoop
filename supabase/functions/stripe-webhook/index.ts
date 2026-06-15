@@ -19,23 +19,23 @@ const supabase = createClient(
 );
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
-// Town name (as shown in the Stripe checkout dropdown) -> our city_id.
-const CITY_BY_NAME: Record<string, string> = {
-  Findlay: 'findlay', Fostoria: 'fostoria', Tiffin: 'tiffin', 'Bowling Green': 'bowling-green',
-  Sandusky: 'sandusky', Lima: 'lima', 'Van Wert': 'van-wert', Bellefontaine: 'bellefontaine',
-  Toledo: 'toledo', Perrysburg: 'perrysburg', Bluffton: 'bluffton', Ada: 'ada',
-  Waterville: 'waterville', 'North Baltimore': 'north-baltimore', Carey: 'carey',
-  Leipsic: 'leipsic', Arlington: 'arlington', Pandora: 'pandora',
+// Stripe dropdown codes (alphanumeric) -> our city_id (which can have hyphens).
+const CODE_TO_CITY: Record<string, string> = {
+  findlay: 'findlay', fostoria: 'fostoria', tiffin: 'tiffin', bowlinggreen: 'bowling-green',
+  sandusky: 'sandusky', lima: 'lima', vanwert: 'van-wert', bellefontaine: 'bellefontaine',
+  toledo: 'toledo', perrysburg: 'perrysburg', bluffton: 'bluffton', ada: 'ada',
+  waterville: 'waterville', northbaltimore: 'north-baltimore', carey: 'carey',
+  leipsic: 'leipsic', arlington: 'arlington', pandora: 'pandora',
 };
-const ALL_CITY_IDS = [...new Set(Object.values(CITY_BY_NAME))];
+const ALL_CITY_IDS = [...new Set(Object.values(CODE_TO_CITY))];
 
 function field(session: any, key: string): string {
   const f = (session.custom_fields || []).find((c: any) => c.key === key);
   return (f?.text?.value || f?.dropdown?.value || '').trim();
 }
 
-function cityIdFor(name: string): string {
-  return CITY_BY_NAME[name] || name.toLowerCase().replace(/\s+/g, '-');
+function cityIdFor(code: string): string {
+  return CODE_TO_CITY[code] || code;
 }
 
 Deno.serve(async (req) => {
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
       const product = s.metadata?.product || 'town_sponsor'; // town_sponsor | all_region | featured_30
-      const business = field(s, 'business_name') || s.customer_details?.name || 'Local business';
+      const business = field(s, 'businessname') || s.customer_details?.name || 'Local business';
       const headline = field(s, 'headline');
       const link = field(s, 'link');
       const town = field(s, 'town');

@@ -9,59 +9,52 @@ avoids Apple's 30% cut. The app's "Advertise" button just links to your web page
 
 ---
 
-## 1. Create a Stripe account
-[stripe.com](https://stripe.com) → sign up. Start in **Test mode** (toggle, top right) until everything works, then switch to Live.
+## ✅ Already done (Test mode)
+The product catalog and the 3 **Payment Links** are created in your Stripe Test
+account (via `scripts/stripe-catalog.mjs`) with the exact metadata + custom-field
+keys the webhook needs, and the test links are already in `site/advertise.html`:
+- **Town Sponsor** — $19/mo · collects business name, headline, town
+- **Featured Listing** — $25 one-time (30-day ad) · business name, headline, town
+- **All-Region Sponsor** — $79/mo · business name, headline, link
 
-## 2. Create products + prices
-Stripe → **Products** → add:
-| Product | Price | Type |
-|---|---|---|
-| Town Sponsor | $19/mo | Recurring (monthly) |
-| All-Region Sponsor | $79/mo | Recurring (monthly) |
-| Featured Listing | $25 | One-time |
-| Featured Listing (7-day) | $9 | One-time (optional) |
+## What's left to turn it on
 
-## 3. Create a Payment Link for each
-Stripe → **Payment Links** → New. For each product:
-- **Metadata** (Advanced options → Metadata): add `product` = one of
-  `town_sponsor`, `all_region`, or `featured_30` (use `featured_30` for both featured options).
-- **Custom fields** (collect from the buyer): add text fields
-  `business_name`, `headline`, `link` — and for the town/all-region split, add a
-  **dropdown** field with key `town` listing your town names (Findlay, Lima, …).
-  (Skip the `town` field on the All-Region link.)
+### 1. Database
+Supabase SQL Editor → run `supabase/stripe.sql` (adds the Stripe link columns).
 
-The field **keys must match exactly**: `business_name`, `headline`, `link`, `town`.
-
-## 4. Put the links on your site
-Open `site/advertise.html` and replace the three `https://buy.stripe.com/REPLACE_…`
-URLs with your real Payment Link URLs. Re-deploy the site.
-
-## 5. Database
-In the Supabase SQL Editor, run `supabase/stripe.sql` (adds the Stripe link columns).
-
-## 6. Deploy the webhook
+### 2. Deploy the webhook
 ```bash
 supabase functions deploy stripe-webhook --no-verify-jwt
 ```
-Then set its secrets (Supabase → Edge Functions → `stripe-webhook` → Secrets):
-- `STRIPE_SECRET_KEY` — Stripe → Developers → API keys → Secret key
-- `STRIPE_WEBHOOK_SECRET` — from the next step
 
-## 7. Point Stripe at the webhook
-Stripe → **Developers → Webhooks → Add endpoint**:
-- URL: `https://wtaefyspddadcrnovumk.supabase.co/functions/v1/stripe-webhook`
-- Events: `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`
-- After creating it, copy the **Signing secret** (`whsec_…`) into `STRIPE_WEBHOOK_SECRET` (step 6).
+### 3. Point Stripe at it + set secrets
+- Stripe → **Developers → Webhooks → Add endpoint**
+  - URL: `https://wtaefyspddadcrnovumk.supabase.co/functions/v1/stripe-webhook`
+  - Events: `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`
+  - Copy the **Signing secret** (`whsec_…`)
+- Supabase → Edge Functions → `stripe-webhook` → **Secrets**:
+  - `STRIPE_SECRET_KEY` = your Stripe **Secret key** (Developers → API keys)
+  - `STRIPE_WEBHOOK_SECRET` = the `whsec_…` from above
 
-## 8. Test it
-In **Test mode**, open your advertise page, buy a Town Sponsor with Stripe's test
-card `4242 4242 4242 4242` (any future date / any CVC). Within seconds a row should
-appear in your `sponsors` table (active = true) and show in the app for that town.
-When you're confident, flip Stripe to **Live mode** and repeat steps 3–7 with live keys.
+### 4. Test it
+Open `site/advertise.html`, buy a Town Sponsor with test card
+`4242 4242 4242 4242` (any future date, any CVC). Within seconds a row should
+appear in your `sponsors` table (`active = true`) and show in the app for that town.
+
+---
+
+## Going live (when you're ready for real money)
+1. Switch Stripe to **Live mode**, grab your **live** secret key.
+2. Regenerate the live catalog + links:
+   ```bash
+   cd scripts && npm init -y && npm install stripe
+   STRIPE_SECRET_KEY=sk_live_... node stripe-catalog.mjs
+   ```
+3. Paste the 3 printed live URLs into `site/advertise.html` (replace the `test_` ones), re-deploy the site.
+4. Add a **live** webhook endpoint in Stripe (same URL/events) and update the two function secrets with the live values.
 
 ## Notes
 - One-time **Featured** purchases create a 30-day ad (auto-expires via `expire_promotions`).
-- **All-Region** creates one ad per town, all tied to the same subscription, so a
-  cancel switches them all off together.
-- Businesses add a **logo** by emailing it to you; set `image_url` in the Manage
-  Sponsors screen. (A logo-upload step can be added later.)
+- **All-Region** creates one ad per town, all tied to the same subscription, so a cancel switches them all off together.
+- Businesses add a **logo / website link** by emailing you; set `image_url`/`link_url` in the in-app Manage Sponsors screen.
+- These were **test** keys you shared — fine for now, but roll them in Stripe before launch and never paste live keys.
