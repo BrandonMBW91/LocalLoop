@@ -7,6 +7,11 @@ import { fetchCityUsers } from '../src/lib/db';
 import { rateForUsers } from '../src/data/pricing';
 import { colors, spacing, radius } from '../src/theme/theme';
 
+// Set this to your hosted advertise page once it's live (e.g.
+// 'https://localloop.app/advertise.html'). When set, a "Advertise online" button
+// appears that opens web checkout — keep purchases on the web (no Apple cut).
+const ADVERTISE_URL = '';
+
 function Benefit({ icon, title, body }) {
   return (
     <View style={styles.benefit}>
@@ -112,17 +117,24 @@ export default function PromoteScreen() {
           : `Founding rates for our first local partners — locked in for a year. No contracts.`}
       </ThemedText>
 
+      {ADVERTISE_URL ? (
+        <Pressable style={styles.cta} onPress={() => Linking.openURL(ADVERTISE_URL)}>
+          <Ionicons name="card" size={22} color={colors.textInverse} />
+          <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
+            Advertise online
+          </ThemedText>
+        </Pressable>
+      ) : null}
+
       <Pressable
-        style={styles.cta}
+        style={ADVERTISE_URL ? styles.ctaOutline : styles.cta}
         onPress={() =>
-          Linking.openURL(
-            `mailto:${email}?subject=Advertising on Local Loop`
-          )
+          Linking.openURL(`mailto:${email}?subject=Advertising on Local Loop`)
         }
       >
-        <Ionicons name="mail" size={22} color={colors.textInverse} />
-        <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
-          Contact us to advertise
+        <Ionicons name="mail" size={22} color={ADVERTISE_URL ? colors.accent : colors.textInverse} />
+        <ThemedText size="subtitle" weight="bold" color={ADVERTISE_URL ? colors.accent : colors.textInverse}>
+          {ADVERTISE_URL ? 'Questions? Email us' : 'Contact us to advertise'}
         </ThemedText>
       </Pressable>
 
@@ -195,6 +207,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginTop: spacing.lg,
     minHeight: 56,
+  },
+  ctaOutline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    paddingVertical: spacing.md,
+    borderRadius: radius.pill,
+    marginTop: spacing.sm,
+    minHeight: 52,
   },
   note: { textAlign: 'center', marginTop: spacing.md, paddingHorizontal: spacing.md },
 });
