@@ -29,14 +29,12 @@ App Store Connect → App Privacy → answer honestly (matches your privacy.html
 - **Usage Data → Product Interaction:** collected, for Analytics/App Functionality.
 - You do **not** collect location, contacts, or browsing history. Not used to track users across other companies' apps (unless you turn on ad personalization later).
 
-## 4. Screenshots (the only thing only you can make)
-Apple needs **iPhone 6.7" portrait (1290 × 2796)**. Easiest: screenshot on your iPhone, they'll be the right size. Grab these 5 (set text size to Large first — shows off the design):
-1. Events list (Today section)
-2. An event's detail page (Get Directions / Add to Calendar buttons)
-3. Garage Sales or Food Trucks tab
-4. The city picker (searchable town list)
-5. The map with pins
-Drag them into the screenshot slots in App Store Connect.
+## 4. Screenshots — DONE ✅ (already generated for you)
+Four ready-to-upload App Store screenshots at the exact size Apple needs (**1290 × 2796**) are in
+**`assets/store/screenshots/`** (`1-events`, `2-detail`, `3-food`, `4-city`). Just drag them into the
+screenshot slots in App Store Connect.
+- Prefer your own real screenshots? Take them on your iPhone with text size set to Large — but the
+  generated ones submit fine as-is.
 
 ## 5. Submit for Review
 Hit **Add for Review → Submit**. Apple review is typically **1–3 days**. You'll get an email when it's approved (or if they need anything).
