@@ -5,15 +5,16 @@ import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
 import ThemedText from '../../src/components/ThemedText';
 import { useApp } from '../../src/context/AppContext';
+import { APP_VERSION, BUILD } from '../../src/version';
 import { textScaleOptions, colors, spacing, radius } from '../../src/theme/theme';
 
-// Which over-the-air update is actually running — handy for confirming a fix
-// has reached the device (vs. the original embedded build).
+// Which over-the-air update is actually running — auto-changes on every update
+// (handy for confirming a fix reached the device vs. the original embedded build).
 function updateLabel() {
   try {
     if (Updates.isEmbeddedLaunch || !Updates.updateId) return 'base build (no update yet)';
     const when = Updates.createdAt ? Updates.createdAt.toLocaleString() : '';
-    return `update …${Updates.updateId.slice(-6)}${when ? ' · ' + when : ''}`;
+    return `${when ? when + ' · ' : ''}…${Updates.updateId.slice(-6)}`;
   } catch {
     return '';
   }
@@ -272,7 +273,7 @@ export default function SettingsScreen() {
         <View style={[styles.row, styles.rowBorder]}>
           <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
           <View style={{ flex: 1, marginLeft: spacing.sm }}>
-            <ThemedText size="body">Version 1.0.0</ThemedText>
+            <ThemedText size="body">Version {APP_VERSION} (build {BUILD})</ThemedText>
             <ThemedText size="small" color={colors.textMuted}>{updateLabel()}</ThemedText>
           </View>
         </View>
