@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { AppProvider } from '../src/context/AppContext';
+import HeaderBack from '../src/components/HeaderBack';
 import { colors } from '../src/theme/theme';
 
 export default function RootLayout() {
@@ -18,6 +19,10 @@ export default function RootLayout() {
               headerTintColor: colors.textInverse,
               headerTitleStyle: { fontWeight: '700', fontSize: 20 },
               contentStyle: { backgroundColor: colors.background },
+              // A shared back control on every pushed screen that always works
+              // (falls back to Home if there's no history) — the native back
+              // button was intermittently unresponsive after dialogs/navigation.
+              headerLeft: () => <HeaderBack />,
             }}
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
