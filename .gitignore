@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Netlify (local site-link state)
+.netlify/
+
 # Native
 .kotlin/
 *.orig.*
