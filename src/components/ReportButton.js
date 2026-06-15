@@ -8,7 +8,7 @@ import { colors, spacing, radius } from '../theme/theme';
 // Small, low-emphasis "Report" control for detail screens. kind is one of
 // 'event' | 'garage_sale' | 'food_truck'.
 export default function ReportButton({ kind, id }) {
-  const { reportListing, city } = useApp();
+  const { reportListing } = useApp();
   const [done, setDone] = useState(false);
 
   const file = async (reason) => {
@@ -17,11 +17,11 @@ export default function ReportButton({ kind, id }) {
     } catch (e) {
       // Even if persistence fails, don't alarm the user; thank them anyway.
     }
+    // Confirm inline (the button label/icon flips to "Reported — thank you").
+    // We intentionally don't pop a second Alert here: showing one right as the
+    // reason-picker Alert dismisses can leave a phantom dialog on some devices
+    // that swallows the next tap (the back button appeared to "break").
     setDone(true);
-    Alert.alert(
-      'Thank you',
-      `Thanks for helping keep ${city.name} safe. Our team will review this listing.`
-    );
   };
 
   const onPress = () => {

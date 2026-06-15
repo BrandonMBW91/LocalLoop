@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
 import { useApp } from '../context/AppContext';
-import { setFeatured } from '../lib/db';
+import { setFeatured, setPostStatus } from '../lib/db';
 import { colors, spacing, radius } from '../theme/theme';
 
-// Admin-only control to promote a listing to the top of its list for a paid
-// window. Hidden entirely for non-admins. kind: 'event' | 'garage_sale' | 'food_truck'.
+const KIND_NOUN = { event: 'event', garage_sale: 'garage sale', food_truck: 'food truck' };
+
+// Admin-only moderator panel on every detail screen: promote a listing, or
+// remove (hide) this specific listing from the app. Hidden for non-admins.
+// kind: 'event' | 'garage_sale' | 'food_truck'.
 export default function FeatureButton({ kind, id, featured, featuredUntil }) {
   const { isAdmin, refresh } = useApp();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   if (!isAdmin) return null;
+
+  const noun = KIND_NOUN[kind] || 'listing';
 
   const apply = async (days) => {
     setBusy(true);
@@ -25,6 +32,29 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
     }
   };
 
+  const doRemove = async () => {
+    setBusy(true);
+    try {
+      await setPostStatus(kind, id, 'rejected'); // hides it from every public list
+      await refresh();
+      router.back(); // it's gone now — return to the list
+    } catch (e) {
+      setBusy(false);
+      Alert.alert('Could not remove', e?.message || 'Please try again.');
+    }
+  };
+
+  const confirmRemove = () => {
+    Alert.alert(
+      `Remove this ${noun}?`,
+      `It will be hidden from everyone in the app. You can restore it later from the database if needed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: doRemove },
+      ]
+    );
+  };
+
   const until = featuredUntil ? new Date(featuredUntil) : null;
   const untilLabel = until
     ? until.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
@@ -33,9 +63,9 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Ionicons name="star" size={18} color={colors.accent} />
+        <Ionicons name="shield-checkmark" size={18} color={colors.accent} />
         <ThemedText size="small" weight="bold" color={colors.accent} style={{ letterSpacing: 0.5 }}>
-          MODERATOR · PROMOTION
+          MODERATOR TOOLS
         </ThemedText>
       </View>
 
@@ -57,11 +87,23 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
           </Pressable>
           {featured ? (
             <Pressable style={[styles.btn, styles.remove]} onPress={() => apply(0)}>
-              <ThemedText size="small" weight="bold" color={colors.danger}>Remove</ThemedText>
+              <ThemedText size="small" weight="bold" color={colors.danger}>Unfeature</ThemedText>
             </Pressable>
           ) : null}
         </View>
       )}
+
+      {!busy ? (
+        <>
+          <View style={styles.divider} />
+          <Pressable style={styles.deleteBtn} onPress={confirmRemove} accessibilityRole="button">
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            <ThemedText size="small" weight="bold" color={colors.danger}>
+              Remove this {noun} from the app
+            </ThemedText>
+          </Pressable>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -89,4 +131,13 @@ const styles = StyleSheet.create({
   outline: { borderWidth: 1.5, borderColor: colors.accent, backgroundColor: colors.surface },
   solid: { backgroundColor: colors.accent },
   remove: { borderWidth: 1.5, borderColor: colors.danger, backgroundColor: colors.surface },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
+  },
 });
