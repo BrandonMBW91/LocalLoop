@@ -1,7 +1,7 @@
 // Pure-logic tests for the functions that decide dates, pricing, and grouping.
 // Run: node tests/logic.test.mjs
 import assert from 'node:assert';
-import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel } from '../src/utils/dates.js';
+import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel, isOver } from '../src/utils/dates.js';
 import { rateForUsers, PRICING_TIERS } from '../src/data/pricing.js';
 
 // Mirror of grouping.bucketForDays (can't import it directly — it uses a
@@ -27,6 +27,32 @@ t('daysFromNow: same day = 0', () => {
   const now = new Date(2026, 5, 15, 23, 0, 0);
   assert.equal(daysFromNow('2026-06-15', now), 0);
 });
+// --- isOver: hide events once they're finished ---
+t('isOver: ended in the past = over', () => {
+  const now = new Date(2026, 5, 15, 19, 3); // 7:03pm
+  assert.equal(isOver('2026-06-15T10:30:00', '2026-06-15T11:30:00', now), true);
+});
+t('isOver: ends later today = not over', () => {
+  const now = new Date(2026, 5, 15, 19, 3);
+  assert.equal(isOver('2026-06-15T19:00:00', '2026-06-15T21:00:00', now), false);
+});
+t('isOver: no end, started >3h ago = over', () => {
+  const now = new Date(2026, 5, 15, 19, 3);
+  assert.equal(isOver(new Date(2026, 5, 15, 11, 30), null, now), true);
+});
+t('isOver: no end, started 1h ago = not over (grace)', () => {
+  const now = new Date(2026, 5, 15, 19, 3);
+  assert.equal(isOver(new Date(2026, 5, 15, 18, 0), null, now), false);
+});
+t('isOver: all-day (noon) earlier today = not over', () => {
+  const now = new Date(2026, 5, 15, 19, 3);
+  assert.equal(isOver(new Date(2026, 5, 15, 12, 0), null, now), false);
+});
+t('isOver: all-day yesterday = over', () => {
+  const now = new Date(2026, 5, 15, 19, 3);
+  assert.equal(isOver(new Date(2026, 5, 14, 12, 0), null, now), true);
+});
+
 t('daysFromNow: future days', () => {
   const now = new Date(2026, 5, 15, 1, 0, 0);
   assert.equal(daysFromNow('2026-06-18', now), 3);

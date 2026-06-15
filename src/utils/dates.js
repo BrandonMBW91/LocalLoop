@@ -80,6 +80,21 @@ export function toDateString(value) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+// True once an event has finished and should drop off the lists. Uses the end
+// time when it's known; for events with no end time it keeps a few hours of
+// grace (so a happening-now event doesn't vanish), and keeps all-day events
+// (anchored to local noon by the aggregator) through the rest of their day.
+export function isOver(start, end, now = new Date()) {
+  if (end) return parse(end).getTime() <= now.getTime();
+  const s = parse(start);
+  if (isNaN(s)) return false;
+  if (s.getHours() === 12 && s.getMinutes() === 0) {
+    const endOfDay = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 23, 59, 59);
+    return endOfDay.getTime() <= now.getTime();
+  }
+  return s.getTime() + 3 * 60 * 60 * 1000 <= now.getTime();
+}
+
 // Number of whole days from `now` to a date (0 = today, 1 = tomorrow).
 export function daysFromNow(value, now = new Date()) {
   const d = parse(value);

@@ -34,6 +34,7 @@ import {
   recordDeviceActivity,
 } from '../lib/db';
 import { trackEvent } from '../lib/analytics';
+import { isOver } from '../utils/dates';
 
 // The email that gets moderator powers (matches is_admin() in the database).
 const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'michabw91@gmail.com').toLowerCase();
@@ -144,13 +145,13 @@ export function AppProvider({ children }) {
           fetchDeals(cityId).catch(() => []), // deals are optional too
         ]);
         if (seq !== loadSeqRef.current) return; // a newer load started; drop these
-        setEvents(ev);
+        setEvents(ev.filter((e) => !isOver(e.start, e.end))); // hide events that are over
         setGarageSales(gs);
         setFoodTrucks(ft);
         setSponsors(sp);
         setDeals(dl);
       } else {
-        setEvents(getEventsForCity(cityId, submittedEvents));
+        setEvents(getEventsForCity(cityId, submittedEvents).filter((e) => !isOver(e.start, e.end)));
         setGarageSales(getGarageSalesForCity(cityId, submittedSales));
         setFoodTrucks(getFoodTrucksForCity(cityId, submittedTrucks));
       }
@@ -158,7 +159,7 @@ export function AppProvider({ children }) {
       if (seq !== loadSeqRef.current) return;
       // Never show an empty app — fall back to the bundled sample data.
       setLoadError(true);
-      setEvents(getEventsForCity(cityId, submittedEvents));
+      setEvents(getEventsForCity(cityId, submittedEvents).filter((e) => !isOver(e.start, e.end)));
       setGarageSales(getGarageSalesForCity(cityId, submittedSales));
       setFoodTrucks(getFoodTrucksForCity(cityId, submittedTrucks));
     } finally {
