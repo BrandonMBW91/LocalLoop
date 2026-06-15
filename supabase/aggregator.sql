@@ -82,7 +82,8 @@ create unique index if not exists event_sources_url_uniq on public.event_sources
 
 insert into public.event_sources (city_id, name, url, type, default_category) values
   ('bowling-green', 'BGSU Events', 'https://events.bgsu.edu/calendar.ics', 'ical', 'Education'),
-  ('findlay', 'University of Findlay', 'https://calendar.findlay.edu/events/list/?shortcode=b5e78f03&ical=1', 'ical', 'Education'),
+  ('findlay', 'University of Findlay', 'https://calendar.findlay.edu/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Education'),
+  ('fostoria', 'Kaubisch Memorial Public Library', 'https://kaubisch-oh.whofi.com/calendar/ical', 'ical', 'Community'),
   ('findlay', 'Owens Community College', 'https://www.owens.edu/events/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true', 'ical', 'Education'),
   ('findlay', 'Findlay-Hancock County Public Library', 'https://fhcpl-main-oh.whofi.com/calendar/ical', 'ical', 'Community'),
   ('tiffin', 'Tiffin University', 'https://go.tiffin.edu/events/?ical=1', 'ical', 'Education'),
