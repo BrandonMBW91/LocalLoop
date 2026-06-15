@@ -86,6 +86,7 @@ insert into public.event_sources (city_id, name, url, type, default_category, en
   ('bowling-green', 'BGSU Events', 'https://events.bgsu.edu/calendar.ics', 'ical', 'Education', true),
   ('carey', 'Dorcas Carey Public Library', 'https://dorcascarey-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
   ('findlay', 'Findlay-Hancock County Public Library', 'https://fhcpl-main-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('findlay', 'Hancock Park District', 'https://hancockparks.com/events/?ical=1', 'ical', 'Community', true),
   ('findlay', 'University of Findlay', 'https://calendar.findlay.edu/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Education', true),
   -- Owens CC endpoint is unreachable (DNS/plugin removed) — disabled to stop per-run fetch errors.
   ('findlay', 'Owens Community College', 'https://www.owens.edu/events/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true', 'ical', 'Education', false),
