@@ -80,17 +80,26 @@ $$;
 -- ---------------------------------------------------------------------------
 create unique index if not exists event_sources_url_uniq on public.event_sources (url);
 
-insert into public.event_sources (city_id, name, url, type, default_category) values
-  ('bowling-green', 'BGSU Events', 'https://events.bgsu.edu/calendar.ics', 'ical', 'Education'),
-  ('findlay', 'University of Findlay', 'https://calendar.findlay.edu/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Education'),
-  ('fostoria', 'Kaubisch Memorial Public Library', 'https://kaubisch-oh.whofi.com/calendar/ical', 'ical', 'Community'),
-  ('findlay', 'Owens Community College', 'https://www.owens.edu/events/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true', 'ical', 'Education'),
-  ('findlay', 'Findlay-Hancock County Public Library', 'https://fhcpl-main-oh.whofi.com/calendar/ical', 'ical', 'Community'),
-  ('tiffin', 'Tiffin University', 'https://go.tiffin.edu/events/?ical=1', 'ical', 'Education'),
-  ('tiffin', 'Tiffin-Seneca Public Library', 'https://tiffin-oh.whofi.com/calendar/ical', 'ical', 'Community'),
-  ('sandusky', 'Sandusky Library', 'https://events.sanduskylib.org/ical_subscribe.php?src=p&cid=10855', 'ical', 'Community'),
-  ('lima', 'Lima Public Library', 'https://lima-oh.whofi.com/calendar/ical', 'ical', 'Community'),
-  ('van-wert', 'Brumback Library', 'https://brumback-oh.whofi.com/calendar/ical', 'ical', 'Community'),
-  ('bellefontaine', 'Logan County Libraries', 'https://loganc-oh.whofi.com/calendar/ical', 'ical', 'Community'),
-  ('toledo', 'Visit Toledo', 'https://visittoledo.org/events-calendar/list/?ical=1', 'ical', 'Community')
+insert into public.event_sources (city_id, name, url, type, default_category, enabled) values
+  ('arlington', 'Arlington Branch Library', 'https://fhcpl-arlington-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('bellefontaine', 'Logan County Libraries', 'https://loganc-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('bowling-green', 'BGSU Events', 'https://events.bgsu.edu/calendar.ics', 'ical', 'Education', true),
+  ('carey', 'Dorcas Carey Public Library', 'https://dorcascarey-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('findlay', 'Findlay-Hancock County Public Library', 'https://fhcpl-main-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('findlay', 'University of Findlay', 'https://calendar.findlay.edu/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Education', true),
+  -- Owens CC endpoint is unreachable (DNS/plugin removed) — disabled to stop per-run fetch errors.
+  ('findlay', 'Owens Community College', 'https://www.owens.edu/events/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true', 'ical', 'Education', false),
+  ('fostoria', 'Kaubisch Memorial Public Library', 'https://kaubisch-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('leipsic', 'Leipsic Public Library', 'https://putnam-leipsic-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('lima', 'Lima Public Library', 'https://lima-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('north-baltimore', 'North Baltimore Public Library', 'https://nbpl-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('pandora', 'Pandora-Riley Branch Library', 'https://putnam-pandora-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('perrysburg', 'City of Perrysburg', 'https://www.perrysburgoh.gov/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar', 'ical', 'Community', true),
+  ('perrysburg', 'Way Public Library', 'https://waylibrary.libcal.com/ical_subscribe.php?cid=12045', 'ical', 'Community', true),
+  ('sandusky', 'Sandusky Library', 'https://events.sanduskylib.org/ical_subscribe.php?src=p&cid=10855', 'ical', 'Community', true),
+  ('tiffin', 'Tiffin University', 'https://go.tiffin.edu/events/?ical=1', 'ical', 'Education', true),
+  ('tiffin', 'Tiffin-Seneca Public Library', 'https://tiffin-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('toledo', 'Visit Toledo', 'https://visittoledo.org/events-calendar/list/?ical=1', 'ical', 'Community', true),
+  ('van-wert', 'Brumback Library', 'https://brumback-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
+  ('waterville', 'City of Waterville', 'https://waterville.org/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Community', true)
 on conflict (url) do nothing;

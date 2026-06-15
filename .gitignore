@@ -40,3 +40,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Saved dashboard pages (may contain secrets) — never commit
+*.htm
+*.html.bak

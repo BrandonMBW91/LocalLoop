@@ -20,27 +20,28 @@ export const colors = {
   border: '#E2DED7',
   shadow: '#000000',
 
-  success: '#2E7D32',
+  success: '#256B29', // darkened so it clears WCAG AA on the light "when" chips
   danger: '#C0392B',
 
   // Garage sales get their own identity (distinct from event categories).
-  garageSale: '#B0561E',
+  garageSale: '#9A4A18', // darkened for AA on garageSaleLight chip
   garageSaleLight: '#FBEFE4',
 
   // Food trucks — a warm, appetizing red.
   foodTruck: '#B5363B',
   foodTruckLight: '#FBE9EA',
 
-  // Category accent colors (kept distinct + readable).
+  // Category accent colors — darkened so the colored pill text clears WCAG AA
+  // (4.5:1) on its own faint tint background on every card.
   category: {
-    Music: '#7B4FBF',
-    Family: '#2E86C1',
-    Food: '#D9772B',
-    Sports: '#1F8A4C',
-    Arts: '#C0397B',
-    Community: '#2C7A7B',
-    Market: '#9A7B1F',
-    Education: '#3A5BBF',
+    Music: '#6A3FB0',
+    Family: '#1C6A9E',
+    Food: '#A85410',
+    Sports: '#197A41',
+    Arts: '#A62E6B',
+    Community: '#1F6566',
+    Market: '#786017',
+    Education: '#34509E',
   },
 };
 

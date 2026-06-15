@@ -20,14 +20,14 @@ const SYSTEM = `You label local community events with ONE category each.
 Allowed categories (return these strings EXACTLY): ${CATEGORIES.join(', ')}.
 Guidance:
 - Music: concerts, live bands, DJs, open mic, recitals.
-- Family: kids, storytime, all-ages activities, school-age programs.
+- Family: ONLY events explicitly for children or for parents+kids together — storytime, baby/toddler/preschool programs, kids crafts, school-age (grades K-12) clubs, family movie/game nights. Do NOT use Family just because an event is "all ages" or open to everyone.
 - Food: tastings, dinners, food trucks, cooking, farmers-to-table dining.
 - Sports: games, races, tournaments, fitness, yoga, recreation, outdoors.
-- Arts: art shows, theater, crafts, museums, film, dance, literature.
+- Arts: art shows, theater, crafts, museums, film, dance, literature, adult craft/art nights, writing groups.
 - Market: markets, vendor fairs, craft shows, sales, swap meets, expos.
-- Education: classes, lectures, workshops, seminars, academic, tech help.
-- Community: civic meetings, fundraisers, clubs, volunteering, holidays, anything else.
-Pick the single best fit. When unsure, prefer the most specific matching category over Community.`;
+- Education: classes, lectures, workshops, seminars, academic talks, tech/computer help, adult book clubs and discussion groups, genealogy, financial/health info sessions.
+- Community: civic meetings, fundraisers, clubs, volunteering, holidays, blood drives, support groups, anything else.
+Pick the single best fit for the LIKELY AUDIENCE. An adult lecture, adult book club, or adult craft night is NOT Family — label it Education or Arts. When unsure between a specific category and Community, prefer the specific one; when unsure whether something is for kids, do NOT default to Family.`;
 
 async function callClaude(items, apiKey) {
   const list = items

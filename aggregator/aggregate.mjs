@@ -73,10 +73,13 @@ function makeRow(ev, source, start, end) {
   const { venue, address } = deriveVenue(ev.location, source.name);
   const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
   const startIso = start.toISOString();
-  // Dedup key from the event's CONTENT, not the feed's UID — many feeds (WhoFi)
-  // hand out a fresh UID on every fetch, which caused duplicate inserts.
+  // Dedup key from the event's stable IDENTITY (town + title + start), not the
+  // feed's UID — many feeds (WhoFi) hand out a fresh UID on every fetch, which
+  // caused duplicate inserts. Venue/address are deliberately excluded: feeds
+  // reformat location strings between runs, which would mint a new hash and
+  // reintroduce duplicates of the same event.
   const source_uid = createHash('sha1')
-    .update(`${source.city_id}|${title}|${startIso}|${venue}|${address}`)
+    .update(`${source.city_id}|${title.toLowerCase()}|${startIso}`)
     .digest('hex')
     .slice(0, 24);
   return {

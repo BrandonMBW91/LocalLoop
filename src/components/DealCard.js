@@ -31,7 +31,7 @@ export default function DealCard({ deal }) {
         <View style={{ flex: 1 }}>
           <View style={styles.topRow}>
             <ThemedText size="tiny" weight="bold" color={accent}>
-              {deal.businessName.toUpperCase()}
+              {(deal.businessName || 'Local business').toUpperCase()}
             </ThemedText>
             {deal.featured ? (
               <View style={styles.featuredPill}>

@@ -382,9 +382,9 @@ function rowToDeal(r) {
   return {
     id: r.id,
     cityId: r.city_id,
-    businessName: r.business_name,
-    title: r.title,
-    description: r.description,
+    businessName: r.business_name || 'Local business',
+    title: r.title || 'Local deal',
+    description: r.description || '',
     address: r.address,
     linkUrl: r.link_url,
     imageUrl: r.image_url,

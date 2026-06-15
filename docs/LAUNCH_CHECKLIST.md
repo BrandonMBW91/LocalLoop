@@ -23,11 +23,16 @@ At [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → Apps → L
   - **Copyright** — `2026 Local Loop`
 
 ## 3. App Privacy questionnaire (Apple asks what data you collect)
-App Store Connect → App Privacy → answer honestly (matches your privacy.html):
-- **Contact Info → Email address:** collected, linked to identity, for App Functionality (sign-in). Not used for tracking.
-- **Identifiers → Device ID:** collected (for ads), may be used for Third-Party Advertising if you enable ads.
-- **Usage Data → Product Interaction:** collected, for Analytics/App Functionality.
-- You do **not** collect location, contacts, or browsing history. Not used to track users across other companies' apps (unless you turn on ad personalization later).
+App Store Connect → App Privacy → answer for what **this build actually does today**.
+IMPORTANT: this build ships **no ads SDK, no IDFA, and no tracking prompt** — so declare
+data as App Functionality / Analytics and answer **"No"** to tracking. (Declaring
+"advertising" or "tracking" without an App-Tracking-Transparency prompt is itself a
+rejection trigger. Add the advertising declaration only in a future build that ships AdMob.)
+- **Contact Info → Email address:** collected, linked to identity, used for **App Functionality** (sign-in). NOT used for tracking.
+- **Identifiers → User ID / Device ID:** collected (an app-generated random id, not the Apple advertising identifier), linked to identity, used for **App Functionality + Analytics**. NOT advertising, NOT tracking.
+- **Usage Data → Product Interaction:** collected, used for **Analytics + App Functionality** (which listings get viewed).
+- "Do you use data to track users?" → **No.**
+- You do **not** collect location, contacts, health, financial info, or browsing history.
 
 ## 4. Screenshots — DONE ✅ (already generated for you)
 Four ready-to-upload App Store screenshots at the exact size Apple needs (**1290 × 2796**) are in

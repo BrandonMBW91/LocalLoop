@@ -47,7 +47,7 @@ export default function SavedScreen() {
         icon="heart-outline"
         title="No saved events yet"
         body="Tap the heart on any event to save it here for quick access."
-        accent={colors.danger}
+        accent={colors.primary}
       />
     );
   }

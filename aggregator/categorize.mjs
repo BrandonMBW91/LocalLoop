@@ -34,10 +34,22 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function main() {
   // Pull the events to label. By default just the aggregated ones (source_uid set).
-  let q = supabase.from('events').select('id, title, description, category');
-  if (!ALL) q = q.not('source_uid', 'is', null);
-  const { data: events, error } = await q;
-  if (error) throw error;
+  // Page through — Supabase caps a single select at 1000 rows, so without this
+  // any events beyond the first 1000 silently keep their old category.
+  const events = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    let q = supabase
+      .from('events')
+      .select('id, title, description, category')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (!ALL) q = q.not('source_uid', 'is', null);
+    const { data, error } = await q;
+    if (error) throw error;
+    events.push(...data);
+    if (data.length < PAGE) break;
+  }
 
   if (!events?.length) {
     console.log('No events to categorize.');

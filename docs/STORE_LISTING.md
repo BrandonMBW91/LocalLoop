@@ -54,9 +54,8 @@ Have a town you'd like added? Just let us know.
 
 ## Screenshots
 
-> ⚠️ Heads-up: `app.json` has `supportsTablet: true`, which makes Apple **require iPad
-> screenshots too**. For a faster first launch, set it to `false` (iPhone-only) — then
-> you only need the iPhone set below. Say the word and I'll flip it.
+> ✅ `app.json` already has `supportsTablet: false` (iPhone-only), so you only need the
+> iPhone screenshots below — no iPad set required.
 
 **iPhone (required) — portrait**
 - 6.7" display: **1290 × 2796** (iPhone 15/16 Pro Max). This set satisfies the requirement.
