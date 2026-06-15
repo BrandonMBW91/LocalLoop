@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useDeferredValue } from 'react';
 import {
   View,
   SectionList,
@@ -37,6 +37,7 @@ export default function EventsScreen() {
     }
   };
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query); // keep typing smooth on big lists
   const [activeCat, setActiveCat] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -49,7 +50,7 @@ export default function EventsScreen() {
   const cityEvents = events;
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     return cityEvents.filter((e) => {
       const matchesFilter =
         activeCat === 'All'
@@ -64,7 +65,7 @@ export default function EventsScreen() {
         e.description.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [cityEvents, query, activeCat]);
+  }, [cityEvents, deferredQuery, activeCat]);
 
   // Group into time buckets (Featured pinned first), with ads interleaved.
   const sections = useMemo(

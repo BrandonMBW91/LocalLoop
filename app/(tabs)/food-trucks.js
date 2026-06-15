@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useDeferredValue } from 'react';
 import {
   View,
   SectionList,
@@ -38,6 +38,7 @@ export default function FoodTrucksScreen() {
     }
   };
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [activeCuisine, setActiveCuisine] = useState('All');
   const [todayOnly, setTodayOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,7 +50,7 @@ export default function FoodTrucksScreen() {
   };
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     return foodTrucks.filter((t) => {
       const matchesCuisine = activeCuisine === 'All' || t.cuisine === activeCuisine;
       const matchesToday = !todayOnly || daysFromNow(t.date) === 0;
@@ -60,7 +61,7 @@ export default function FoodTrucksScreen() {
         t.locationName.toLowerCase().includes(q);
       return matchesCuisine && matchesToday && matchesQuery;
     });
-  }, [foodTrucks, query, activeCuisine, todayOnly]);
+  }, [foodTrucks, deferredQuery, activeCuisine, todayOnly]);
 
   const sections = useMemo(
     () =>

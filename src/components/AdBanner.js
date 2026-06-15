@@ -6,6 +6,10 @@ import { useApp } from '../context/AppContext';
 import { trackSponsor } from '../lib/db';
 import { colors, spacing, radius } from '../theme/theme';
 
+// Count each sponsor's impression once per app session, not once per remount —
+// a windowed list re-mounts AdBanner repeatedly as it scrolls in/out of view.
+const countedImpressions = new Set();
+
 // Shows a real local sponsor when one is booked for the current city, otherwise
 // a friendly placeholder that doubles as a "your ad here" prompt. Pass `index`
 // in a list so multiple slots rotate through the available sponsors.
@@ -13,9 +17,12 @@ export default function AdBanner({ index = 0, label = 'Local Business Ad' }) {
   const { sponsors = [], backendEnabled } = useApp();
   const sponsor = sponsors.length ? sponsors[index % sponsors.length] : null;
 
-  // Count an impression each time a real ad is shown.
+  // Count an impression the first time a real ad is shown this session.
   useEffect(() => {
-    if (backendEnabled && sponsor?.id) trackSponsor(sponsor.id, 'impression');
+    if (backendEnabled && sponsor?.id && !countedImpressions.has(sponsor.id)) {
+      countedImpressions.add(sponsor.id);
+      trackSponsor(sponsor.id, 'impression');
+    }
   }, [backendEnabled, sponsor?.id]);
 
   if (sponsor) {

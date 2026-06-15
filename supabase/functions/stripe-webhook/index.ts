@@ -52,9 +52,13 @@ Deno.serve(async (req) => {
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
       const product = s.metadata?.product || 'town_sponsor'; // town_sponsor | all_region | featured_30
-      const business = field(s, 'businessname') || s.customer_details?.name || 'Local business';
-      const headline = field(s, 'headline');
-      const link = field(s, 'link');
+      // Sanitize buyer-supplied checkout fields before they become a live ad.
+      const clamp = (v: string, n: number) => (v || '').slice(0, n);
+      const business = clamp(field(s, 'businessname') || s.customer_details?.name || 'Local business', 120);
+      const headline = clamp(field(s, 'headline'), 200);
+      const rawLink = field(s, 'link');
+      // Only allow safe link schemes — never javascript:/data: phishing.
+      const link = /^(https:\/\/|tel:)/i.test(rawLink) ? clamp(rawLink, 300) : '';
       const town = field(s, 'town');
       const subId = s.subscription || null;
       const custId = s.customer || null;

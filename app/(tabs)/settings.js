@@ -243,7 +243,7 @@ export default function SettingsScreen() {
         <View style={[styles.row, styles.rowBorder]}>
           <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
           <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
-            Version 1.0.0 (Prototype)
+            Version 1.0.0
           </ThemedText>
         </View>
       </View>

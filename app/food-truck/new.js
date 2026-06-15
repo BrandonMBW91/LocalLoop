@@ -220,7 +220,7 @@ export default function NewFoodTruckScreen() {
           />
         </Field>
 
-        <Field label="Your contact" hint="Optional, not shown publicly in the prototype">
+        <Field label="Your contact" hint="Optional — not shown publicly">
           <TextInput
             value={host}
             onChangeText={setHost}

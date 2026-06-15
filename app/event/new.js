@@ -229,7 +229,7 @@ export default function SubmitScreen() {
           />
         </Field>
 
-        <Field label="Your contact (organizer)" hint="Optional, not shown publicly in the prototype">
+        <Field label="Your contact (organizer)" hint="Optional — not shown publicly">
           <TextInput
             value={contact}
             onChangeText={setContact}

@@ -123,12 +123,12 @@ export default function SignInScreen() {
             <TextInput
               value={code}
               onChangeText={setCode}
-              placeholder="12345678"
+              placeholder="123456"
               placeholderTextColor={colors.textMuted}
               style={[styles.input, styles.codeInput, { fontSize: inputFontSize }]}
               keyboardType="number-pad"
               autoFocus
-              maxLength={10}
+              maxLength={6}
               accessibilityLabel="Verification code"
             />
             <Pressable

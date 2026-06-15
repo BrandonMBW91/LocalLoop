@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useDeferredValue } from 'react';
 import {
   View,
   SectionList,
@@ -37,6 +37,7 @@ export default function GarageSalesScreen() {
     }
   };
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [activeItem, setActiveItem] = useState('All');
   const [weekendOnly, setWeekendOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,7 +51,7 @@ export default function GarageSalesScreen() {
   const sales = garageSales;
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     return sales.filter((s) => {
       const matchesItem = activeItem === 'All' || (s.items || []).includes(activeItem);
       const matchesWeekend = !weekendOnly || daysFromNow(s.start) <= 7;
@@ -62,7 +63,7 @@ export default function GarageSalesScreen() {
         (s.items || []).join(' ').toLowerCase().includes(q);
       return matchesItem && matchesWeekend && matchesQuery;
     });
-  }, [sales, query, activeItem, weekendOnly]);
+  }, [sales, deferredQuery, activeItem, weekendOnly]);
 
   // A multi-day sale that's running across today counts as "Today"; otherwise
   // group by its start date.

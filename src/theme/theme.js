@@ -6,7 +6,7 @@ export const colors = {
   primary: '#1F6F54', // deep green (Findlay parks / Flag City feel)
   primaryDark: '#15503D',
   primaryLight: '#E7F2EE',
-  accent: '#D9772B', // warm orange for calls-to-action
+  accent: '#B85C12', // warm orange for CTAs — darkened so white text clears WCAG AA
   accentLight: '#FBEBDD',
 
   background: '#FBFAF7',

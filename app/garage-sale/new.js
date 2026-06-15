@@ -279,7 +279,7 @@ export default function NewGarageSaleScreen() {
           />
         </Field>
 
-        <Field label="Your name or contact" hint="Optional, not shown publicly in the prototype">
+        <Field label="Your name or contact" hint="Optional — not shown publicly">
           <TextInput
             value={host}
             onChangeText={setHost}
