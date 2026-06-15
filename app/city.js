@@ -1,0 +1,124 @@
+import React, { useMemo, useState } from 'react';
+import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import ThemedText from '../src/components/ThemedText';
+import { useApp } from '../src/context/AppContext';
+import { CITIES } from '../src/data/cities';
+import { colors, spacing, radius, baseFont } from '../src/theme/theme';
+
+export default function CityPickerScreen() {
+  const router = useRouter();
+  const { cityId, setCity, scale } = useApp();
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return CITIES;
+    return CITIES.filter(
+      (c) => c.name.toLowerCase().includes(q) || (c.tagline || '').toLowerCase().includes(q)
+    );
+  }, [query]);
+
+  const choose = (id) => {
+    setCity(id);
+    router.back();
+  };
+
+  return (
+    <View style={styles.screen}>
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={22} color={colors.textMuted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search your town…"
+          placeholderTextColor={colors.textMuted}
+          style={[styles.searchInput, { fontSize: Math.round(baseFont.body * scale) }]}
+          autoCorrect={false}
+          returnKeyType="search"
+          accessibilityLabel="Search for a city"
+        />
+        {query.length > 0 && (
+          <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
+            <Ionicons name="close-circle" size={22} color={colors.textMuted} />
+          </Pressable>
+        )}
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }}>
+        {filtered.map((c, i) => {
+          const selected = c.id === cityId;
+          return (
+            <Pressable
+              key={c.id}
+              onPress={() => choose(c.id)}
+              style={[styles.row, i > 0 && styles.rowBorder, selected && styles.rowSelected]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+            >
+              <View style={{ flex: 1 }}>
+                <ThemedText size="body" weight={selected ? 'bold' : 'regular'}>
+                  {c.name}, {c.state}
+                </ThemedText>
+                {c.tagline ? (
+                  <ThemedText size="small" color={colors.textMuted}>
+                    {c.tagline}
+                  </ThemedText>
+                ) : null}
+              </View>
+              <Ionicons
+                name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                size={26}
+                color={selected ? colors.primary : colors.textMuted}
+              />
+            </Pressable>
+          );
+        })}
+
+        {filtered.length === 0 ? (
+          <View style={styles.empty}>
+            <ThemedText style={{ fontSize: 40 }}>🔍</ThemedText>
+            <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center' }}>
+              No town by that name yet. More are added as the app grows — tell us which one
+              you’d like!
+            </ThemedText>
+          </View>
+        ) : null}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    margin: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 52,
+  },
+  searchInput: { flex: 1, color: colors.text, paddingVertical: 12 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    minHeight: 60,
+    backgroundColor: colors.surface,
+  },
+  rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  rowSelected: { backgroundColor: colors.primaryLight },
+  empty: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+  },
+});

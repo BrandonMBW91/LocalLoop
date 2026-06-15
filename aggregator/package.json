@@ -1,0 +1,15 @@
+{
+  "name": "findlay-events-aggregator",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Pulls events from public calendar feeds into Supabase.",
+  "scripts": {
+    "start": "node aggregate.mjs",
+    "categorize": "node categorize.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.1",
+    "node-ical": "^0.20.1"
+  }
+}

@@ -1,0 +1,33 @@
+name: Aggregate events
+
+# Pulls events from your calendar feeds into Supabase, daily.
+on:
+  schedule:
+    - cron: '0 9 * * *' # every day at 09:00 UTC (~4–5am ET)
+  workflow_dispatch: {} # also lets you run it manually from the Actions tab
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: aggregator
+        run: npm install
+      - name: Run aggregator
+        working-directory: aggregator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node aggregate.mjs
+      - name: Geocode new events (map pins)
+        working-directory: aggregator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+        run: node geocode.mjs
