@@ -24,10 +24,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.RECORD_AUDIO"
-      ]
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,7 +34,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Local Loop uses your photos so you can add pictures to a garage sale post."
+          "photosPermission": "Local Loop uses your photos so you can add pictures to a garage sale post.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       "expo-font",

@@ -8,7 +8,7 @@ import { colors, spacing, radius, categoryColor } from '../theme/theme';
 import { useApp } from '../context/AppContext';
 import { relativeDay, timeRange } from '../utils/dates';
 
-export default function EventCard({ event }) {
+function EventCard({ event }) {
   const router = useRouter();
   const { savedIds, toggleSaved, scale } = useApp();
   const saved = savedIds.includes(event.id);
@@ -137,3 +137,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 });
+
+// Memoized: cards only re-render when their event prop changes, so typing in
+// search (which rebuilds the list) doesn't re-render every visible card.
+export default React.memo(EventCard);

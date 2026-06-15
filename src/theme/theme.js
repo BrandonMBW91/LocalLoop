@@ -83,3 +83,20 @@ export const textScaleOptions = [
 export function categoryColor(category) {
   return colors.category[category] || colors.primary;
 }
+
+// Ionicons name per category — used for the event detail hero so it matches the
+// app's icon language and renders consistently (unlike emoji on older Androids).
+export const categoryIcons = {
+  Music: 'musical-notes',
+  Family: 'people',
+  Food: 'restaurant',
+  Sports: 'trophy',
+  Arts: 'color-palette',
+  Community: 'heart',
+  Market: 'cart',
+  Education: 'school',
+};
+
+export function categoryIcon(category) {
+  return categoryIcons[category] || 'calendar';
+}

@@ -16,7 +16,7 @@ function whenBadge(truck) {
   return null;
 }
 
-export default function FoodTruckCard({ truck }) {
+function FoodTruckCard({ truck }) {
   const router = useRouter();
   const { scale } = useApp();
   const accent = colors.foodTruck;
@@ -107,3 +107,5 @@ const styles = StyleSheet.create({
   },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });
+
+export default React.memo(FoodTruckCard);

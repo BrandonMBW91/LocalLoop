@@ -17,7 +17,7 @@ function whenBadge(sale) {
   return null;
 }
 
-export default function GarageSaleCard({ sale }) {
+function GarageSaleCard({ sale }) {
   const router = useRouter();
   const { scale } = useApp();
   const accent = colors.garageSale;
@@ -142,3 +142,5 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
 });
+
+export default React.memo(GarageSaleCard);

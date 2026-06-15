@@ -8,7 +8,7 @@ import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
 import { recordView } from '../../src/lib/db';
-import { colors, spacing, radius, categoryColor } from '../../src/theme/theme';
+import { colors, spacing, radius, categoryColor, categoryIcon } from '../../src/theme/theme';
 import { formatLongDate, timeRange } from '../../src/utils/dates';
 import { addToCalendarUrl } from '../../src/utils/calendar';
 
@@ -92,7 +92,7 @@ export default function EventDetailScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
       {/* Hero */}
       <View style={[styles.hero, { backgroundColor: accent + '1A' }]}>
-        <ThemedText style={{ fontSize: 80 }}>{event.emoji || '📅'}</ThemedText>
+        <Ionicons name={categoryIcon(event.category)} size={72} color={accent} />
         <View style={[styles.catBadge, { backgroundColor: accent }]}>
           <ThemedText size="small" weight="bold" color={colors.textInverse}>
             {event.category}
