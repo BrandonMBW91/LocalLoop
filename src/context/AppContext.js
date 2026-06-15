@@ -285,6 +285,13 @@ export function AppProvider({ children }) {
     AsyncStorage.setItem(STORAGE_KEYS.onboarded, 'true').catch(() => {});
   };
 
+  // Replay the first-launch welcome (e.g. from Settings). Clears the flag so the
+  // (tabs) gate redirects to /welcome until the user picks a town again.
+  const resetOnboarding = () => {
+    setOnboarded(false);
+    AsyncStorage.removeItem(STORAGE_KEYS.onboarded).catch(() => {});
+  };
+
   // Lookups for the detail screens: prefer the loaded list, fall back to seed.
   const findEventById = useCallback(
     (id) => events.find((e) => e.id === id) || getEventById(id, submittedEvents),
@@ -368,6 +375,7 @@ export function AppProvider({ children }) {
     acceptRules,
     onboarded,
     completeOnboarding,
+    resetOnboarding,
 
     // Auth / backend
     backendEnabled: isSupabaseEnabled,

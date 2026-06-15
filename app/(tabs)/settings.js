@@ -27,6 +27,7 @@ export default function SettingsScreen() {
     signOut,
     isAdmin,
     pendingCount,
+    resetOnboarding,
   } = useApp();
 
   const confirmSignOut = () => {
@@ -237,6 +238,21 @@ export default function SettingsScreen() {
           <Ionicons name="bulb-outline" size={24} color={colors.accent} />
           <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
             Request a feature
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+        </Pressable>
+        <Pressable
+          style={[styles.row, styles.rowBorder]}
+          onPress={() => {
+            resetOnboarding();
+            router.replace('/welcome');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Show the welcome screen again"
+        >
+          <Ionicons name="sparkles-outline" size={24} color={colors.primary} />
+          <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
+            Show welcome screen again
           </ThemedText>
           <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
         </Pressable>
