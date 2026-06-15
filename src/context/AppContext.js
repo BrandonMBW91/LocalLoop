@@ -33,6 +33,7 @@ import {
   savePushToken,
   recordDeviceActivity,
 } from '../lib/db';
+import { trackEvent } from '../lib/analytics';
 
 // The email that gets moderator powers (matches is_admin() in the database).
 const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'michabw91@gmail.com').toLowerCase();
@@ -169,9 +170,16 @@ export function AppProvider({ children }) {
     loadData();
   }, [loadData]);
 
+  // Fire-and-forget product analytics, auto-tagged with the anon device + city.
+  const logEvent = useCallback(
+    (event, props = {}) => trackEvent({ event, props, deviceId, cityId }),
+    [deviceId, cityId]
+  );
+
   const setCity = (id) => {
     setCityId(id);
     AsyncStorage.setItem(STORAGE_KEYS.city, id).catch(() => {});
+    logEvent('change_city', { to: id });
   };
 
   const setTextScale = (key) => {
@@ -198,6 +206,7 @@ export function AppProvider({ children }) {
           scheduleEventReminder(ev);
           if (isSupabaseEnabled) getPushToken().then((t) => t && savePushToken(t, cityId, Platform.OS));
         }
+        logEvent('save_event', { id: eventId });
       }
       return next;
     });
@@ -353,6 +362,7 @@ export function AppProvider({ children }) {
     scale,
     savedIds,
     toggleSaved,
+    logEvent,
 
     // Data
     events,

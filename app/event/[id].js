@@ -36,11 +36,15 @@ export default function EventDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findEventById, savedIds, toggleSaved, backendEnabled, isAdmin } = useApp();
+  const { findEventById, savedIds, toggleSaved, backendEnabled, isAdmin, logEvent } = useApp();
   const event = findEventById(id);
 
   useEffect(() => {
-    if (backendEnabled && id) recordView('event', id);
+    if (backendEnabled && id) {
+      recordView('event', id);
+      logEvent('view_event', { category: event?.category });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, backendEnabled]);
 
   if (!event) {

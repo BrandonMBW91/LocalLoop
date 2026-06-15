@@ -27,7 +27,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 export default function EventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, scale, events, deals, sponsors, loadingData, refresh, backendEnabled, signedIn } = useApp();
+  const { city, scale, events, deals, sponsors, loadingData, refresh, backendEnabled, signedIn, logEvent } = useApp();
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) {
@@ -96,7 +96,7 @@ export default function EventsScreen() {
           </ThemedText>
         </View>
         <Pressable
-          onPress={() => router.push('/map')}
+          onPress={() => { logEvent('open_map'); router.push('/map'); }}
           style={styles.changeCity}
           accessibilityRole="button"
           accessibilityLabel="Map view"
@@ -130,6 +130,7 @@ export default function EventsScreen() {
           style={[styles.searchInput, { fontSize: Math.round(baseFont.body * scale) }]}
           accessibilityLabel="Search events"
           returnKeyType="search"
+          onSubmitEditing={() => query.trim() && logEvent('search', { term: query.trim().slice(0, 40) })}
         />
         {query.length > 0 && (
           <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
