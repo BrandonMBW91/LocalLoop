@@ -15,6 +15,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { classifyEvents, emojiFor } from './classify.mjs';
 import { deriveVenue } from './venue.mjs';
+import { extractJsonLdEvents } from './jsonld.mjs';
 
 loadDotEnv();
 
@@ -104,8 +105,24 @@ async function pullSource(source) {
   const cutoff = now + HORIZON_DAYS * 24 * 60 * 60 * 1000;
 
   const text = await fetchICS(source.url);
-  const data = await ical.async.parseICS(text);
   const rows = [];
+
+  // Generic structured-data source: pull schema.org Events out of the page HTML
+  // (for venues that don't expose an iCal feed). No recurrence to expand.
+  if (source.type === 'jsonld') {
+    for (const ev of extractJsonLdEvents(text)) {
+      const start = ev.allDay ? atLocalNoon(ev.start) : ev.start;
+      const t = start.getTime();
+      const end = ev.end || null;
+      const endT = end ? end.getTime() : t;
+      if (endT < floor || t > cutoff) continue;
+      rows.push(makeRow(ev, source, start, end));
+    }
+    const seenJ = new Set();
+    return rows.filter((r) => (seenJ.has(r.source_uid) ? false : seenJ.add(r.source_uid)));
+  }
+
+  const data = await ical.async.parseICS(text);
 
   for (const key of Object.keys(data)) {
     const ev = data[key];
@@ -161,6 +178,7 @@ async function main() {
       city_id: args.city || 'findlay',
       name: args.name || 'Test feed',
       url: args.url,
+      type: args.type || 'ical',
       default_category: args.category || 'Community',
     }];
   } else {
