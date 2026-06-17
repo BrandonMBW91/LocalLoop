@@ -96,6 +96,10 @@ export default function RootLayout() {
               options={{ title: 'Manage Deals', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="editor-pick"
+              options={{ title: "This Week's Pick", headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="map"
               options={{ title: 'Events Map', headerBackTitle: 'Back' }}
             />

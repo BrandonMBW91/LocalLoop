@@ -15,6 +15,7 @@ import ThemedText from '../../src/components/ThemedText';
 import EventCard from '../../src/components/EventCard';
 import CategoryChip from '../../src/components/CategoryChip';
 import AdBanner from '../../src/components/AdBanner';
+import EditorPickBanner from '../../src/components/EditorPickBanner';
 import SectionHeader from '../../src/components/SectionHeader';
 import SkeletonList from '../../src/components/SkeletonCard';
 import EmptyState from '../../src/components/EmptyState';
@@ -27,7 +28,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 export default function EventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, scale, events, deals, sponsors, loadingData, refresh, backendEnabled, signedIn, logEvent } = useApp();
+  const { city, scale, events, deals, sponsors, editorPick, loadingData, refresh, backendEnabled, signedIn, logEvent } = useApp();
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) {
@@ -59,6 +60,8 @@ export default function EventsScreen() {
           ? daysFromNow(e.start) === 0
           : activeCat === 'Weekend'
           ? isThisWeekend(e.start)
+          : activeCat === 'Free'
+          ? /free/i.test(e.price || '')
           : e.category === activeCat;
       const matchesQuery =
         !q ||
@@ -93,9 +96,12 @@ export default function EventsScreen() {
           <ThemedText size="large" weight="bold" color={colors.textInverse}>
             {city.name}, {city.state}
           </ThemedText>
-          <ThemedText size="small" color={colors.textInverse} style={{ opacity: 0.9 }}>
-            {city.tagline}
-          </ThemedText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+            <Ionicons name="location" size={13} color={colors.textInverse} style={{ opacity: 0.9 }} />
+            <ThemedText size="small" color={colors.textInverse} style={{ opacity: 0.9 }}>
+              {city.tagline}
+            </ThemedText>
+          </View>
         </View>
         <Pressable
           onPress={() => { logEvent('open_map'); router.push('/map'); }}
@@ -163,6 +169,11 @@ export default function EventsScreen() {
             selected={activeCat === 'Weekend'}
             onPress={() => setActiveCat('Weekend')}
           />
+          <CategoryChip
+            label="Free"
+            selected={activeCat === 'Free'}
+            onPress={() => setActiveCat('Free')}
+          />
           {CATEGORIES.map((cat) => (
             <CategoryChip
               key={cat}
@@ -196,6 +207,7 @@ export default function EventsScreen() {
         }
         ListHeaderComponent={
           <>
+            <EditorPickBanner pick={editorPick} />
             {deals.length > 0 ? (
               <Pressable style={styles.dealsBanner} onPress={() => router.push('/deals')}>
                 <Ionicons name="pricetags" size={20} color={colors.accent} />

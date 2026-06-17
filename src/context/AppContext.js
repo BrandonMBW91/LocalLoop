@@ -30,6 +30,7 @@ import {
   uploadSalePhotos,
   fetchSponsors,
   fetchDeals,
+  fetchEditorPick,
   savePushToken,
   recordDeviceActivity,
 } from '../lib/db';
@@ -79,6 +80,7 @@ export function AppProvider({ children }) {
   const [foodTrucks, setFoodTrucks] = useState([]);
   const [sponsors, setSponsors] = useState([]); // live ads for the current city
   const [deals, setDeals] = useState([]); // live local deals for the current city
+  const [editorPick, setEditorPick] = useState(null); // admin "This Week's Pick"
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -137,12 +139,13 @@ export function AppProvider({ children }) {
     setLoadError(false);
     try {
       if (isSupabaseEnabled) {
-        const [ev, gs, ft, sp, dl] = await Promise.all([
+        const [ev, gs, ft, sp, dl, pick] = await Promise.all([
           fetchEvents(cityId),
           fetchGarageSales(cityId),
           fetchFoodTrucks(cityId),
           fetchSponsors(cityId).catch(() => []), // ads are optional; never block the app
           fetchDeals(cityId).catch(() => []), // deals are optional too
+          fetchEditorPick(cityId).catch(() => null), // editor's pick is optional
         ]);
         if (seq !== loadSeqRef.current) return; // a newer load started; drop these
         setEvents(ev.filter((e) => !isOver(e.start, e.end))); // hide events that are over
@@ -150,10 +153,12 @@ export function AppProvider({ children }) {
         setFoodTrucks(ft);
         setSponsors(sp);
         setDeals(dl);
+        setEditorPick(pick);
       } else {
         setEvents(getEventsForCity(cityId, submittedEvents).filter((e) => !isOver(e.start, e.end)));
         setGarageSales(getGarageSalesForCity(cityId, submittedSales));
         setFoodTrucks(getFoodTrucksForCity(cityId, submittedTrucks));
+        setEditorPick(null);
       }
     } catch (e) {
       if (seq !== loadSeqRef.current) return;
@@ -162,6 +167,7 @@ export function AppProvider({ children }) {
       setEvents(getEventsForCity(cityId, submittedEvents).filter((e) => !isOver(e.start, e.end)));
       setGarageSales(getGarageSalesForCity(cityId, submittedSales));
       setFoodTrucks(getFoodTrucksForCity(cityId, submittedTrucks));
+      setEditorPick(null);
     } finally {
       if (seq === loadSeqRef.current) setLoadingData(false);
     }
@@ -371,6 +377,7 @@ export function AppProvider({ children }) {
     foodTrucks,
     sponsors,
     deals,
+    editorPick,
     loadingData,
     loadError,
     refresh: loadData,

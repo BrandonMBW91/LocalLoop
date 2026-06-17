@@ -73,6 +73,10 @@ function GarageSaleCard({ sale }) {
             {sale.address}
           </ThemedText>
         </View>
+        <View style={styles.metaRow}>
+          <Ionicons name="user-circle" size={14 * scale} color={accent} />
+          <ThemedText size="tiny" color={accent} weight="bold">Posted by a neighbor</ThemedText>
+        </View>
 
         {sale.items?.length ? (
           <View style={styles.tagRow}>

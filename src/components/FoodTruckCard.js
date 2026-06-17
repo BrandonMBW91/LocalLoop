@@ -67,6 +67,10 @@ function FoodTruckCard({ truck }) {
             {truck.locationName}
           </ThemedText>
         </View>
+        <View style={styles.metaRow}>
+          <Ionicons name="user-circle" size={14 * scale} color={colors.foodTruck} />
+          <ThemedText size="tiny" color={colors.foodTruck} weight="bold">Posted by a neighbor</ThemedText>
+        </View>
       </View>
     </Pressable>
   );

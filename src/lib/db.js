@@ -174,6 +174,39 @@ export async function fetchEvents(cityId) {
   return (data || []).map(rowToEvent);
 }
 
+// ---- Editor's Pick (admin-curated "This Week's Pick" per town) ----
+
+export async function fetchEditorPick(cityId) {
+  const { data, error } = await supabase
+    .from('editor_picks')
+    .select('*')
+    .eq('city_id', cityId)
+    .eq('active', true)
+    .maybeSingle();
+  if (error) return null; // table optional / non-fatal
+  if (!data) return null;
+  return {
+    cityId: data.city_id,
+    title: data.title || '',
+    note: data.note || '',
+    detail: data.detail || '',
+    linkUrl: data.link_url || null,
+  };
+}
+
+export async function saveEditorPick(cityId, { title, note, detail, linkUrl }) {
+  const { error } = await supabase.from('editor_picks').upsert(
+    { city_id: cityId, title, note, detail, link_url: linkUrl || null, active: true, updated_at: new Date().toISOString() },
+    { onConflict: 'city_id' }
+  );
+  if (error) throw error;
+}
+
+export async function clearEditorPick(cityId) {
+  const { error } = await supabase.from('editor_picks').delete().eq('city_id', cityId);
+  if (error) throw error;
+}
+
 export async function fetchGarageSales(cityId) {
   const { data, error } = await supabase
     .from('garage_sales')

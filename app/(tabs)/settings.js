@@ -197,6 +197,13 @@ export default function SettingsScreen() {
               </ThemedText>
               <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
             </Pressable>
+            <Pressable style={[styles.row, styles.rowBorder]} onPress={() => router.push('/editor-pick')}>
+              <Ionicons name="star" size={24} color={colors.accent} />
+              <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
+                This week's pick
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+            </Pressable>
             <Pressable style={[styles.row, styles.rowBorder]} onPress={() => router.push('/manage-deals')}>
               <Ionicons name="pricetags" size={24} color={colors.accent} />
               <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
