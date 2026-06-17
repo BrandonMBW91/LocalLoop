@@ -33,12 +33,17 @@ function collect(node, out) {
     node.forEach((n) => collect(n, out));
     return;
   }
-  if (node['@graph']) collect(node['@graph'], out);
   const t = node['@type'];
   const types = Array.isArray(t) ? t : [t];
   if (types.some((x) => /(^|[^a-z])Event$/i.test(String(x || '')))) {
     const ev = normalize(node);
     if (ev) out.push(ev);
+    return; // don't dig into an event's own sub-objects
+  }
+  // Generic descent: find Events wherever they're nested — @graph, ItemList's
+  // itemListElement → item (Eventbrite), etc.
+  for (const v of Object.values(node)) {
+    if (v && typeof v === 'object') collect(v, out);
   }
 }
 
@@ -76,14 +81,22 @@ function imageUrl(img) {
   return '';
 }
 
+// Parse a schema.org date. Date-only strings ("2026-08-08") must parse as LOCAL
+// midnight — JS parses them as UTC, which lands on the previous day in US zones.
+function parseDate(raw) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(raw || ''));
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Date(raw);
+}
+
 function normalize(node) {
   const name = typeof node.name === 'string' ? node.name
     : Array.isArray(node.name) ? node.name[0] : '';
   const startRaw = node.startDate;
   if (!name || !startRaw) return null;
-  const start = new Date(startRaw);
+  const start = parseDate(startRaw);
   if (isNaN(start)) return null;
-  const end = node.endDate ? new Date(node.endDate) : null;
+  const end = node.endDate ? parseDate(node.endDate) : null;
   const image = imageUrl(node.image);
   return {
     summary: String(name),
