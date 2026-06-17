@@ -159,6 +159,21 @@ export default function EventDetailScreen() {
           </Pressable>
         </View>
 
+        {event.ticketUrl ? (
+          <Pressable
+            style={styles.ticketsBtn}
+            onPress={() => Linking.openURL(event.ticketUrl).catch(() => {})}
+            accessibilityRole="link"
+            accessibilityLabel="Get tickets"
+          >
+            <Ionicons name="ticket-outline" size={22} color={colors.textInverse} />
+            <ThemedText size="body" weight="bold" color={colors.textInverse}>
+              {/ticket|\$/i.test(event.price || '') ? 'Get Tickets' : 'More Info & Register'}
+            </ThemedText>
+            <Ionicons name="open-outline" size={18} color={colors.textInverse} />
+          </Pressable>
+        ) : null}
+
         <Pressable style={styles.calendarBtn} onPress={onAddToCalendar}>
           <Ionicons name="calendar-outline" size={22} color={colors.textInverse} />
           <ThemedText size="body" weight="bold" color={colors.textInverse}>
@@ -251,6 +266,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.md,
+    marginTop: spacing.md,
+    minHeight: 52,
+  },
+  ticketsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     marginTop: spacing.md,

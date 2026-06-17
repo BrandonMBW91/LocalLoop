@@ -49,6 +49,12 @@ function cleanText(s) {
 // Administrative noise that isn't a real public event — filtered out by title.
 const JUNK_RE = /\b(closed|closure|cancel?led|no school|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b/i;
 
+// Only keep https links (no javascript:/http: etc.) for the "Get Tickets" button.
+function httpsUrl(raw) {
+  const s = typeof raw === 'string' ? raw : (raw && raw.val) || '';
+  return /^https:\/\//i.test(s) ? String(s).slice(0, 500) : null;
+}
+
 // Library/parks/community events are almost always free — only show a price when
 // the text actually signals one, otherwise default to Free (nicer than "See details").
 function priceFor(title, description) {
@@ -115,6 +121,7 @@ function makeRow(ev, source, start, end) {
     description: cleanText(ev.description) || `From ${source.name}.`,
     source_uid,
     image_url: ev.image || null,
+    ticket_url: httpsUrl(ev.url),
   };
 }
 

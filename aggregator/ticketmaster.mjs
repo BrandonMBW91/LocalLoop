@@ -94,6 +94,7 @@ function toRow(ev, cityId) {
     address, price, host: 'Ticketmaster',
     description: clean(ev.info || ev.pleaseNote || `${title} — tickets via Ticketmaster.`),
     source_uid, lat, lng, image_url: pickImage(ev.images),
+    ticket_url: /^https:\/\//i.test(ev.url || '') ? ev.url : null,
   };
 }
 

@@ -32,6 +32,7 @@ function rowToEvent(r) {
     lat: r.lat,
     lng: r.lng,
     imageUrl: r.image_url || null,
+    ticketUrl: r.ticket_url || null,
     pending: r.status !== 'approved',
     description: r.description || '',
   };
