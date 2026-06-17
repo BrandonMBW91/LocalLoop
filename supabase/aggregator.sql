@@ -106,5 +106,15 @@ insert into public.event_sources (city_id, name, url, type, default_category, en
   ('tiffin', 'Tiffin-Seneca Public Library', 'https://tiffin-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
   ('toledo', 'Visit Toledo', 'https://visittoledo.org/events-calendar/list/?ical=1', 'ical', 'Community', true),
   ('van-wert', 'Brumback Library', 'https://brumback-oh.whofi.com/calendar/ical', 'ical', 'Community', true),
-  ('waterville', 'City of Waterville', 'https://waterville.org/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Community', true)
+  ('waterville', 'City of Waterville', 'https://waterville.org/?post_type=tribe_events&ical=1&eventDisplay=list', 'ical', 'Community', true),
+  -- Eventbrite location pages (schema.org JSON-LD, pulled via the 'jsonld' type).
+  ('findlay', 'Eventbrite', 'https://www.eventbrite.com/d/oh--findlay/all-events/', 'jsonld', 'Community', true),
+  ('toledo', 'Eventbrite', 'https://www.eventbrite.com/d/oh--toledo/all-events/', 'jsonld', 'Community', true),
+  ('lima', 'Eventbrite', 'https://www.eventbrite.com/d/oh--lima/all-events/', 'jsonld', 'Community', true),
+  ('bowling-green', 'Eventbrite', 'https://www.eventbrite.com/d/oh--bowling-green/all-events/', 'jsonld', 'Community', true),
+  ('sandusky', 'Eventbrite', 'https://www.eventbrite.com/d/oh--sandusky/all-events/', 'jsonld', 'Community', true),
+  ('tiffin', 'Eventbrite', 'https://www.eventbrite.com/d/oh--tiffin/all-events/', 'jsonld', 'Community', true),
+  ('van-wert', 'Eventbrite', 'https://www.eventbrite.com/d/oh--van-wert/all-events/', 'jsonld', 'Community', true),
+  ('perrysburg', 'Eventbrite', 'https://www.eventbrite.com/d/oh--perrysburg/all-events/', 'jsonld', 'Community', true),
+  ('bellefontaine', 'Eventbrite', 'https://www.eventbrite.com/d/oh--bellefontaine/all-events/', 'jsonld', 'Community', true)
 on conflict (url) do nothing;
