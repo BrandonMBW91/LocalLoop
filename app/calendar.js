@@ -5,6 +5,7 @@ import ThemedText from '../src/components/ThemedText';
 import EventCard from '../src/components/EventCard';
 import EmptyState from '../src/components/EmptyState';
 import { useApp } from '../src/context/AppContext';
+import { parse } from '../src/utils/dates';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -23,11 +24,15 @@ export default function CalendarScreen() {
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() });
   const [selected, setSelected] = useState(dayKey(today));
 
-  // Bucket all loaded events by their local day key.
+  // Bucket all loaded events by their local day key. Uses the shared timezone-
+  // safe parse() so date-only events land on the right day, and skips any event
+  // with a missing/invalid start rather than bucketing it under "NaN".
   const byDay = useMemo(() => {
     const map = {};
     for (const e of events) {
-      const k = dayKey(new Date(e.start));
+      const d = parse(e.start);
+      if (isNaN(d)) continue;
+      const k = dayKey(d);
       (map[k] = map[k] || []).push(e);
     }
     return map;
@@ -56,7 +61,7 @@ export default function CalendarScreen() {
   };
 
   const dayEvents = byDay[selected] || [];
-  const selDate = selected ? new Date(selected + 'T00:00:00') : null;
+  const selDate = selected ? parse(selected) : null;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
@@ -119,7 +124,7 @@ export default function CalendarScreen() {
           <EmptyState icon="calendar-outline" title="Nothing on this day" body="Pick another day with a dot, or browse the full list." />
         ) : (
           dayEvents
-            .sort((a, b) => new Date(a.start) - new Date(b.start))
+            .sort((a, b) => parse(a.start) - parse(b.start))
             .map((e) => <EventCard key={e.id} event={e} />)
         )}
       </View>

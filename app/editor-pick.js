@@ -7,6 +7,26 @@ import { useApp } from '../src/context/AppContext';
 import { saveEditorPick, clearEditorPick } from '../src/lib/db';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 
+// A labeled text field. Defined at module scope (not inside the screen) so it
+// keeps a stable component identity — otherwise every keystroke remounts the
+// TextInput and the keyboard loses focus after one character.
+function Field({ label, hint, value, onChange, multiline, placeholder, fs }) {
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      <ThemedText size="body" weight="semibold">{label}</ThemedText>
+      {hint ? <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 4 }}>{hint}</ThemedText> : null}
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        multiline={multiline}
+        style={[styles.input, { fontSize: fs }, multiline && { minHeight: 90, textAlignVertical: 'top' }]}
+      />
+    </View>
+  );
+}
+
 // Admin: set the hand-curated "This Week's Pick" for the current town.
 export default function EditorPickScreen() {
   const router = useRouter();
@@ -51,30 +71,15 @@ export default function EditorPickScreen() {
     }
   };
 
-  const Field = ({ label, hint, value, onChange, multiline, placeholder }) => (
-    <View style={{ marginBottom: spacing.md }}>
-      <ThemedText size="body" weight="semibold">{label}</ThemedText>
-      {hint ? <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 4 }}>{hint}</ThemedText> : null}
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        multiline={multiline}
-        style={[styles.input, { fontSize: fs }, multiline && { minHeight: 90, textAlignVertical: 'top' }]}
-      />
-    </View>
-  );
-
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}>
       <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: spacing.md }}>
         Pick one thing worth highlighting in {city.name} this week. It shows in your own voice at the top of the events list.
       </ThemedText>
-      <Field label="The pick" hint="e.g. Balloonfest is back this weekend" value={title} onChange={setTitle} placeholder="What shouldn't they miss?" />
-      <Field label="Your note" hint="A short, personal tip" value={note} onChange={setNote} multiline placeholder="Get there early Saturday for the morning launch…" />
-      <Field label="When / where" hint="Optional" value={detail} onChange={setDetail} placeholder="Sat–Sun · Riverside Park · Free" />
-      <Field label="Link" hint="Optional — tickets or more info (https://…)" value={linkUrl} onChange={setLinkUrl} placeholder="https://…" />
+      <Field label="The pick" hint="e.g. Balloonfest is back this weekend" value={title} onChange={setTitle} placeholder="What shouldn't they miss?" fs={fs} />
+      <Field label="Your note" hint="A short, personal tip" value={note} onChange={setNote} multiline placeholder="Get there early Saturday for the morning launch…" fs={fs} />
+      <Field label="When / where" hint="Optional" value={detail} onChange={setDetail} placeholder="Sat–Sun · Riverside Park · Free" fs={fs} />
+      <Field label="Link" hint="Optional — tickets or more info (https://…)" value={linkUrl} onChange={setLinkUrl} placeholder="https://…" fs={fs} />
 
       <Pressable style={[styles.btn, busy && { opacity: 0.6 }]} onPress={save} disabled={busy}>
         {busy ? <ActivityIndicator color={colors.textInverse} /> : (

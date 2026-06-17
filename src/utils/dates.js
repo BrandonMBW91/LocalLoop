@@ -6,7 +6,7 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function parse(value) {
+export function parse(value) {
   if (value instanceof Date) return value;
   // Date-only strings ("2026-06-19") are parsed as UTC midnight by JS, which
   // renders as the PREVIOUS day in negative-offset zones (e.g. US Eastern).
