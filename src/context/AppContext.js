@@ -55,6 +55,8 @@ const STORAGE_KEYS = {
   rulesAccepted: '@fe/rulesAccepted',
   deviceId: '@fe/deviceId',
   onboarded: '@fe/onboarded',
+  interests: '@fe/interests',
+  follows: '@fe/follows',
 };
 
 // A stable, anonymous per-install id (no personal data) for active-user counts.
@@ -72,6 +74,8 @@ export function AppProvider({ children }) {
   const [rulesAccepted, setRulesAccepted] = useState(false); // accepted community rules
   const [deviceId, setDeviceId] = useState(null); // anonymous per-install id
   const [onboarded, setOnboarded] = useState(false); // finished first-launch welcome
+  const [interests, setInterestsState] = useState([]); // categories the user cares about
+  const [follows, setFollows] = useState([]); // venue names the user follows
   const [hydrated, setHydrated] = useState(false);
 
   // Live data shown in the app (from the backend, or sample data as fallback).
@@ -102,6 +106,8 @@ export function AppProvider({ children }) {
         if (map[STORAGE_KEYS.submittedTrucks]) setSubmittedTrucks(JSON.parse(map[STORAGE_KEYS.submittedTrucks]));
         if (map[STORAGE_KEYS.rulesAccepted] === 'true') setRulesAccepted(true);
         if (map[STORAGE_KEYS.onboarded] === 'true') setOnboarded(true);
+        if (map[STORAGE_KEYS.interests]) setInterestsState(JSON.parse(map[STORAGE_KEYS.interests]));
+        if (map[STORAGE_KEYS.follows]) setFollows(JSON.parse(map[STORAGE_KEYS.follows]));
         let did = map[STORAGE_KEYS.deviceId];
         if (!did) {
           did = makeDeviceId();
@@ -301,6 +307,28 @@ export function AppProvider({ children }) {
     AsyncStorage.setItem(STORAGE_KEYS.onboarded, 'true').catch(() => {});
   };
 
+  // The categories the user chose during onboarding (or in Settings) — drives
+  // the "For You" filter on the events list.
+  const setInterests = (cats) => {
+    const next = Array.isArray(cats) ? cats : [];
+    setInterestsState(next);
+    AsyncStorage.setItem(STORAGE_KEYS.interests, JSON.stringify(next)).catch(() => {});
+  };
+
+  // Follow / unfollow a venue by name. Followed venues power the "Following"
+  // filter so regulars can jump straight to their favorite spots.
+  const isFollowing = useCallback((venue) => follows.includes(venue), [follows]);
+  const toggleFollow = (venue) => {
+    if (!venue) return;
+    setFollows((prev) => {
+      const has = prev.includes(venue);
+      const next = has ? prev.filter((v) => v !== venue) : [...prev, venue];
+      AsyncStorage.setItem(STORAGE_KEYS.follows, JSON.stringify(next)).catch(() => {});
+      logEvent(has ? 'unfollow_venue' : 'follow_venue', { venue: venue.slice(0, 40) });
+      return next;
+    });
+  };
+
   // Replay the first-launch welcome (e.g. from Settings). Clears the flag so the
   // (tabs) gate redirects to /welcome until the user picks a town again.
   const resetOnboarding = () => {
@@ -394,6 +422,11 @@ export function AppProvider({ children }) {
     onboarded,
     completeOnboarding,
     resetOnboarding,
+    interests,
+    setInterests,
+    follows,
+    isFollowing,
+    toggleFollow,
 
     // Auth / backend
     backendEnabled: isSupabaseEnabled,

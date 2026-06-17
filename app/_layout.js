@@ -100,6 +100,14 @@ export default function RootLayout() {
               options={{ title: "This Week's Pick", headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="interests"
+              options={{ title: 'Your Interests', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="calendar"
+              options={{ title: 'Calendar', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="map"
               options={{ title: 'Events Map', headerBackTitle: 'Back' }}
             />

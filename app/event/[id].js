@@ -36,7 +36,7 @@ export default function EventDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findEventById, savedIds, toggleSaved, backendEnabled, isAdmin, logEvent } = useApp();
+  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, logEvent } = useApp();
   const event = findEventById(id);
 
   useEffect(() => {
@@ -60,6 +60,7 @@ export default function EventDetailScreen() {
 
   const accent = categoryColor(event.category);
   const saved = savedIds.includes(event.id);
+  const following = isFollowing(event.venue);
 
   const openMaps = () => {
     const loc = (event.address || event.venue || '').trim();
@@ -201,6 +202,25 @@ export default function EventDetailScreen() {
           <InfoRow icon="people" label="Hosted by" value={event.host} />
         </View>
 
+        {/* Follow this venue — surfaces its events under the "Following" filter */}
+        {event.venue ? (
+          <Pressable
+            style={[styles.followBtn, following && styles.followingBtn]}
+            onPress={() => toggleFollow(event.venue)}
+            accessibilityRole="button"
+            accessibilityLabel={following ? `Unfollow ${event.venue}` : `Follow ${event.venue}`}
+          >
+            <Ionicons
+              name={following ? 'notifications' : 'notifications-outline'}
+              size={20}
+              color={following ? colors.textInverse : colors.primary}
+            />
+            <ThemedText size="body" weight="bold" color={following ? colors.textInverse : colors.primary}>
+              {following ? `Following ${event.venue}` : `Follow ${event.venue}`}
+            </ThemedText>
+          </Pressable>
+        ) : null}
+
         {/* Description */}
         <ThemedText size="subtitle" weight="bold" style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
           About this event
@@ -219,6 +239,23 @@ export default function EventDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  followBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+    minHeight: 50,
+  },
+  followingBtn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
   hero: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -42,6 +42,8 @@ export default function SettingsScreen() {
     isAdmin,
     pendingCount,
     resetOnboarding,
+    interests,
+    follows,
   } = useApp();
 
   const confirmSignOut = () => {
@@ -114,6 +116,29 @@ export default function SettingsScreen() {
               );
             })}
           </View>
+        </View>
+      </View>
+
+      {/* Your feed — interests + followed venues */}
+      <SectionTitle>YOUR FEED</SectionTitle>
+      <View style={styles.card}>
+        <Pressable style={styles.row} onPress={() => router.push('/interests')}>
+          <Ionicons name="sparkles" size={24} color={colors.primary} />
+          <View style={{ flex: 1, marginLeft: spacing.sm }}>
+            <ThemedText size="body" weight="bold">Your interests</ThemedText>
+            <ThemedText size="small" color={colors.textMuted}>
+              {interests.length > 0 ? interests.join(', ') : 'Pick what to surface first'}
+            </ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+        </Pressable>
+        <View style={[styles.row, styles.rowBorder]}>
+          <Ionicons name="notifications" size={24} color={colors.primary} />
+          <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
+            {follows.length > 0
+              ? `Following ${follows.length} ${follows.length === 1 ? 'venue' : 'venues'}`
+              : 'Follow a venue to track its events'}
+          </ThemedText>
         </View>
       </View>
 

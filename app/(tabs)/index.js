@@ -28,7 +28,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 export default function EventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, scale, events, deals, sponsors, editorPick, loadingData, refresh, backendEnabled, signedIn, logEvent } = useApp();
+  const { city, scale, events, deals, sponsors, editorPick, interests, follows, loadingData, refresh, backendEnabled, signedIn, logEvent } = useApp();
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) {
@@ -62,6 +62,10 @@ export default function EventsScreen() {
           ? isThisWeekend(e.start)
           : activeCat === 'Free'
           ? /free/i.test(e.price || '')
+          : activeCat === 'For You'
+          ? interests.length === 0 || interests.includes(e.category)
+          : activeCat === 'Following'
+          ? follows.includes(e.venue)
           : e.category === activeCat;
       const matchesQuery =
         !q ||
@@ -70,7 +74,7 @@ export default function EventsScreen() {
         e.description.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [cityEvents, deferredQuery, activeCat]);
+  }, [cityEvents, deferredQuery, activeCat, interests, follows]);
 
   // Group into time buckets (Featured pinned first), with ads interleaved.
   const sections = useMemo(
@@ -104,15 +108,20 @@ export default function EventsScreen() {
           </View>
         </View>
         <Pressable
+          onPress={() => { logEvent('open_calendar'); router.push('/calendar'); }}
+          style={styles.iconBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Calendar view"
+        >
+          <Ionicons name="calendar" size={20 * Math.min(scale, 1.2)} color={colors.primary} />
+        </Pressable>
+        <Pressable
           onPress={() => { logEvent('open_map'); router.push('/map'); }}
-          style={styles.changeCity}
+          style={styles.iconBtn}
           accessibilityRole="button"
           accessibilityLabel="Map view"
         >
           <Ionicons name="map" size={20 * Math.min(scale, 1.2)} color={colors.primary} />
-          <ThemedText size="small" weight="semibold" color={colors.primary}>
-            Map
-          </ThemedText>
         </Pressable>
         <Pressable
           onPress={() => router.push('/city')}
@@ -159,6 +168,13 @@ export default function EventsScreen() {
             selected={activeCat === 'All'}
             onPress={() => setActiveCat('All')}
           />
+          {interests.length > 0 ? (
+            <CategoryChip
+              label="For You"
+              selected={activeCat === 'For You'}
+              onPress={() => setActiveCat('For You')}
+            />
+          ) : null}
           <CategoryChip
             label="Today"
             selected={activeCat === 'Today'}
@@ -174,6 +190,13 @@ export default function EventsScreen() {
             selected={activeCat === 'Free'}
             onPress={() => setActiveCat('Free')}
           />
+          {follows.length > 0 ? (
+            <CategoryChip
+              label="Following"
+              selected={activeCat === 'Following'}
+              onPress={() => setActiveCat('Following')}
+            />
+          ) : null}
           {CATEGORIES.map((cat) => (
             <CategoryChip
               key={cat}
@@ -267,6 +290,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radius.pill,
     minHeight: 44,
+  },
+  iconBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
   },
   searchWrap: {
     flexDirection: 'row',

@@ -24,9 +24,9 @@ export default function CityPickerScreen() {
   const choose = (id) => {
     setCity(id);
     if (onboarding) {
-      // Came from the first-launch welcome — finish onboarding and land in the app.
-      completeOnboarding();
-      router.replace('/');
+      // Came from the first-launch welcome — one more step (interests) then land
+      // in the app. The interests screen finishes onboarding when done/skipped.
+      router.replace({ pathname: '/interests', params: { onboarding: '1' } });
     } else {
       router.back();
     }
