@@ -215,7 +215,13 @@ export default function EventDetailScreen() {
               size={20}
               color={following ? colors.textInverse : colors.primary}
             />
-            <ThemedText size="body" weight="bold" color={following ? colors.textInverse : colors.primary}>
+            <ThemedText
+              size="body"
+              weight="bold"
+              color={following ? colors.textInverse : colors.primary}
+              numberOfLines={1}
+              style={{ flexShrink: 1 }}
+            >
               {following ? `Following ${event.venue}` : `Follow ${event.venue}`}
             </ThemedText>
           </Pressable>
@@ -246,6 +252,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
     borderWidth: 1.5,
     borderColor: colors.primary,
