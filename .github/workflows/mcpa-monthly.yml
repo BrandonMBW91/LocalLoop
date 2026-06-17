@@ -1,0 +1,36 @@
+name: Marathon Center scrape
+
+# The Marathon Center (mcpa.org) site is JS-rendered with no feed, so we render
+# it with a headless browser. Events change in batches, so monthly is plenty.
+on:
+  schedule:
+    - cron: '0 8 1 * *' # 1st of each month, 08:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  mcpa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install deps (+ puppeteer for this job only)
+        working-directory: aggregator
+        run: |
+          npm install
+          npm install puppeteer
+          npx puppeteer browsers install chrome
+      - name: Scrape Marathon Center
+        working-directory: aggregator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node mcpa.mjs
+      - name: Geocode new events
+        working-directory: aggregator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+        run: node geocode.mjs
