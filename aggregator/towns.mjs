@@ -32,10 +32,17 @@ const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|
 const CITY_POS = NAMES.map(([id, name]) => [id, new RegExp(`\\b${name}\\b,?\\s*(?:oh\\b|ohio\\b|\\d{5}\\b)`, 'i')]);
 // Pass 2: any town mention that isn't the start of a street name.
 const ANY = NAMES.map(([id, name]) => [id, new RegExp(`\\b${name}\\b(?!\\s+${STREET}\\b)`, 'i')]);
+// The address clearly names an Ohio city ("…, OH 43452" / "…, Ohio, …").
+const NAMES_A_CITY = /,\s*(?:oh|ohio)\b|\b(?:oh|ohio)\s+\d{5}\b/i;
 
+// Returns the town id for an event's location. Falls back to `fallback` (the
+// feed's town) only when the address has no recognizable city. Returns null when
+// the address names an Ohio city that ISN'T one of our towns (out of area —
+// e.g. a Visit Toledo event in Catawba Island), so the caller can drop it.
 export function cityFromLocation(location, fallback) {
   const loc = String(location || '');
   for (const [id, re] of CITY_POS) if (re.test(loc)) return id;
   for (const [id, re] of ANY) if (re.test(loc)) return id;
+  if (NAMES_A_CITY.test(loc)) return null; // out-of-area city → exclude
   return fallback;
 }

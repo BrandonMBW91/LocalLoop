@@ -75,7 +75,9 @@ function toRow(ev, cityId) {
   const lat = venue?.location?.latitude ? Number(venue.location.latitude) : null;
   const lng = venue?.location?.longitude ? Number(venue.location.longitude) : null;
   // Assign to the venue's actual town, not the query town (TM returns metro-wide).
+  // null = an out-of-area city we don't serve → drop it.
   const assignedCity = cityFromLocation(`${venueName} ${venue?.city?.name || ''} ${address}`, cityId);
+  if (!assignedCity) return null;
 
   // Same content-hash scheme as the iCal aggregator, so a show listed by both
   // Ticketmaster and a venue feed de-dupes to one row.

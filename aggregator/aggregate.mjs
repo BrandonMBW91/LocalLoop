@@ -88,7 +88,9 @@ function makeRow(ev, source, start, end) {
   const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
   // Assign to the town in the event's location, not the feed's host town.
+  // null = the address names a city we don't serve (out of area) → drop it.
   const cityId = cityFromLocation(`${venue} ${address}`, source.city_id);
+  if (!cityId) return null;
   const startIso = start.toISOString();
   // Dedup key from the event's stable IDENTITY (town + title + start), not the
   // feed's UID — many feeds (WhoFi) hand out a fresh UID on every fetch, which
