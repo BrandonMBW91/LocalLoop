@@ -31,6 +31,7 @@ function rowToEvent(r) {
     viewCount: r.view_count,
     lat: r.lat,
     lng: r.lng,
+    imageUrl: r.image_url || null,
     pending: r.status !== 'approved',
     description: r.description || '',
   };

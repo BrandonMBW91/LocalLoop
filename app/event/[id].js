@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
@@ -94,9 +94,15 @@ export default function EventDetailScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
-      {/* Hero */}
-      <View style={[styles.hero, { backgroundColor: accent + '1A' }]}>
-        <Ionicons name={categoryIcon(event.category)} size={72} color={accent} />
+      {/* Hero — real artwork when we have it, otherwise a category icon */}
+      {event.imageUrl ? (
+        <Image source={{ uri: event.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+      ) : (
+        <View style={[styles.hero, { backgroundColor: accent + '1A' }]}>
+          <Ionicons name={categoryIcon(event.category)} size={72} color={accent} />
+        </View>
+      )}
+      <View style={styles.heroBadges}>
         <View style={[styles.catBadge, { backgroundColor: accent }]}>
           <ThemedText size="small" weight="bold" color={colors.textInverse}>
             {event.category}
@@ -203,6 +209,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.xl,
     gap: spacing.sm,
+  },
+  heroImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: colors.surfaceAlt,
+  },
+  heroBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   catBadge: {
     paddingHorizontal: spacing.md,

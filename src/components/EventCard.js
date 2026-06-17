@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
@@ -22,7 +22,11 @@ function EventCard({ event }) {
         accessibilityRole="button"
         accessibilityLabel={`${event.title}, ${relativeDay(event.start)}, at ${event.venue}`}
       >
-        <DateChip date={event.start} accent={accent} scale={scale} />
+        {event.imageUrl ? (
+          <Image source={{ uri: event.imageUrl }} style={styles.thumb} resizeMode="cover" />
+        ) : (
+          <DateChip date={event.start} accent={accent} scale={scale} />
+        )}
 
         <View style={styles.body}>
           <View style={styles.topRow}>
@@ -106,6 +110,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   pressed: { opacity: 0.6 },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+  },
   body: { flex: 1, gap: 4 },
   topRow: {
     flexDirection: 'row',

@@ -45,6 +45,18 @@ function cleanText(s) {
     .slice(0, 1200);
 }
 
+// Administrative noise that isn't a real public event — filtered out by title.
+const JUNK_RE = /\b(closed|closure|cancel?led|no school|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b/i;
+
+// Library/parks/community events are almost always free — only show a price when
+// the text actually signals one, otherwise default to Free (nicer than "See details").
+function priceFor(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  if (/\bfree\b|no (cost|charge|admission|fee)/.test(text)) return 'Free';
+  if (/\$\d|\bfee\b|\bticket|\badmission\b|\bcost\b|\bpaid\b|\bpurchase\b/.test(text)) return 'See details';
+  return 'Free';
+}
+
 // All-day events: anchor to local noon so the calendar day never shifts across
 // timezones when converted to an ISO timestamp.
 function atLocalNoon(d) {
@@ -73,6 +85,7 @@ async function fetchICS(url) {
 function makeRow(ev, source, start, end) {
   const { venue, address } = deriveVenue(ev.location, source.name);
   const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
+  if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
   const startIso = start.toISOString();
   // Dedup key from the event's stable IDENTITY (town + title + start), not the
   // feed's UID — many feeds (WhoFi) hand out a fresh UID on every fetch, which
@@ -92,10 +105,11 @@ function makeRow(ev, source, start, end) {
     end_at: end ? end.toISOString() : null,
     venue,
     address,
-    price: 'See details',
+    price: priceFor(title, cleanText(ev.description)),
     host: source.name,
     description: cleanText(ev.description) || `From ${source.name}.`,
     source_uid,
+    image_url: ev.image || null,
   };
 }
 
@@ -116,7 +130,8 @@ async function pullSource(source) {
       const end = ev.end || null;
       const endT = end ? end.getTime() : t;
       if (endT < floor || t > cutoff) continue;
-      rows.push(makeRow(ev, source, start, end));
+      const row = makeRow(ev, source, start, end);
+      if (row) rows.push(row);
     }
     const seenJ = new Set();
     return rows.filter((r) => (seenJ.has(r.source_uid) ? false : seenJ.add(r.source_uid)));
@@ -152,7 +167,8 @@ async function pullSource(source) {
       const endT = durationMs ? t + durationMs : t;
       if (endT < floor || t > cutoff) continue;
       const end = durationMs ? new Date(t + durationMs) : null;
-      rows.push(makeRow(ev, source, start, end));
+      const row = makeRow(ev, source, start, end);
+      if (row) rows.push(row);
     }
   }
 

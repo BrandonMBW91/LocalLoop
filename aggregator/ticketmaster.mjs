@@ -37,6 +37,16 @@ function clean(s) {
   return String(s || '').replace(/\s+/g, ' ').trim().slice(0, 1000);
 }
 
+// Pick a good promo image: prefer a wide 16:9 around 1024px.
+function pickImage(images) {
+  if (!Array.isArray(images) || !images.length) return '';
+  const wide = images.filter((i) => i.ratio === '16_9' && i.url);
+  const pool = wide.length ? wide : images.filter((i) => i.url);
+  if (!pool.length) return '';
+  pool.sort((a, b) => Math.abs((a.width || 0) - 1024) - Math.abs((b.width || 0) - 1024));
+  return pool[0].url;
+}
+
 async function fetchCity(city) {
   const now = new Date().toISOString().slice(0, 19) + 'Z';
   const end = new Date(Date.now() + HORIZON_DAYS * 86400000).toISOString().slice(0, 19) + 'Z';
@@ -78,7 +88,7 @@ function toRow(ev, cityId) {
     start_at: startIso, end_at: null, venue: venueName || 'See venue',
     address, price, host: 'Ticketmaster',
     description: clean(ev.info || ev.pleaseNote || `${title} — tickets via Ticketmaster.`),
-    source_uid, lat, lng,
+    source_uid, lat, lng, image_url: pickImage(ev.images),
   };
 }
 

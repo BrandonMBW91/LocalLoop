@@ -68,6 +68,14 @@ function cleanDesc(d) {
   return d.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+function imageUrl(img) {
+  if (!img) return '';
+  if (typeof img === 'string') return img;
+  if (Array.isArray(img)) return imageUrl(img[0]);
+  if (typeof img === 'object') return typeof img.url === 'string' ? img.url : '';
+  return '';
+}
+
 function normalize(node) {
   const name = typeof node.name === 'string' ? node.name
     : Array.isArray(node.name) ? node.name[0] : '';
@@ -76,6 +84,7 @@ function normalize(node) {
   const start = new Date(startRaw);
   if (isNaN(start)) return null;
   const end = node.endDate ? new Date(node.endDate) : null;
+  const image = imageUrl(node.image);
   return {
     summary: String(name),
     start,
@@ -83,6 +92,7 @@ function normalize(node) {
     location: locString(node.location),
     description: cleanDesc(node.description),
     url: typeof node.url === 'string' ? node.url : '',
+    image: /^https?:\/\//.test(image) ? image : '',
     allDay: /^\d{4}-\d{2}-\d{2}$/.test(String(startRaw)), // date-only = all-day
   };
 }
