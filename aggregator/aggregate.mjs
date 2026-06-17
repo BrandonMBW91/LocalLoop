@@ -16,6 +16,7 @@ import { loadDotEnv } from './env.mjs';
 import { classifyEvents, emojiFor } from './classify.mjs';
 import { deriveVenue } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
+import { cityFromLocation } from './towns.mjs';
 
 loadDotEnv();
 
@@ -86,6 +87,8 @@ function makeRow(ev, source, start, end) {
   const { venue, address } = deriveVenue(ev.location, source.name);
   const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
+  // Assign to the town in the event's location, not the feed's host town.
+  const cityId = cityFromLocation(`${venue} ${address}`, source.city_id);
   const startIso = start.toISOString();
   // Dedup key from the event's stable IDENTITY (town + title + start), not the
   // feed's UID — many feeds (WhoFi) hand out a fresh UID on every fetch, which
@@ -93,11 +96,11 @@ function makeRow(ev, source, start, end) {
   // reformat location strings between runs, which would mint a new hash and
   // reintroduce duplicates of the same event.
   const source_uid = createHash('sha1')
-    .update(`${source.city_id}|${title.toLowerCase()}|${startIso}`)
+    .update(`${cityId}|${title.toLowerCase()}|${startIso}`)
     .digest('hex')
     .slice(0, 24);
   return {
-    city_id: source.city_id,
+    city_id: cityId,
     title,
     category: source.default_category || 'Community',
     emoji: EMOJI[source.default_category] || '📅',
