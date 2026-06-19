@@ -353,10 +353,28 @@ export function AppProvider({ children }) {
   // ---- Auth actions (email one-time code) ----
   // Email avoids needing a paid SMS provider. Supabase sends a 6-digit code
   // (make sure the "Magic Link" email template includes {{ .Token }}).
-  const requestOtp = (email) =>
-    supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  const verifyOtp = (email, token) =>
-    supabase.auth.verifyOtp({ email, token, type: 'email' });
+  //
+  // App Review demo login: a passwordless OTP flow can't be exercised by Apple's
+  // reviewers (they can't receive our email), so a single hard-coded demo account
+  // takes a fixed code and signs in via password instead — no email required.
+  // It's a normal, unprivileged user (posts still go through moderation). The
+  // credentials are in App Store Connect → App Review Information.
+  const REVIEW_EMAIL = 'appreview@localloop.app';
+  const REVIEW_CODE = '424242';
+  const REVIEW_PASSWORD = 'LL-Review-7Kx92-demo';
+
+  const requestOtp = (email) => {
+    // Demo account: skip the real email send so the UI can advance to the code
+    // step (the reviewer enters the fixed code from the review notes).
+    if (email.trim().toLowerCase() === REVIEW_EMAIL) return Promise.resolve({ data: {}, error: null });
+    return supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+  };
+  const verifyOtp = (email, token) => {
+    if (email.trim().toLowerCase() === REVIEW_EMAIL && token.trim() === REVIEW_CODE) {
+      return supabase.auth.signInWithPassword({ email: REVIEW_EMAIL, password: REVIEW_PASSWORD });
+    }
+    return supabase.auth.verifyOtp({ email, token, type: 'email' });
+  };
   const signOut = () => supabase.auth.signOut();
 
   // ---- Admin / moderation ----
