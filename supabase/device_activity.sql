@@ -15,17 +15,29 @@ create index if not exists device_activity_city_seen_idx
 
 alter table public.device_activity enable row level security;
 
--- A device can record/refresh its own activity (upsert by device_id). We never
--- read these from the client — only the pricing function (service-level) does.
+-- Writes go through record_device_activity() below (SECURITY DEFINER), NOT a
+-- direct client upsert: an INSERT ... ON CONFLICT DO UPDATE needs read access to
+-- detect the conflict, and we never want the client able to read this table (it
+-- would expose the user list / per-town counts). So the table has NO client
+-- read/write policies — the definer function is the only client-reachable path.
 drop policy if exists "device_insert" on public.device_activity;
-create policy "device_insert" on public.device_activity
-  for insert to anon, authenticated with check (true);
-
 drop policy if exists "device_update" on public.device_activity;
-create policy "device_update" on public.device_activity
-  for update to anon, authenticated using (true) with check (true);
+revoke insert, update on public.device_activity from anon, authenticated;
 
-grant insert, update on public.device_activity to anon, authenticated;
+-- A device records/refreshes its own activity (upsert by device_id) via this
+-- definer function, which bypasses RLS so the table can stay fully private.
+create or replace function public.record_device_activity(p_device text, p_city text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.device_activity (device_id, city_id, last_seen)
+  values (p_device, p_city, now())
+  on conflict (device_id) do update set city_id = excluded.city_id, last_seen = now();
+$$;
+
+grant execute on function public.record_device_activity(text, text) to anon, authenticated;
 
 -- Monthly active users in a town = distinct devices seen there in the last 30 days.
 create or replace function public.city_active_users(p_city text)

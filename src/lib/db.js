@@ -520,9 +520,10 @@ export async function fetchCityReach(cityId) {
 // pricing). Fire-and-forget.
 export async function recordDeviceActivity(deviceId, cityId) {
   try {
-    await supabase
-      .from('device_activity')
-      .upsert({ device_id: deviceId, city_id: cityId, last_seen: new Date().toISOString() }, { onConflict: 'device_id' });
+    // Via a SECURITY DEFINER function so the table stays fully private (no anon
+    // read/write policies). A direct upsert needs read access for ON CONFLICT,
+    // which would expose the user list. See supabase/device_activity.sql.
+    await supabase.rpc('record_device_activity', { p_device: deviceId, p_city: cityId });
   } catch (e) {
     // non-fatal
   }
