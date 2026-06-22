@@ -16,7 +16,7 @@ jobs:
           node-version: '22'
       - name: Install deps
         working-directory: aggregator
-        run: npm install
+        run: npm ci
       - name: Run aggregator
         working-directory: aggregator
         env:

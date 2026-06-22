@@ -6,10 +6,29 @@
 // Schedule it for ~9am Fridays via Supabase Dashboard → Edge Functions → Cron,
 // or with pg_cron hitting the function URL. SUPABASE_URL and
 // SUPABASE_SERVICE_ROLE_KEY are provided to the function automatically.
+//
+// AUTH: this sends a push to every device, so it must NOT be callable by anyone
+// holding the public anon key. Set a CRON_SECRET function secret
+// (`supabase secrets set CRON_SECRET=<random>`) and have the cron/pg_net call
+// send it as the `x-cron-secret` header. Without a matching secret we 401.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-Deno.serve(async () => {
+// Constant-time string compare so the gate can't be probed by timing.
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+Deno.serve(async (req) => {
+  const secret = Deno.env.get('CRON_SECRET');
+  const provided = req.headers.get('x-cron-secret') || '';
+  if (!secret || !safeEqual(provided, secret)) {
+    return new Response('unauthorized', { status: 401 });
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

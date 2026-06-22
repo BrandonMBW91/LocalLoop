@@ -177,7 +177,7 @@ export function AppProvider({ children }) {
     } finally {
       if (seq === loadSeqRef.current) setLoadingData(false);
     }
-  }, [hydrated, cityId, submittedEvents, submittedSales, submittedTrucks, session]);
+  }, [hydrated, cityId, submittedEvents, submittedSales, submittedTrucks]);
 
   useEffect(() => {
     loadData();

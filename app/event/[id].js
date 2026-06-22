@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -39,13 +39,16 @@ export default function EventDetailScreen() {
   const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, logEvent } = useApp();
   const event = findEventById(id);
 
+  // Record the view once per id, but only after the event has resolved, so the
+  // logged category isn't undefined on the first-render race.
+  const viewedRef = useRef(null);
   useEffect(() => {
-    if (backendEnabled && id) {
+    if (backendEnabled && id && event && viewedRef.current !== id) {
+      viewedRef.current = id;
       recordView('event', id);
-      logEvent('view_event', { category: event?.category });
+      logEvent('view_event', { category: event.category });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, backendEnabled]);
+  }, [id, backendEnabled, event, recordView, logEvent]);
 
   if (!event) {
     return (

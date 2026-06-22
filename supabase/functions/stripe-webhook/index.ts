@@ -34,10 +34,6 @@ function field(session: any, key: string): string {
   return (f?.text?.value || f?.dropdown?.value || '').trim();
 }
 
-function cityIdFor(code: string): string {
-  return CODE_TO_CITY[code] || code;
-}
-
 Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature');
   const raw = await req.text();
@@ -45,7 +41,8 @@ Deno.serve(async (req) => {
   try {
     event = await stripe.webhooks.constructEventAsync(raw, sig!, WEBHOOK_SECRET);
   } catch (e) {
-    return new Response(`bad signature: ${(e as Error).message}`, { status: 400 });
+    console.error('stripe signature verify failed:', (e as Error).message);
+    return new Response('invalid signature', { status: 400 });
   }
 
   try {
@@ -63,7 +60,15 @@ Deno.serve(async (req) => {
       const subId = s.subscription || null;
       const custId = s.customer || null;
 
-      const cityIds = product === 'all_region' ? ALL_CITY_IDS : [cityIdFor(town)];
+      // Resolve the town to a known city_id; never insert an orphan/empty one.
+      const resolvedCity = town ? CODE_TO_CITY[town] : null;
+      const cityIds = product === 'all_region' ? ALL_CITY_IDS : (resolvedCity ? [resolvedCity] : []);
+      if (cityIds.length === 0) {
+        console.error('stripe-webhook: unknown town, skipping', { town, session: s.id });
+        return new Response(JSON.stringify({ received: true, skipped: 'unknown town' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       const endsAt = product === 'featured_30' ? new Date(Date.now() + 30 * 86400000).toISOString() : null;
 
       const rows = cityIds.map((city_id) => ({
@@ -75,8 +80,10 @@ Deno.serve(async (req) => {
         ends_at: endsAt,
         stripe_customer_id: custId,
         stripe_subscription_id: subId,
+        stripe_session_id: s.id,
       }));
-      await supabase.from('sponsors').insert(rows);
+      // Idempotent against Stripe retries/replays (unique on session_id + city_id).
+      await supabase.from('sponsors').upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true });
     } else if (event.type === 'customer.subscription.deleted') {
       await supabase.from('sponsors').update({ active: false }).eq('stripe_subscription_id', event.data.object.id);
     } else if (event.type === 'invoice.payment_failed') {
@@ -84,7 +91,8 @@ Deno.serve(async (req) => {
       if (subId) await supabase.from('sponsors').update({ active: false }).eq('stripe_subscription_id', subId);
     }
   } catch (e) {
-    return new Response(`handler error: ${(e as Error).message}`, { status: 500 });
+    console.error('stripe-webhook handler error:', (e as Error).message);
+    return new Response('error', { status: 500 });
   }
 
   return new Response(JSON.stringify({ received: true }), {

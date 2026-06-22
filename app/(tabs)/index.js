@@ -340,20 +340,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     minHeight: 52,
   },
-  empty: {
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
-  },
-  emptyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.pill,
-    marginTop: spacing.sm,
-  },
 });

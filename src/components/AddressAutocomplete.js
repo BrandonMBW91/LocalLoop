@@ -35,9 +35,11 @@ export default function AddressAutocomplete({
   const [loading, setLoading] = useState(false);
   const timer = useRef(null);
   const seqRef = useRef(0);
+  const mounted = useRef(true);
 
-  // Cancel any pending lookup if this field unmounts mid-debounce.
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  // Cancel any pending lookup if this field unmounts mid-debounce, and flag the
+  // unmount so an in-flight fetch that resolves later can't setState.
+  useEffect(() => () => { mounted.current = false; if (timer.current) clearTimeout(timer.current); }, []);
 
   const onType = (text) => {
     onChangeText(text);
@@ -51,12 +53,12 @@ export default function AddressAutocomplete({
       try {
         setLoading(true);
         const results = await fetchSuggestions(text);
-        if (seq !== seqRef.current) return; // a newer keystroke won; drop these
+        if (!mounted.current || seq !== seqRef.current) return; // unmounted or a newer keystroke won
         setSuggestions(results);
       } catch (e) {
-        if (seq === seqRef.current) setSuggestions([]);
+        if (mounted.current && seq === seqRef.current) setSuggestions([]);
       } finally {
-        if (seq === seqRef.current) setLoading(false);
+        if (mounted.current && seq === seqRef.current) setLoading(false);
       }
     }, 350);
   };

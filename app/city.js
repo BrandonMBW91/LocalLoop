@@ -10,7 +10,7 @@ import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 export default function CityPickerScreen() {
   const router = useRouter();
   const { onboarding } = useLocalSearchParams();
-  const { cityId, setCity, scale, completeOnboarding } = useApp();
+  const { cityId, setCity, scale } = useApp();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {

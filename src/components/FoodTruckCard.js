@@ -68,7 +68,7 @@ function FoodTruckCard({ truck }) {
           </ThemedText>
         </View>
         <View style={styles.metaRow}>
-          <Ionicons name="user-circle" size={14 * scale} color={colors.foodTruck} />
+          <Ionicons name="person-circle" size={15 * scale} color={colors.foodTruck} />
           <ThemedText size="tiny" color={colors.foodTruck} weight="bold">Posted by a neighbor</ThemedText>
         </View>
       </View>

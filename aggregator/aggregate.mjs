@@ -120,7 +120,7 @@ function makeRow(ev, source, start, end) {
     host: source.name,
     description: cleanText(ev.description) || `From ${source.name}.`,
     source_uid,
-    image_url: ev.image || null,
+    image_url: httpsUrl(ev.image),
     ticket_url: httpsUrl(ev.url),
   };
 }

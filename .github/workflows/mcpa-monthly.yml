@@ -18,7 +18,7 @@ jobs:
       - name: Install deps (+ puppeteer for this job only)
         working-directory: aggregator
         run: |
-          npm install
+          npm ci
           npm install puppeteer
           npx puppeteer browsers install chrome
       - name: Scrape Marathon Center

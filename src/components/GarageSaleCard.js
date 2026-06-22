@@ -74,14 +74,14 @@ function GarageSaleCard({ sale }) {
           </ThemedText>
         </View>
         <View style={styles.metaRow}>
-          <Ionicons name="user-circle" size={14 * scale} color={accent} />
+          <Ionicons name="person-circle" size={15 * scale} color={accent} />
           <ThemedText size="tiny" color={accent} weight="bold">Posted by a neighbor</ThemedText>
         </View>
 
         {sale.items?.length ? (
           <View style={styles.tagRow}>
-            {sale.items.slice(0, 3).map((item) => (
-              <View key={item} style={styles.tag}>
+            {sale.items.slice(0, 3).map((item, i) => (
+              <View key={`${item}-${i}`} style={styles.tag}>
                 <ThemedText size="tiny" color={accent} weight="medium">{item}</ThemedText>
               </View>
             ))}

@@ -146,7 +146,7 @@ export async function uploadSalePhotos(photos = []) {
   for (let i = 0; i < photos.length; i++) {
     const p = photos[i];
     if (!p?.base64) continue;
-    const path = `${Date.now()}-${i}.jpg`;
+    const path = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.jpg`;
     const { error } = await supabase.storage
       .from('sale-photos')
       .upload(path, decodeBase64(p.base64), { contentType: 'image/jpeg' });
@@ -494,12 +494,13 @@ export async function recordDealView(id) {
   }
 }
 
-// Register/refresh a device's push token (for the weekend digest).
+// Register/refresh a device's push token (for the weekend digest). Goes through a
+// SECURITY DEFINER function so the table needs no anon write policy — a direct
+// upsert with an open anon UPDATE policy would let anyone overwrite other devices'
+// token rows. See supabase/push.sql / supabase/launch_audit_fixes.sql.
 export async function savePushToken(token, cityId, platform) {
   try {
-    await supabase
-      .from('push_tokens')
-      .upsert({ token, city_id: cityId, platform, updated_at: new Date().toISOString() }, { onConflict: 'token' });
+    await supabase.rpc('register_push_token', { p_token: token, p_city: cityId, p_platform: platform });
   } catch (e) {
     // non-fatal
   }
