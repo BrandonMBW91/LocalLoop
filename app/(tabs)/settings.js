@@ -39,6 +39,7 @@ export default function SettingsScreen() {
     signedIn,
     session,
     signOut,
+    deleteAccount,
     isAdmin,
     pendingCount,
     resetOnboarding,
@@ -51,6 +52,28 @@ export default function SettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
     ]);
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your account and any events, garage sales, or food trucks you submitted. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              Alert.alert('Account deleted', 'Your account and submissions have been removed.');
+            } catch (e) {
+              Alert.alert('Could not delete account', e?.message || 'Please try again in a moment.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -173,6 +196,12 @@ export default function SettingsScreen() {
                   <Ionicons name="log-out-outline" size={24} color={colors.danger} />
                   <ThemedText size="body" color={colors.danger} style={{ flex: 1, marginLeft: spacing.sm }}>
                     Sign out
+                  </ThemedText>
+                </Pressable>
+                <Pressable style={[styles.row, styles.rowBorder]} onPress={confirmDelete}>
+                  <Ionicons name="trash-outline" size={24} color={colors.danger} />
+                  <ThemedText size="body" color={colors.danger} style={{ flex: 1, marginLeft: spacing.sm }}>
+                    Delete account
                   </ThemedText>
                 </Pressable>
               </>

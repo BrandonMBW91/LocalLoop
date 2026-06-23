@@ -33,6 +33,7 @@ import {
   fetchEditorPick,
   savePushToken,
   recordDeviceActivity,
+  deleteAccountRpc,
 } from '../lib/db';
 import { trackEvent } from '../lib/analytics';
 import { isOver } from '../utils/dates';
@@ -376,6 +377,12 @@ export function AppProvider({ children }) {
     return supabase.auth.verifyOtp({ email, token, type: 'email' });
   };
   const signOut = () => supabase.auth.signOut();
+  // Permanently delete the account + submitted content, then clear the local
+  // session (App Store Guideline 5.1.1(v)).
+  const deleteAccount = async () => {
+    await deleteAccountRpc();
+    await supabase.auth.signOut();
+  };
 
   // ---- Admin / moderation ----
   const isAdmin = Boolean(
@@ -453,6 +460,7 @@ export function AppProvider({ children }) {
     requestOtp,
     verifyOtp,
     signOut,
+    deleteAccount,
 
     // Admin / moderation
     isAdmin,

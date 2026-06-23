@@ -494,6 +494,14 @@ export async function recordDealView(id) {
   }
 }
 
+// Permanently delete the signed-in user's account + the content they submitted.
+// Runs server-side via a SECURITY DEFINER function scoped to auth.uid(), so a
+// user can only ever delete themselves. See supabase/account_deletion.sql.
+export async function deleteAccountRpc() {
+  const { error } = await supabase.rpc('delete_account');
+  if (error) throw error;
+}
+
 // Register/refresh a device's push token (for the weekend digest). Goes through a
 // SECURITY DEFINER function so the table needs no anon write policy — a direct
 // upsert with an open anon UPDATE policy would let anyone overwrite other devices'
