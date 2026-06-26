@@ -16,6 +16,8 @@ import DateTimeField from '../../src/components/DateTimeField';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { screenContent } from '../../src/utils/moderation';
+import { findDuplicateEvent } from '../../src/utils/dedup';
+import { formatShortDate } from '../../src/utils/dates';
 import { CATEGORIES } from '../../src/data/events';
 import { colors, spacing, radius, baseFont, categoryColor } from '../../src/theme/theme';
 
@@ -43,7 +45,7 @@ function Field({ label, hint, children, required }) {
 
 export default function SubmitScreen() {
   const router = useRouter();
-  const { city, scale, addSubmittedEvent, backendEnabled, rulesAccepted } = useApp();
+  const { city, scale, events, addSubmittedEvent, backendEnabled, rulesAccepted } = useApp();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Community');
@@ -63,7 +65,7 @@ export default function SubmitScreen() {
     setVenue(''); setAddress(''); setPrice(''); setDescription(''); setContact('');
   };
 
-  const onSubmit = async () => {
+  const onSubmit = async (skipDupCheck = false) => {
     if (!title.trim() || !venue.trim() || !dateValue) {
       Alert.alert(
         'Almost there',
@@ -79,6 +81,24 @@ export default function SubmitScreen() {
     }
 
     const start = combineDateTime(dateValue, timeValue);
+
+    // Gently catch likely duplicates of an event already on Local Loop (a feed
+    // or a neighbor may have posted the same thing). Soft prompt, not a block.
+    if (!skipDupCheck) {
+      const dup = findDuplicateEvent({ id: null, title: title.trim(), start }, events);
+      if (dup) {
+        Alert.alert(
+          'This might already be posted',
+          `“${dup.title}” is already on Local Loop for ${formatShortDate(dup.start)}${dup.venue ? ' at ' + dup.venue : ''}. Is this the same event?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'View it', onPress: () => router.push(`/event/${dup.id}`) },
+            { text: 'It’s different — post', onPress: () => onSubmit(true) },
+          ]
+        );
+        return;
+      }
+    }
 
     const event = {
       id: `user-${Date.now()}`,
@@ -241,7 +261,7 @@ export default function SubmitScreen() {
 
         <Pressable
           style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-          onPress={onSubmit}
+          onPress={() => onSubmit()}
           disabled={submitting}
           accessibilityRole="button"
         >
