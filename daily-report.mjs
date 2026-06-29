@@ -52,6 +52,24 @@ for (const e of evs) {
 const byCity = {};
 for (const d of await rows(`device_activity?select=city_id&last_seen=gte.${dayAgo}`)) byCity[d.city_id] = (byCity[d.city_id] || 0) + 1;
 
+// 7-day trend, bucketed by local calendar day (so an ad-driven bump is visible).
+const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+const weekEvs = await rows(`app_events?select=event,device_id,created_at&created_at=gte.${weekAgo}&limit=5000`);
+const dayKey = (iso) => new Date(iso).toLocaleDateString('en-CA'); // YYYY-MM-DD local
+const trend = {};
+for (const e of weekEvs) {
+  const k = dayKey(e.created_at);
+  (trend[k] = trend[k] || { devices: new Set(), actions: 0 });
+  trend[k].devices.add(e.device_id);
+  trend[k].actions += 1;
+}
+const trendDays = [];
+for (let i = 6; i >= 0; i--) {
+  const k = new Date(Date.now() - i * 86400000).toLocaleDateString('en-CA');
+  const t = trend[k] || { devices: new Set(), actions: 0 };
+  trendDays.push([k, t.devices.size, t.actions]);
+}
+
 const fmtMap = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '—';
 const today = new Date().toISOString().slice(0, 10);
 
@@ -68,6 +86,11 @@ console.log(`  USER SUBMISSIONS (people posting their own content)`);
 console.log(`    Events:                 ${evUser24} today   |   ${evUserTotal} total`);
 console.log(`    Garage sales:           ${gs24} today   |   ${gsTotal} total`);
 console.log(`    Food trucks:            ${ft24} today   |   ${ftTotal} total`);
+console.log(`  7-DAY TREND  (active devices / actions, by day)`);
+for (const [d, dev, act] of trendDays) {
+  const bar = '#'.repeat(Math.min(dev, 40));
+  console.log(`    ${d}   ${String(dev).padStart(3)} dev  ${String(act).padStart(4)} act  ${bar}`);
+}
 console.log(`  CONTENT`);
 console.log(`    Live events (feeds):    ${eventsLive}`);
 console.log(`\n  Note: App Store downloads live in App Store Connect -> Analytics`);
