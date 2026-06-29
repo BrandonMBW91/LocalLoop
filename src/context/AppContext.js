@@ -140,6 +140,8 @@ export function AppProvider({ children }) {
 
   // ---- Load events + garage sales for the current city ----
   const loadSeqRef = useRef(0);
+  // Guard so we log a single app_open per launch (not on every city switch).
+  const openLoggedRef = useRef(false);
   const loadData = useCallback(async () => {
     if (!hydrated) return;
     const seq = ++loadSeqRef.current; // ignore results from superseded loads
@@ -250,7 +252,15 @@ export function AppProvider({ children }) {
   // Record this device as active in the current town (anonymous) — powers
   // user-based ad pricing.
   useEffect(() => {
-    if (isSupabaseEnabled && deviceId && cityId) recordDeviceActivity(deviceId, cityId);
+    if (isSupabaseEnabled && deviceId && cityId) {
+      recordDeviceActivity(deviceId, cityId);
+      // Log one app_open per launch so daily opens are tracked historically in
+      // app_events (device_activity is upsert-only and keeps no per-day history).
+      if (!openLoggedRef.current) {
+        openLoggedRef.current = true;
+        trackEvent({ event: 'app_open', deviceId, cityId });
+      }
+    }
   }, [deviceId, cityId]);
 
   // Submit handlers: write to the backend when configured, otherwise keep a
