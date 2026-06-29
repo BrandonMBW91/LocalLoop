@@ -6,6 +6,7 @@ import * as Updates from 'expo-updates';
 import ThemedText from '../../src/components/ThemedText';
 import { useApp } from '../../src/context/AppContext';
 import { APP_VERSION, BUILD } from '../../src/version';
+import { openReview } from '../../src/lib/review';
 import { textScaleOptions, colors, spacing, radius } from '../../src/theme/theme';
 
 // Which over-the-air update is actually running — auto-changes on every update
@@ -291,8 +292,15 @@ export default function SettingsScreen() {
       {/* About */}
       <SectionTitle>ABOUT</SectionTitle>
       <View style={styles.card}>
+        <Pressable style={styles.row} onPress={openReview} accessibilityRole="button" accessibilityLabel="Rate Local Loop on the App Store">
+          <Ionicons name="star-outline" size={24} color={colors.accent} />
+          <ThemedText size="body" weight="semibold" style={{ flex: 1, marginLeft: spacing.sm }}>
+            Rate Local Loop
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+        </Pressable>
         <Pressable
-          style={styles.row}
+          style={[styles.row, styles.rowBorder]}
           onPress={() => Linking.openURL('mailto:michabw91@gmail.com')}
         >
           <Ionicons name="mail-outline" size={24} color={colors.primary} />

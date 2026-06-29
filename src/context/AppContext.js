@@ -36,6 +36,7 @@ import {
   deleteAccountRpc,
 } from '../lib/db';
 import { trackEvent } from '../lib/analytics';
+import { maybePromptReview } from '../lib/review';
 import { isOver } from '../utils/dates';
 
 // The email that gets moderator powers (matches is_admin() in the database).
@@ -183,6 +184,14 @@ export function AppProvider({ children }) {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // After the app has settled (and the user has opened it a few times), ask once
+  // for an App Store rating. Self-throttling and OTA-safe (see lib/review).
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    const t = setTimeout(() => maybePromptReview(), 4000);
+    return () => clearTimeout(t);
+  }, [hydrated]);
 
   // Fire-and-forget product analytics, auto-tagged with the anon device + city.
   const logEvent = useCallback(
