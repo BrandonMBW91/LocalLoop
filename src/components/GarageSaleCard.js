@@ -8,10 +8,43 @@ import { colors, spacing, radius } from '../theme/theme';
 import { useApp } from '../context/AppContext';
 import { dateRangeLabel, daysFromNow } from '../utils/dates';
 
-function whenBadge(sale) {
+// Parse a "10:00 AM" / "2:00 PM" clock string into minutes since midnight.
+// Returns null when it can't be parsed (treated as "hours unknown").
+function clockToMinutes(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])?$/);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3] ? m[3].toUpperCase() : null;
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+// Where the clock is relative to a sale's posted daily hours, on a sale day:
+// 'live' (open now), 'before' (opens later today), 'after' (closed for today).
+// Falls back to 'live' when hours are missing, matching the old date-only badge.
+function dailyHourStatus(sale, now) {
+  const open = clockToMinutes(sale.dailyStart);
+  const close = clockToMinutes(sale.dailyEnd);
+  if (open == null || close == null) return 'live';
+  const mins = now.getHours() * 60 + now.getMinutes();
+  if (close <= open) return mins >= open || mins < close ? 'live' : mins < open ? 'before' : 'after';
+  if (mins < open) return 'before';
+  if (mins >= close) return 'after';
+  return 'live';
+}
+
+function whenBadge(sale, now = new Date()) {
   const startIn = daysFromNow(sale.start);
   const endIn = daysFromNow(sale.end || sale.start);
-  if (startIn <= 0 && endIn >= 0) return 'HAPPENING NOW';
+  if (startIn <= 0 && endIn >= 0) {
+    // Today is a sale day — only say "now" during the posted hours.
+    const status = dailyHourStatus(sale, now);
+    if (status === 'live') return 'HAPPENING NOW';
+    if (status === 'before') return 'TODAY';
+    return endIn >= 1 ? 'THIS WEEK' : null; // closed for today; more days ahead?
+  }
   if (startIn === 1) return 'TOMORROW';
   if (startIn > 1 && startIn <= 7) return 'THIS WEEK';
   return null;
