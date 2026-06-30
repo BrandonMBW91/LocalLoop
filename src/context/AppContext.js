@@ -195,10 +195,20 @@ export function AppProvider({ children }) {
     return () => clearTimeout(t);
   }, [hydrated]);
 
+  // True when the signed-in user is the admin/owner. Their activity is kept out
+  // of analytics so the owner's own opens and taps never inflate the metrics.
+  const isAdmin = Boolean(
+    session?.user?.email && session.user.email.toLowerCase() === ADMIN_EMAIL
+  );
+
   // Fire-and-forget product analytics, auto-tagged with the anon device + city.
+  // No-op for the admin/owner so their own usage is never counted.
   const logEvent = useCallback(
-    (event, props = {}) => trackEvent({ event, props, deviceId, cityId }),
-    [deviceId, cityId]
+    (event, props = {}) => {
+      if (isAdmin) return;
+      trackEvent({ event, props, deviceId, cityId });
+    },
+    [deviceId, cityId, isAdmin]
   );
 
   const setCity = (id) => {
@@ -252,7 +262,8 @@ export function AppProvider({ children }) {
   // Record this device as active in the current town (anonymous) — powers
   // user-based ad pricing.
   useEffect(() => {
-    if (isSupabaseEnabled && deviceId && cityId) {
+    // Skip entirely for the admin/owner so their device never enters the metrics.
+    if (isSupabaseEnabled && !isAdmin && deviceId && cityId) {
       recordDeviceActivity(deviceId, cityId);
       // Log one app_open per launch so daily opens are tracked historically in
       // app_events (device_activity is upsert-only and keeps no per-day history).
@@ -261,7 +272,7 @@ export function AppProvider({ children }) {
         trackEvent({ event: 'app_open', deviceId, cityId });
       }
     }
-  }, [deviceId, cityId]);
+  }, [deviceId, cityId, isAdmin]);
 
   // Submit handlers: write to the backend when configured, otherwise keep a
   // local pending copy so the prototype works with no backend. Both throw on
@@ -404,9 +415,7 @@ export function AppProvider({ children }) {
   };
 
   // ---- Admin / moderation ----
-  const isAdmin = Boolean(
-    session?.user?.email && session.user.email.toLowerCase() === ADMIN_EMAIL
-  );
+  // isAdmin is computed earlier (it also gates analytics).
 
   const refreshPendingCount = useCallback(async () => {
     if (!isSupabaseEnabled || !isAdmin) {
