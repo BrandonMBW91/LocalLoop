@@ -24,6 +24,16 @@ const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
 const dayAgo = new Date(Date.now() - 86400000).toISOString();
 const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
+// --- Facebook boost / ad tracking ---
+// Update when a boost goes live or ends. baselineDevices = the all-time device
+// total at the moment the boost started (so "new devices since" = growth from it).
+const BOOST = {
+  active: true,
+  startedAt: '2026-06-30T22:00:00Z', // ~6:00 PM ET, Jun 30 2026
+  baselineDevices: 32,
+  note: '$10/day, 4 days, Findlay +25mi, engagement goal',
+};
+
 async function count(path) {
   const r = await fetch(`${SB}/rest/v1/${path}`, { headers: { ...H, Prefer: 'count=exact', Range: '0-0' } });
   return Number((r.headers.get('content-range') || '/0').split('/')[1]) || 0;
@@ -88,6 +98,20 @@ for (let i = 6; i >= 0; i--) {
   trendDays.push([k, t.devices.size, t.actions]);
 }
 
+// Since-boost metrics (only when a boost is flagged active).
+let boostLine = null;
+if (BOOST.active) {
+  const [opensSince, actionsSince] = await Promise.all([
+    count(`app_events?select=id&event=eq.app_open&created_at=gte.${BOOST.startedAt}`),
+    count(`app_events?select=id&event=neq.app_open&created_at=gte.${BOOST.startedAt}`),
+  ]);
+  const evSince = await rows(`app_events?select=device_id&created_at=gte.${BOOST.startedAt}&limit=8000`);
+  const devActiveSince = new Set(evSince.map((e) => e.device_id).filter(Boolean)).size;
+  const hrs = Math.max(1, Math.round((Date.now() - new Date(BOOST.startedAt).getTime()) / 3600000));
+  const newDev = devTotal - BOOST.baselineDevices;
+  boostLine = { hrs, newDev, devActiveSince, opensSince, actionsSince };
+}
+
 const fmtMap = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ') || '—';
 const stamp = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -101,6 +125,13 @@ console.log(`    Actions (last 24h):     ${act24}   |   all-time ${actTotal}`);
 console.log(`    Active devices (24h):   ${activeDevs.size}   (openers who tapped something)`);
 console.log(`    Action mix (24h):       ${fmtMap(byType)}`);
 console.log(`    Top searches (24h):     ${fmtMap(searches)}`);
+if (boostLine) {
+  console.log(`  SINCE BOOST — ${BOOST.note}`);
+  console.log(`    Live for:               ${boostLine.hrs}h`);
+  console.log(`    New devices since:      ${boostLine.newDev >= 0 ? '+' + boostLine.newDev : boostLine.newDev}   (${BOOST.baselineDevices} -> ${devTotal} all-time)`);
+  console.log(`    Devices active since:   ${boostLine.devActiveSince}`);
+  console.log(`    Opens / actions since:  ${boostLine.opensSince} opens · ${boostLine.actionsSince} actions`);
+}
 console.log(`  SUBMISSIONS — content posted (includes our own listings)`);
 console.log(`    Events:                 ${evUser24} in 24h   |   all-time ${evUserTotal}`);
 console.log(`    Garage sales:           ${gs24} in 24h   |   all-time ${gsTotal}`);
