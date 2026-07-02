@@ -7,10 +7,14 @@ import { fetchCityUsers } from '../src/lib/db';
 import { rateForUsers } from '../src/data/pricing';
 import { colors, spacing, radius } from '../src/theme/theme';
 
-// Set this to your hosted advertise page once it's live (e.g.
-// 'https://localloop.app/advertise.html'). When set, a "Advertise online" button
-// appears that opens web checkout — keep purchases on the web (no Apple cut).
+// Hosted advertise page + live Stripe Payment Links. Purchases stay on the web
+// (advertising services are exempt from IAP; no Apple cut).
 const ADVERTISE_URL = 'https://localloop.io/advertise.html';
+const CHECKOUT = {
+  town: 'https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00', // Town Sponsor $19/mo
+  region: 'https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01', // All-Region $79/mo
+  featured30: 'https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02', // Featured 30d $25
+};
 
 function Benefit({ icon, title, body }) {
   return (
@@ -26,15 +30,27 @@ function Benefit({ icon, title, body }) {
   );
 }
 
-function RateRow({ label, sub, price, last }) {
-  return (
-    <View style={[styles.rateRow, !last && styles.rateRowBorder]}>
+function RateRow({ label, sub, price, last, url }) {
+  const inner = (
+    <>
       <View style={{ flex: 1 }}>
         <ThemedText size="body" weight="semibold">{label}</ThemedText>
         {sub ? <ThemedText size="small" color={colors.textMuted}>{sub}</ThemedText> : null}
       </View>
       <ThemedText size="subtitle" weight="bold" color={colors.primary}>{price}</ThemedText>
-    </View>
+      {url ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginLeft: 6 }} /> : null}
+    </>
+  );
+  if (!url) return <View style={[styles.rateRow, !last && styles.rateRowBorder]}>{inner}</View>;
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.rateRow, !last && styles.rateRowBorder, pressed && { opacity: 0.6 }]}
+      onPress={() => Linking.openURL(url)}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${price}, opens secure checkout`}
+    >
+      {inner}
+    </Pressable>
   );
 }
 
@@ -111,10 +127,10 @@ export default function PromoteScreen() {
         </ThemedText>
       </View>
       <View style={styles.rateCard}>
-        <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days" price={`$${rate.featured7}`} />
-        <RateRow label="Featured listing" sub="One event, sale, or truck · 30 days" price={`$${rate.featured30}`} />
-        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly`} price={`$${rate.sponsor}/mo`} />
-        <RateRow label="All of NW Ohio" sub="Every town · monthly" price="$79/mo" />
+        <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={`$${rate.featured7}`} />
+        <RateRow label="Featured listing" sub="One event, sale, or truck · 30 days · tap to buy" price={`$${rate.featured30}`} url={CHECKOUT.featured30} />
+        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly · tap to buy`} price={`$${rate.sponsor}/mo`} url={CHECKOUT.town} />
+        <RateRow label="All of NW Ohio" sub="Every town · monthly · tap to buy" price="$79/mo" url={CHECKOUT.region} />
         <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
@@ -123,11 +139,11 @@ export default function PromoteScreen() {
           : `Founding rates for our first local partners — locked in for a year. No contracts.`}
       </ThemedText>
 
-      {ADVERTISE_URL ? (
-        <Pressable style={styles.cta} onPress={() => Linking.openURL(ADVERTISE_URL)}>
+      {CHECKOUT.town ? (
+        <Pressable style={styles.cta} onPress={() => Linking.openURL(CHECKOUT.town)}>
           <Ionicons name="card" size={22} color={colors.textInverse} />
           <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
-            Advertise online
+            Become a Town Sponsor · ${rate.sponsor}/mo
           </ThemedText>
         </Pressable>
       ) : null}
