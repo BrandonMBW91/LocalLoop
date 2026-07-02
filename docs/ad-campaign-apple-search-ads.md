@@ -94,6 +94,30 @@ your screenshots). The metadata refresh we shipped already does the work.
 - Compare installs-per-dollar here vs the Facebook boost. This should win on
   installs; the boost wins on reach/awareness. Running both is fine if budget allows.
 
+## QUEUED — Channel #3: Snapchat Ads (do NOT launch until the first two tests conclude)
+
+**Trigger:** launch only after (a) the Facebook boost finishes its 4 days AND (b) Apple
+Search Ads has ~a week of data. If ASA lands installs under ~$2-3, scale ASA first and
+keep Snap queued. If both underwhelm, Snap is the next test.
+
+**Why Snap:** reaches the demographic the FB boost missed entirely (boost audience was
+86% women 45-65+; Snap skews 13-30 — UF students, young families). Radius geo-targeting
+works, CPMs are cheap ($3-8), and $5/day is the floor.
+
+**Campaign spec (ready to paste):**
+- Where: ads.snapchat.com (Snapchat Ads Manager, self-serve, separate from Meta)
+- Objective: App Installs (swipe up -> App Store), app: Local Loop (ID 6780306721)
+- Budget: $5/day, 7-day test, hard end date
+- Geo: circle around Findlay, OH, 25 mi radius
+- Age: 16-34 (the crowd the other channels don't reach)
+- Creative: 9:16 vertical, 1080x1920. Simplest viable: animated screenshot walk-through
+  of the events feed with July-4th-style content + "Everything happening in Findlay.
+  Free." end card. (Claude can generate this from existing screenshots.)
+- Measurement: Snap dashboard installs are unreliable without their SDK — judge it by
+  the daily report device bump during the flight, same as the FB boost.
+
+**Skip:** Snap Pixel / SDK integration for now (not worth the dev lift for a $35 test).
+
 ## Meta app-install alternative (bigger lift, note for later)
 A Meta App Promotion campaign would give precise Findlay-radius geo + a younger skew,
 but requires: registering the app in Meta's developer dashboard, SKAdNetwork config,
