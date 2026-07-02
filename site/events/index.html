@@ -1,66 +1,84 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Local Events in Northwest Ohio — Findlay, Lima, Tiffin &amp; more | Local Loop</title>
-<meta name="description" content="Browse 847 upcoming events across 18 Northwest Ohio towns. Concerts, markets, library programs, festivals and more — free with the Local Loop app."/>
+<meta name="description" content="Browse 857 upcoming events across 24 Northwest and Central Ohio towns. Concerts, markets, library programs, festivals and more — free with the Local Loop app."/>
 <link rel="canonical" href="https://localloop.io/events/"/>
 <meta property="og:title" content="Local Events in Northwest Ohio — Findlay, Lima, Tiffin &amp; more | Local Loop"/>
-<meta property="og:description" content="Browse 847 upcoming events across 18 Northwest Ohio towns. Concerts, markets, library programs, festivals and more — free with the Local Loop app."/>
+<meta property="og:description" content="Browse 857 upcoming events across 24 Northwest and Central Ohio towns. Concerts, markets, library programs, festivals and more — free with the Local Loop app."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://localloop.io/events/"/>
 <style>
-:root{--green:#1F6F54;--orange:#B85C12;--bg:#FBFAF7;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E2DED7;}
-*{box-sizing:border-box;}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;}
-.wrap{max-width:860px;margin:0 auto;padding:0 20px;}
-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0;}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:var(--ink);text-decoration:none;}
-nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:16px;}
-h1{font-size:32px;line-height:1.2;margin:24px 0 6px;}
-.sub{color:var(--muted);font-size:18px;margin:0 0 8px;}
-.get{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;margin:14px 0;}
-.ev{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0;}
-.ev .when{color:var(--orange);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;}
-.ev h3{margin:4px 0 4px;font-size:19px;}
-.ev .meta{color:var(--muted);font-size:15px;margin:0;}
-.towns{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:24px 0;}
-.town{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;text-decoration:none;color:var(--ink);}
-.town b{display:block;font-size:17px;}.town span{color:var(--muted);font-size:14px;}
-.banner{background:var(--green);color:#fff;border-radius:18px;padding:28px;text-align:center;margin:36px 0;}
-.banner h2{margin:0 0 8px;}.banner p{opacity:.9;margin:0 auto 16px;max-width:480px;}.banner .get{background:#fff;color:var(--green);}
-footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+:root{--green:#1F6F54;--green-d:#15503D;--green-l:#E7F2EE;--orange:#B85C12;--bg:#FBFAF7;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E2DED7;}
+*{box-sizing:border-box;}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px;}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink);text-decoration:none;}
+nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;font-size:15px;}
+.town-hero{background:var(--green);border-radius:22px;color:#fff;padding:22px 24px 20px;margin:4px 0 14px;}
+.town-hero .kicker{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;opacity:.75;}
+.town-hero h1{margin:2px 0 2px;font-size:34px;line-height:1.1;color:#fff;}
+.town-hero .tag{display:flex;align-items:center;gap:6px;opacity:.92;font-size:15px;}
+.get{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--green);text-decoration:none;font-weight:800;padding:10px 20px;border-radius:999px;margin-top:14px;font-size:15px;}
+.day-h{display:flex;align-items:baseline;justify-content:space-between;margin:22px 2px 8px;}
+.day-h b{font-size:20px;}
+.day-h span{color:var(--muted);font-size:14px;}
+.ev{display:flex;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 3px 8px rgba(0,0,0,.04);}
+.chip{flex:0 0 56px;border-radius:12px;overflow:hidden;text-align:center;align-self:flex-start;}
+.chip .dow{color:#fff;font-size:10px;font-weight:800;letter-spacing:1px;padding:3px 0;}
+.chip .day{font-size:22px;font-weight:800;line-height:1.05;padding-top:5px;}
+.chip .mon{font-size:11px;font-weight:700;padding-bottom:6px;}
+.body{min-width:0;flex:1;}
+.pill{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:5px;}
+.ev h3{margin:0 0 5px;font-size:18px;line-height:1.25;}
+.meta{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;margin:2px 0;}
+.meta svg{flex:0 0 auto;opacity:.75;}
+.region-h{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:26px 2px 8px;}
+.town{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);margin:8px 0;}
+.town b{display:block;font-size:17px;}
+.town .tg{color:var(--muted);font-size:13.5px;}
+.town .n{color:var(--muted);font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.town .n:after{content:"›";color:var(--green);font-size:20px;font-weight:700;}
+.banner{background:var(--green);color:#fff;border-radius:20px;padding:26px;text-align:center;margin:34px 0;}
+.banner h2{margin:0 0 8px;}.banner p{opacity:.9;margin:0 auto 16px;max-width:480px;}.banner .get{background:#fff;color:var(--green);margin-top:0;}
+.empty{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;text-align:center;color:var(--muted);}
+footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 footer a{color:var(--green);text-decoration:none;}
-@media(max-width:560px){h1{font-size:26px;}}
+@media(max-width:480px){.town-hero h1{font-size:28px;}.ev{padding:12px;}}
 </style></head><body><div class="wrap">
-<header><a class="brand" href="/">📅 Local Loop</a>
+<header><a class="brand" href="/"><svg width="36" height="36" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#1F6F54"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" transform="translate(176 176) scale(28)" fill="#fff"/><rect x="468" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="540" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#D9772B"/><rect x="448" y="452" width="128" height="8" fill="#fff"/><g fill="#fff"><rect x="462" y="474" width="20" height="20" rx="4"/><rect x="502" y="474" width="20" height="20" rx="4"/><rect x="542" y="474" width="20" height="20" rx="4"/><rect x="462" y="506" width="20" height="20" rx="4"/><rect x="502" y="506" width="20" height="20" rx="4"/></g></svg> Local Loop</a>
 <nav><a href="/events/">All towns</a><a href="/advertise.html">For businesses</a></nav></header>
-<h1>Local events across Northwest Ohio</h1>
-<p class="sub">847 upcoming events in 24 towns. Pick yours:</p>
-<a class="get" href="https://apps.apple.com/app/id6780306721">Get the free app</a>
-<div class="towns"><a class="town" href="/events/findlay.html"><b>Findlay, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/bowling-green.html"><b>Bowling Green, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/sandusky.html"><b>Sandusky, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/lima.html"><b>Lima, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/van-wert.html"><b>Van Wert, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/toledo.html"><b>Toledo, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/perrysburg.html"><b>Perrysburg, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/bluffton.html"><b>Bluffton, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/carey.html"><b>Carey, OH</b><span>60 upcoming events</span></a>
-<a class="town" href="/events/waterville.html"><b>Waterville, OH</b><span>58 upcoming events</span></a>
-<a class="town" href="/events/fostoria.html"><b>Fostoria, OH</b><span>55 upcoming events</span></a>
-<a class="town" href="/events/upper-sandusky.html"><b>Upper Sandusky, OH</b><span>51 upcoming events</span></a>
-<a class="town" href="/events/bellefontaine.html"><b>Bellefontaine, OH</b><span>40 upcoming events</span></a>
-<a class="town" href="/events/tiffin.html"><b>Tiffin, OH</b><span>32 upcoming events</span></a>
-<a class="town" href="/events/north-baltimore.html"><b>North Baltimore, OH</b><span>21 upcoming events</span></a>
-<a class="town" href="/events/richwood.html"><b>Richwood, OH</b><span>20 upcoming events</span></a>
-<a class="town" href="/events/pandora.html"><b>Pandora, OH</b><span>11 upcoming events</span></a>
-<a class="town" href="/events/leipsic.html"><b>Leipsic, OH</b><span>10 upcoming events</span></a>
-<a class="town" href="/events/kenton.html"><b>Kenton, OH</b><span>6 upcoming events</span></a>
-<a class="town" href="/events/arlington.html"><b>Arlington, OH</b><span>3 upcoming events</span></a>
-<a class="town" href="/events/ada.html"><b>Ada, OH</b><span>0 upcoming events</span></a>
-<a class="town" href="/events/larue.html"><b>LaRue, OH</b><span>0 upcoming events</span></a>
-<a class="town" href="/events/prospect.html"><b>Prospect, OH</b><span>0 upcoming events</span></a>
-<a class="town" href="/events/green-camp.html"><b>Green Camp, OH</b><span>0 upcoming events</span></a></div>
+<section class="town-hero"><div class="kicker">Local events across</div>
+<h1>Northwest Ohio</h1>
+<div class="tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>857 upcoming events in 24 towns</span></div>
+<a class="get" href="https://apps.apple.com/app/id6780306721">Get the free app</a></section>
+<div class="region-h">Northwest Ohio</div>
+<a class="town" href="/events/ada.html"><span><b>Ada, OH</b><span class="tg">Home of Ohio Northern</span></span><span class="n">0 events</span></a>
+<a class="town" href="/events/arlington.html"><span><b>Arlington, OH</b><span class="tg">Flag Village, USA</span></span><span class="n">3 events</span></a>
+<a class="town" href="/events/bluffton.html"><span><b>Bluffton, OH</b><span class="tg">Home of Bluffton University</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/bowling-green.html"><span><b>Bowling Green, OH</b><span class="tg">Home of BGSU</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/carey.html"><span><b>Carey, OH</b><span class="tg">Home of the Basilica</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/findlay.html"><span><b>Findlay, OH</b><span class="tg">Flag City, USA</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/fostoria.html"><span><b>Fostoria, OH</b><span class="tg">City of Industry</span></span><span class="n">55 events</span></a>
+<a class="town" href="/events/leipsic.html"><span><b>Leipsic, OH</b><span class="tg">Named for Leipzig, Germany</span></span><span class="n">10 events</span></a>
+<a class="town" href="/events/lima.html"><span><b>Lima, OH</b><span class="tg">Heart of the Region</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/north-baltimore.html"><span><b>North Baltimore, OH</b><span class="tg">Crossroads of the Heartland</span></span><span class="n">21 events</span></a>
+<a class="town" href="/events/pandora.html"><span><b>Pandora, OH</b><span class="tg">Swiss Mennonite Heritage</span></span><span class="n">11 events</span></a>
+<a class="town" href="/events/perrysburg.html"><span><b>Perrysburg, OH</b><span class="tg">Historic riverfront town</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/sandusky.html"><span><b>Sandusky, OH</b><span class="tg">On the shores of Lake Erie</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/tiffin.html"><span><b>Tiffin, OH</b><span class="tg">The Heart of Seneca County</span></span><span class="n">34 events</span></a>
+<a class="town" href="/events/toledo.html"><span><b>Toledo, OH</b><span class="tg">The Glass City</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/upper-sandusky.html"><span><b>Upper Sandusky, OH</b><span class="tg">Wyandot County Seat</span></span><span class="n">52 events</span></a>
+<a class="town" href="/events/van-wert.html"><span><b>Van Wert, OH</b><span class="tg">Peony Capital of Ohio</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/waterville.html"><span><b>Waterville, OH</b><span class="tg">Along the Maumee River</span></span><span class="n">58 events</span></a>
+<div class="region-h">Central Ohio</div>
+<a class="town" href="/events/bellefontaine.html"><span><b>Bellefontaine, OH</b><span class="tg">Ohio's Highest Point</span></span><span class="n">41 events</span></a>
+<a class="town" href="/events/green-camp.html"><span><b>Green Camp, OH</b><span class="tg">War of 1812 Camp Town</span></span><span class="n">0 events</span></a>
+<a class="town" href="/events/kenton.html"><span><b>Kenton, OH</b><span class="tg">Cast-Iron Toy Capital</span></span><span class="n">11 events</span></a>
+<a class="town" href="/events/larue.html"><span><b>LaRue, OH</b><span class="tg">Smallest NFL Town Ever</span></span><span class="n">0 events</span></a>
+<a class="town" href="/events/prospect.html"><span><b>Prospect, OH</b><span class="tg">On the Scioto River</span></span><span class="n">0 events</span></a>
+<a class="town" href="/events/richwood.html"><span><b>Richwood, OH</b><span class="tg">Home of the Independent Fair</span></span><span class="n">21 events</span></a>
 <div class="banner"><h2>Get the free app</h2>
-<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too — all across Northwest Ohio.</p>
+<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest Ohio, free.</p>
 <a class="get" href="https://apps.apple.com/app/id6780306721">Download Local Loop</a></div>
 <footer><div>© 2026 Local Loop · Northwest Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
