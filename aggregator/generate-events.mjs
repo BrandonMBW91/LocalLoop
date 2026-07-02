@@ -207,7 +207,7 @@ ${g.items.map(eventCard).join('\n')}`).join('\n')
     const ld = events.map((e) => eventLd(e, name));
 
     const html = `${HEAD(title, desc, `/events/${id}.html`)}
-<script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <section class="town-hero"><div class="kicker">Things to do in</div>
 <h1>${esc(name)}, OH</h1>
 ${tagline ? `<div class="tag">${PIN_SVG}<span>${esc(tagline)}</span></div>` : ''}

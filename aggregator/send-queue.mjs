@@ -84,13 +84,13 @@ async function sweepBounces(knownTos) {
   {
     const lock = await imap.getMailboxLock('INBOX');
     try {
+      // ONLY daemon/postmaster senders — subject keywords alone would match real
+      // human replies ("delivery available?") and blocklist good prospects.
       const since = new Date(Date.now() - 30 * 86400000);
       const uidSets = await Promise.all([
         imap.search({ from: 'mailer-daemon', since }, { uid: true }),
         imap.search({ from: 'postmaster', since }, { uid: true }),
-        imap.search({ subject: 'undeliver', since }, { uid: true }),
-        imap.search({ subject: 'delivery', since }, { uid: true }),
-        imap.search({ subject: 'failure', since }, { uid: true }),
+        imap.search({ from: 'maildelivery', since }, { uid: true }),
       ].map((p) => p.catch(() => [])));
       const uids = [...new Set(uidSets.flat().filter(Boolean))].slice(0, 100);
       const doomed = [];
@@ -132,8 +132,11 @@ async function sweepBounces(knownTos) {
 const sentTos = await getSentTos();
 await sweepBounces(new Set([...sentTos, ...queueTos]));
 
-// GOOD sends = logged sends whose address never bounced.
-const logEntries = readLines(LOG).map((l) => ({ ts: l.slice(0, 10), to: (l.split(/\s+/)[1] || '').toLowerCase() }));
+// GOOD sends = logged sends whose address never bounced. Log timestamps are
+// ISO/UTC — convert to LOCAL date so evening runs don't straddle midnight and
+// double the daily quota.
+const localDay = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-CA'); };
+const logEntries = readLines(LOG).map((l) => ({ ts: localDay(l.split(/\s+/)[0]), to: (l.split(/\s+/)[1] || '').toLowerCase() }));
 const goodAllTime = logEntries.filter((e) => !bounced.has(e.to)).length;
 const goodToday = logEntries.filter((e) => e.ts === today && !bounced.has(e.to)).length;
 
@@ -146,7 +149,10 @@ const ramp = goodAllTime < 15 ? 5 : goodAllTime < 40 ? 8 : 10;
 const quota = Math.min(ramp, Number(args.limit) || ramp);
 let need = Math.max(0, quota - goodToday);
 
-const pendingList = () => queue.filter((d) => !sentTos.has(d.to) && !bounced.has(d.to));
+// Pending = never sent per the Sent folder AND per our local log (belt and
+// suspenders: a partial IMAP fetch can't cause a re-email).
+const loggedTos = new Set(logEntries.map((e) => e.to).filter(Boolean));
+const pendingList = () => queue.filter((d) => !sentTos.has(d.to) && !loggedTos.has(d.to) && !bounced.has(d.to));
 console.log(`queue ${queue.length} · good all-time ${goodAllTime} · good today ${goodToday}/${quota} · bounced total ${bounced.size} · pending ${pendingList().length} · sending now ${Math.min(need, pendingList().length)}${DRY ? ' DRY' : ''}`);
 
 if (need === 0) { console.log('daily quota already met with good sends — nothing to do.'); process.exit(0); }
@@ -174,5 +180,5 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
   need = failed;
   round++;
 }
-const finalGood = readLines(LOG).filter((l) => l.slice(0, 10) === today && !bounced.has((l.split(/\s+/)[1] || '').toLowerCase())).length;
+const finalGood = readLines(LOG).filter((l) => localDay(l.split(/\s+/)[0]) === today && !bounced.has((l.split(/\s+/)[1] || '').toLowerCase())).length;
 console.log(`done. good sends today: ${finalGood}/${quota}.`);

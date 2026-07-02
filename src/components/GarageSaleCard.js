@@ -11,10 +11,11 @@ import { dateRangeLabel, daysFromNow } from '../utils/dates';
 // Parse a "10:00 AM" / "2:00 PM" clock string into minutes since midnight.
 // Returns null when it can't be parsed (treated as "hours unknown").
 function clockToMinutes(s) {
-  const m = String(s || '').trim().match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])?$/);
+  // Minutes optional: the app's own formatTime emits "9 AM" for on-the-hour.
+  const m = String(s || '').trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
   if (!m) return null;
   let h = parseInt(m[1], 10);
-  const min = parseInt(m[2], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
   const ap = m[3] ? m[3].toUpperCase() : null;
   if (ap === 'PM' && h !== 12) h += 12;
   if (ap === 'AM' && h === 12) h = 0;

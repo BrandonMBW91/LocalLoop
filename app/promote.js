@@ -15,6 +15,10 @@ const CHECKOUT = {
   region: 'https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01', // All-Region $79/mo
   featured30: 'https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02', // Featured 30d $25
 };
+// The Payment Links above charge FIXED founding prices. Only expose tap-to-buy
+// while the displayed tier price still matches what Stripe will charge —
+// otherwise fall back to the email flow (create per-tier links when tiers rise).
+const LINK_PRICES = { sponsor: 19, featured30: 25 };
 
 function Benefit({ icon, title, body }) {
   return (
@@ -68,6 +72,8 @@ export default function PromoteScreen() {
   }, [cityId, backendEnabled]);
 
   const rate = rateForUsers(users);
+  // Checkout links are valid only while tier prices equal the fixed link prices.
+  const buyable = rate.sponsor === LINK_PRICES.sponsor && rate.featured30 === LINK_PRICES.featured30;
 
   return (
     <ScrollView
@@ -128,9 +134,9 @@ export default function PromoteScreen() {
       </View>
       <View style={styles.rateCard}>
         <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={`$${rate.featured7}`} />
-        <RateRow label="Featured listing" sub="One event, sale, or truck · 30 days · tap to buy" price={`$${rate.featured30}`} url={CHECKOUT.featured30} />
-        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly · tap to buy`} price={`$${rate.sponsor}/mo`} url={CHECKOUT.town} />
-        <RateRow label="All of NW Ohio" sub="Every town · monthly · tap to buy" price="$79/mo" url={CHECKOUT.region} />
+        <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${buyable ? ' · tap to buy' : ''}`} price={`$${rate.featured30}`} url={buyable ? CHECKOUT.featured30 : undefined} />
+        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${buyable ? ' · tap to buy' : ''}`} price={`$${rate.sponsor}/mo`} url={buyable ? CHECKOUT.town : undefined} />
+        <RateRow label="All of NW Ohio" sub={`Every town · monthly${buyable ? ' · tap to buy' : ''}`} price="$79/mo" url={buyable ? CHECKOUT.region : undefined} />
         <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
@@ -139,7 +145,7 @@ export default function PromoteScreen() {
           : `Founding rates for our first local partners — locked in for a year. No contracts.`}
       </ThemedText>
 
-      {CHECKOUT.town ? (
+      {buyable ? (
         <Pressable style={styles.cta} onPress={() => Linking.openURL(CHECKOUT.town)}>
           <Ionicons name="card" size={22} color={colors.textInverse} />
           <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>

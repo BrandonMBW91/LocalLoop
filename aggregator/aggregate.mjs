@@ -48,7 +48,9 @@ function cleanText(s) {
 
 // Administrative noise that isn't a real public event — filtered out by title.
 // "observed"/"no classes" catch campus holiday closures ("Independence Day Observed").
-const JUNK_RE = /\b(closed|closure|cancel?led|no school|no classes|observed|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b/i;
+// "no school/classes" only when NOT followed by a program word (No School Day Camp
+// is a real kids' event); "observed" only as a title-ending holiday marker.
+const JUNK_RE = /\b(closed|closure|cancel?led|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b|\bno (school|classes)\b(?!\s*(day\s*)?(camp|program|party|fun|movie|craft))|\bobserved\b[\])]?\s*(-.*)?$/i;
 
 // Only keep https links (no javascript:/http: etc.) for the "Get Tickets" button.
 function httpsUrl(raw) {
@@ -191,9 +193,12 @@ async function pullSource(source) {
     try { items = JSON.parse(text); } catch { throw new Error('revize: response is not JSON'); }
     for (const it of Array.isArray(items) ? items : []) {
       if (!it || !it.title || !it.start) continue;
-      const start = new Date(it.start);
+      // Revize timestamps are LOCAL Eastern with no zone ("2026-07-04T22:00:00").
+      // Anchor them explicitly so CI (UTC) doesn't shift events 4 hours early.
+      const et = (s) => (/T\d{2}:\d{2}/.test(s) && !/[Zz]|[+-]\d{2}:?\d{2}$/.test(s) ? s + '-04:00' : s);
+      const start = new Date(et(String(it.start)));
       if (Number.isNaN(start.getTime())) continue;
-      const end = it.end ? new Date(it.end) : null;
+      const end = it.end ? new Date(et(String(it.end))) : null;
       const t = start.getTime();
       const endT = end ? end.getTime() : t;
       if (endT < floor || t > cutoff) continue;
