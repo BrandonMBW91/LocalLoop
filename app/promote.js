@@ -40,7 +40,7 @@ function RateRow({ label, sub, price, last }) {
 
 export default function PromoteScreen() {
   const { city, cityId, backendEnabled } = useApp();
-  const email = 'michabw91@gmail.com';
+  const email = 'localloop@localloop.io';
   const [users, setUsers] = useState(0);
 
   useEffect(() => {

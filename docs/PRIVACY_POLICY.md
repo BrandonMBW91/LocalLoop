@@ -69,7 +69,7 @@ where appropriate, notify users in the app.
 
 ## Contact
 
-Questions or deletion requests: **michabw91@gmail.com**
+Questions or deletion requests: **localloop@localloop.io**
 
 ---
 

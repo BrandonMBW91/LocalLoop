@@ -301,7 +301,7 @@ export default function SettingsScreen() {
         </Pressable>
         <Pressable
           style={[styles.row, styles.rowBorder]}
-          onPress={() => Linking.openURL('mailto:michabw91@gmail.com')}
+          onPress={() => Linking.openURL('mailto:localloop@localloop.io')}
         >
           <Ionicons name="mail-outline" size={24} color={colors.primary} />
           <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
@@ -313,7 +313,7 @@ export default function SettingsScreen() {
           style={[styles.row, styles.rowBorder]}
           onPress={() =>
             Linking.openURL(
-              'mailto:michabw91@gmail.com?subject=' +
+              'mailto:localloop@localloop.io?subject=' +
                 encodeURIComponent('Local Loop — Feature Request')
             )
           }
