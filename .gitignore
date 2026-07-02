@@ -47,3 +47,5 @@ yarn-error.*
 # Saved dashboard pages (may contain secrets) — never commit
 *.htm
 *.html.bak
+
+outreach/

@@ -42,9 +42,13 @@ export default function PromoteScreen() {
   const { city, cityId, backendEnabled } = useApp();
   const email = 'localloop@localloop.io';
   const [users, setUsers] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
-    if (backendEnabled) fetchCityUsers(cityId).then(setUsers).catch(() => {});
+    if (backendEnabled) {
+      fetchCityUsers(cityId).then(setUsers).catch(() => {});
+      fetchCityUsers(null).then(setTotalUsers).catch(() => {}); // all towns
+    }
   }, [cityId, backendEnabled]);
 
   const rate = rateForUsers(users);
@@ -102,7 +106,8 @@ export default function PromoteScreen() {
           {rate.name} tier
         </ThemedText>
         <ThemedText size="small" color={colors.textMuted}>
-          · {users.toLocaleString()} active {users === 1 ? 'neighbor' : 'neighbors'} this month
+          · {users.toLocaleString()} active {users === 1 ? 'neighbor' : 'neighbors'} in {city.name}
+          {totalUsers > users ? ` · ${totalUsers.toLocaleString()} across all towns` : ''} this month
         </ThemedText>
       </View>
       <View style={styles.rateCard}>
