@@ -539,9 +539,13 @@ export async function recordDeviceActivity(deviceId, cityId) {
 }
 
 // Monthly active users in a town — drives ad pricing by actual users.
+// Pass null or 'all' to count active users across every town.
 export async function fetchCityUsers(cityId) {
   try {
-    const { data, error } = await supabase.rpc('city_active_users', { p_city: cityId });
+    const all = !cityId || cityId === 'all';
+    const { data, error } = all
+      ? await supabase.rpc('all_active_users')
+      : await supabase.rpc('city_active_users', { p_city: cityId });
     if (error) throw error;
     return data || 0;
   } catch (e) {
@@ -616,20 +620,41 @@ export async function expirePromotions() {
 
 // ---- Admin metrics (reach numbers to show advertisers) ----
 
-// Reach snapshot for one city: live listing counts, total views per type, the
-// most-viewed listings, and how many active ads / featured listings are running.
+// Reach snapshot for one city, or across every town when cityId is null/'all':
+// live listing counts, total views per type, the most-viewed listings, and how
+// many active ads / featured listings are running.
 export async function fetchMetrics(cityId) {
-  const [ev, gs, ft, sp] = await Promise.all([
-    supabase.from('events').select('id,title,view_count,featured').eq('city_id', cityId).eq('status', 'approved'),
-    supabase.from('garage_sales').select('id,title,view_count,featured').eq('city_id', cityId).eq('status', 'approved'),
-    supabase.from('food_trucks').select('id,name,view_count,featured').eq('city_id', cityId).eq('status', 'approved'),
-    supabase.from('sponsors').select('id,active').eq('city_id', cityId),
-  ]);
+  const all = !cityId || cityId === 'all';
 
-  const evRows = ev.data || [];
-  const gsRows = gs.data || [];
-  const ftRows = ft.data || [];
-  const spRows = sp.data || [];
+  // Pull every matching row, paging past PostgREST's 1000-row cap — all-town
+  // totals span thousands of listings, so a single select would truncate them.
+  const pull = async (table, cols) => {
+    const out = [];
+    let from = 0;
+    let page;
+    do {
+      let q = supabase.from(table).select(cols).eq('status', 'approved');
+      if (!all) q = q.eq('city_id', cityId);
+      const { data } = await q.range(from, from + 999);
+      page = data || [];
+      out.push(...page);
+      from += 1000;
+    } while (page.length === 1000);
+    return out;
+  };
+  const pullSponsors = async () => {
+    let q = supabase.from('sponsors').select('id,active');
+    if (!all) q = q.eq('city_id', cityId);
+    const { data } = await q;
+    return data || [];
+  };
+
+  const [evRows, gsRows, ftRows, spRows] = await Promise.all([
+    pull('events', 'id,title,view_count,featured'),
+    pull('garage_sales', 'id,title,view_count,featured'),
+    pull('food_trucks', 'id,name,view_count,featured'),
+    pullSponsors(),
+  ]);
   const sumViews = (rows) => rows.reduce((n, r) => n + (r.view_count || 0), 0);
 
   const top = [

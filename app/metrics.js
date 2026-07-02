@@ -26,6 +26,7 @@ function StatCard({ value, label, color, icon }) {
 export default function MetricsScreen() {
   const router = useRouter();
   const { isAdmin, city, cityId } = useApp();
+  const [scope, setScope] = useState('all'); // 'all' towns (default) or the current city
   const [data, setData] = useState(null);
   const [users, setUsers] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,8 @@ export default function MetricsScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, u] = await Promise.all([fetchMetrics(cityId), fetchCityUsers(cityId)]);
+      const target = scope === 'all' ? null : cityId; // null => every town
+      const [m, u] = await Promise.all([fetchMetrics(target), fetchCityUsers(target)]);
       setData(m);
       setUsers(u);
     } catch (e) {
@@ -41,7 +43,7 @@ export default function MetricsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [cityId]);
+  }, [scope, cityId]);
 
   useEffect(() => {
     if (isAdmin) load();
@@ -75,11 +77,31 @@ export default function MetricsScreen() {
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.primary} />}
     >
       <ThemedText size="small" color={colors.textMuted}>SHOWING REACH FOR</ThemedText>
-      <ThemedText size="large" weight="bold" style={{ marginBottom: spacing.xs }}>
-        {city.name}, {city.state}
+      <ThemedText size="large" weight="bold" style={{ marginBottom: spacing.sm }}>
+        {scope === 'all' ? 'All towns' : `${city.name}, ${city.state}`}
       </ThemedText>
+      <View style={styles.toggle}>
+        <Pressable
+          style={[styles.togglePill, scope === 'all' && styles.togglePillActive]}
+          onPress={() => setScope('all')}
+        >
+          <ThemedText size="small" weight="bold" color={scope === 'all' ? colors.textInverse : colors.textMuted}>
+            All towns
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={[styles.togglePill, scope === 'city' && styles.togglePillActive]}
+          onPress={() => setScope('city')}
+        >
+          <ThemedText size="small" weight="bold" color={scope === 'city' ? colors.textInverse : colors.textMuted}>
+            {city.name}
+          </ThemedText>
+        </Pressable>
+      </View>
       <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: spacing.md }}>
-        Switch cities in Settings to see another town. Pull down to refresh.
+        {scope === 'all'
+          ? 'Combined across every town. Pull down to refresh.'
+          : 'This town only. Pull down to refresh.'}
       </ThemedText>
 
       {/* Headline numbers */}
@@ -156,6 +178,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     backgroundColor: colors.background,
   },
+  toggle: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  togglePill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  togglePillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCard: {
     flexGrow: 1,
