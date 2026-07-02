@@ -14,22 +14,17 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from '../aggregator/env.mjs';
+import { CITIES as APP_CITIES } from '../src/data/cities.js';
 
 loadDotEnv();
 
 const APP_STORE_URL = 'https://apps.apple.com/app/id6780306721';
-const SITE = 'https://local-loop-nwohio.netlify.app';
+const SITE = 'https://localloop.io';
 const HORIZON_DAYS = 45;
 
-const CITIES = [
-  ['findlay', 'Findlay'], ['fostoria', 'Fostoria'], ['tiffin', 'Tiffin'],
-  ['bowling-green', 'Bowling Green'], ['sandusky', 'Sandusky'], ['lima', 'Lima'],
-  ['van-wert', 'Van Wert'], ['bellefontaine', 'Bellefontaine'], ['toledo', 'Toledo'],
-  ['perrysburg', 'Perrysburg'], ['bluffton', 'Bluffton'], ['ada', 'Ada'],
-  ['waterville', 'Waterville'], ['north-baltimore', 'North Baltimore'],
-  ['carey', 'Carey'], ['leipsic', 'Leipsic'], ['arlington', 'Arlington'],
-  ['pandora', 'Pandora'],
-];
+// Single source of truth for towns — same list the app uses, so new towns get
+// SEO pages automatically.
+const CITIES = APP_CITIES.map((c) => [c.id, c.name]);
 const NAME = Object.fromEntries(CITIES);
 
 const here = dirname(fileURLToPath(import.meta.url));
