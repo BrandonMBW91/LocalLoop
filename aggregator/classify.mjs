@@ -29,9 +29,15 @@ Guidance:
 - Community: civic meetings, fundraisers, clubs, volunteering, holidays, blood drives, support groups, anything else.
 Pick the single best fit for the LIKELY AUDIENCE. An adult lecture, adult book club, or adult craft night is NOT Family — label it Education or Arts. When unsure between a specific category and Community, prefer the specific one; when unsure whether something is for kids, do NOT default to Family.`;
 
+// Strip unpaired UTF-16 surrogates — a truncated emoji in feed text produces a
+// lone surrogate that makes the request body invalid JSON (API rejects it).
+function sane(s) {
+  return String(s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+}
+
 async function callClaude(items, apiKey) {
   const list = items
-    .map((e, i) => `${i + 1}. ${e.title || 'Untitled'}${e.description ? ` — ${String(e.description).slice(0, 200)}` : ''}`)
+    .map((e, i) => `${i + 1}. ${sane(e.title) || 'Untitled'}${e.description ? ` — ${sane(String(e.description).slice(0, 200))}` : ''}`)
     .join('\n');
 
   const body = {

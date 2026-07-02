@@ -79,7 +79,10 @@ function sameDay(a, b) {
 async function fetchICS(url) {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; FindlayEventsBot/1.0; +https://findlayevents.com)',
+      // Full browser UA: several feeds' WAFs (PrestoSports, mod_security) 403/406
+      // the honest bot UA but allow a browser string.
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
       Accept: 'text/calendar, text/plain, */*',
       Referer: new URL(url).origin + '/',
     },
