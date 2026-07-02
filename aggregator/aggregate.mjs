@@ -47,7 +47,8 @@ function cleanText(s) {
 }
 
 // Administrative noise that isn't a real public event — filtered out by title.
-const JUNK_RE = /\b(closed|closure|cancel?led|no school|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b/i;
+// "observed"/"no classes" catch campus holiday closures ("Independence Day Observed").
+const JUNK_RE = /\b(closed|closure|cancel?led|no school|no classes|observed|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b/i;
 
 // Only keep https links (no javascript:/http: etc.) for the "Get Tickets" button.
 function httpsUrl(raw) {
@@ -90,6 +91,36 @@ async function fetchICS(url) {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
+}
+
+// ---- near-duplicate guard -------------------------------------------------
+// Catches the same event arriving as a variant (renamed program, "TeamA vs
+// TeamB" flipped, a "2026" prefix) that hashes to a fresh source_uid. Deliberately
+// tight: only same-city events starting within 5 minutes qualify, so recurring
+// sessions and sign-up slots (15/30-min offsets) are never touched.
+const GENERIC_VENUE = new Set(['meeting', 'room', 'rooms', 'capacity', 'the', 'and', 'floor', 'suite', 'area', 'events']);
+const normText = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+const titleTokens = (s) => new Set(normText(s).split(' ').filter((w) => w.length > 1));
+const venueTokens = (s) => new Set([...titleTokens(s)].filter((w) => !GENERIC_VENUE.has(w)));
+function jaccard(a, b) {
+  if (!a.size || !b.size) return 0;
+  let i = 0;
+  for (const t of a) if (b.has(t)) i++;
+  return i / (a.size + b.size - i);
+}
+function tokensEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const t of a) if (!b.has(t)) return false;
+  return true;
+}
+function isNearDupe(a, b) {
+  if (a.city_id !== b.city_id) return false;
+  if (Math.abs(new Date(a.start_at) - new Date(b.start_at)) > 5 * 60000) return false;
+  const ta = titleTokens(a.title), tb = titleTokens(b.title);
+  if (!(tokensEqual(ta, tb) || jaccard(ta, tb) >= 0.75)) return false;
+  const va = venueTokens(a.venue), vb = venueTokens(b.venue);
+  if (!va.size || !vb.size) return true; // a bare venue ("Eventbrite") can't disambiguate
+  return jaccard(va, vb) >= 0.5; // distinct branch names keep real events apart
 }
 
 function makeRow(ev, source, start, end) {
@@ -150,6 +181,32 @@ async function pullSource(source) {
     }
     const seenJ = new Set();
     return rows.filter((r) => (seenJ.has(r.source_uid) ? false : seenJ.add(r.source_uid)));
+  }
+
+  // Revize municipal calendars (e.g. City of Kenton): a plain JSON array of
+  // FullCalendar-style events {title, start, end, location, desc (URI-encoded
+  // HTML), url}. No recurrence to expand.
+  if (source.type === 'revize') {
+    let items;
+    try { items = JSON.parse(text); } catch { throw new Error('revize: response is not JSON'); }
+    for (const it of Array.isArray(items) ? items : []) {
+      if (!it || !it.title || !it.start) continue;
+      const start = new Date(it.start);
+      if (Number.isNaN(start.getTime())) continue;
+      const end = it.end ? new Date(it.end) : null;
+      const t = start.getTime();
+      const endT = end ? end.getTime() : t;
+      if (endT < floor || t > cutoff) continue;
+      let desc = '';
+      try { desc = decodeURIComponent(String(it.desc || '')); } catch { desc = String(it.desc || ''); }
+      const row = makeRow(
+        { summary: it.title, description: desc, location: it.location || '', url: it.url || null },
+        source, start, end
+      );
+      if (row) rows.push(row);
+    }
+    const seenR = new Set();
+    return rows.filter((r) => (seenR.has(r.source_uid) ? false : seenR.add(r.source_uid)));
   }
 
   const data = await ical.async.parseICS(text);
@@ -249,7 +306,36 @@ async function main() {
     const uids = rows.map((r) => r.source_uid);
     const { data: existing } = await supabase.from('events').select('source_uid').in('source_uid', uids);
     const have = new Set((existing || []).map((r) => r.source_uid));
-    const newRows = rows.filter((r) => !have.has(r.source_uid));
+    let newRows = rows.filter((r) => !have.has(r.source_uid));
+
+    // Near-dupe guard: drop variants of events we already carry (or that appear
+    // twice within this batch) — see isNearDupe for the exact rule.
+    if (newRows.length) {
+      const cities = [...new Set(newRows.map((r) => r.city_id))];
+      const starts = newRows.map((r) => new Date(r.start_at).getTime());
+      const lo = new Date(Math.min(...starts) - 3600000).toISOString();
+      const hi = new Date(Math.max(...starts) + 3600000).toISOString();
+      const dbRows = [];
+      for (let from = 0; ; from += 1000) {
+        const { data: page } = await supabase
+          .from('events')
+          .select('city_id,title,start_at,venue')
+          .in('city_id', cities)
+          .gte('start_at', lo)
+          .lte('start_at', hi)
+          .range(from, from + 999);
+        dbRows.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
+      const kept = [];
+      let skipped = 0;
+      for (const r of newRows) {
+        if (dbRows.some((e) => isNearDupe(r, e)) || kept.some((k) => isNearDupe(r, k))) skipped++;
+        else kept.push(r);
+      }
+      if (skipped) console.log(`  skipped ${skipped} near-duplicate(s)`);
+      newRows = kept;
+    }
 
     if (!newRows.length) {
       console.log('  no new events');
