@@ -32,11 +32,19 @@ const NAMES = [
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';
+// Words after a town name that mean it ISN'T that town: "Sandusky County" is
+// Fremont's county, "Sandusky River/Bay" are features, "Arlington Heights" is
+// elsewhere. (Deliberately NOT blocking "Township" — Perrysburg Township etc.
+// are that town's community.)
+const NOT_TOWN = '(?:county|heights|river|bay)';
+// "Upper Sandusky" is a different town entirely — never match the bare name there.
+const NOT_BEFORE = '(?<!\\bupper\\s)';
 
 // Pass 1: town immediately before OH / Ohio / a 5-digit ZIP (the city slot).
-const CITY_POS = NAMES.map(([id, name]) => [id, new RegExp(`\\b${name}\\b,?\\s*(?:oh\\b|ohio\\b|\\d{5}\\b)`, 'i')]);
-// Pass 2: any town mention that isn't the start of a street name.
-const ANY = NAMES.map(([id, name]) => [id, new RegExp(`\\b${name}\\b(?!\\s+${STREET}\\b)`, 'i')]);
+const CITY_POS = NAMES.map(([id, name]) => [id, new RegExp(`${NOT_BEFORE}\\b${name}\\b,?\\s*(?:oh\\b|ohio\\b|\\d{5}\\b)`, 'i')]);
+// Pass 2: any town mention that isn't the start of a street name — including
+// two-town road names ("Waterville Monclova Rd") — or a county/feature name.
+const ANY = NAMES.map(([id, name]) => [id, new RegExp(`${NOT_BEFORE}\\b${name}\\b(?!\\s+${STREET}\\b|\\s+\\w+\\s+${STREET}\\b|\\s+${NOT_TOWN}\\b)`, 'i')]);
 // The address clearly names an Ohio city ("…, OH 43452" / "…, Ohio, …").
 const NAMES_A_CITY = /,\s*(?:oh|ohio)\b|\b(?:oh|ohio)\s+\d{5}\b/i;
 
