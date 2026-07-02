@@ -28,7 +28,8 @@
   .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
   .note{color:var(--muted);font-size:14px;margin-top:12px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:40px 0;}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;text-decoration:none;color:inherit;display:block;transition:box-shadow .15s,border-color .15s;}
+  .card:hover{border-color:var(--green);box-shadow:0 4px 14px rgba(31,111,84,.12);}
   .card .ic{width:44px;height:44px;border-radius:12px;background:#E7F2EE;color:var(--green);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
   .card h3{margin:0 0 6px;font-size:18px;}
   .card p{margin:0;color:var(--muted);font-size:15px;}
@@ -62,10 +63,10 @@
   </section>
 
   <div class="grid">
-    <div class="card"><div class="ic">📅</div><h3>Local events</h3><p>Concerts, markets, library programs, festivals — sorted by Today, This Week, and beyond.</p></div>
-    <div class="card"><div class="ic">🪧</div><h3>Garage &amp; yard sales</h3><p>Find sales near you with photos, hours, and what's for sale.</p></div>
-    <div class="card"><div class="ic">🚚</div><h3>Food trucks</h3><p>See which trucks are out today and exactly where they're parked.</p></div>
-    <div class="card"><div class="ic">🏷️</div><h3>Local deals</h3><p>Specials and coupons from businesses right in your town.</p></div>
+    <a class="card" href="/events/"><div class="ic">📅</div><h3>Local events</h3><p>Concerts, markets, library programs, and festivals, sorted by Today, This Week, and beyond. Pick your town and browse.</p></a>
+    <a class="card" href="/events/"><div class="ic">🪧</div><h3>Garage &amp; yard sales</h3><p>Find sales near you with photos, hours, and what's for sale. Browse events by town here, sales in the app.</p></a>
+    <a class="card" href="/events/"><div class="ic">🚚</div><h3>Food trucks</h3><p>See which trucks are out today and exactly where they're parked.</p></a>
+    <a class="card" href="/events/"><div class="ic">🏷️</div><h3>Local deals</h3><p>Specials and coupons from businesses right in your town.</p></a>
   </div>
 
   <section class="banner">

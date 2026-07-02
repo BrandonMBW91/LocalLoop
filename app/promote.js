@@ -10,7 +10,7 @@ import { colors, spacing, radius } from '../src/theme/theme';
 // Set this to your hosted advertise page once it's live (e.g.
 // 'https://localloop.app/advertise.html'). When set, a "Advertise online" button
 // appears that opens web checkout — keep purchases on the web (no Apple cut).
-const ADVERTISE_URL = '';
+const ADVERTISE_URL = 'https://localloop.io/advertise.html';
 
 function Benefit({ icon, title, body }) {
   return (
@@ -109,7 +109,8 @@ export default function PromoteScreen() {
         <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days" price={`$${rate.featured7}`} />
         <RateRow label="Featured listing" sub="One event, sale, or truck · 30 days" price={`$${rate.featured30}`} />
         <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly`} price={`$${rate.sponsor}/mo`} />
-        <RateRow label="All of NW Ohio" sub="Every town · monthly" price="$79/mo" last />
+        <RateRow label="All of NW Ohio" sub="Every town · monthly" price="$79/mo" />
+        <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
         {rate.nextTierAt
