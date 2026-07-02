@@ -20,4 +20,9 @@ export const CITIES = [
   { id: 'leipsic', name: 'Leipsic', state: 'OH', tagline: 'Putnam County' },
   { id: 'arlington', name: 'Arlington', state: 'OH', tagline: 'Hancock County' },
   { id: 'pandora', name: 'Pandora', state: 'OH', tagline: 'Putnam County' },
+  { id: 'kenton', name: 'Kenton', state: 'OH', tagline: 'Hardin County' },
+  { id: 'richwood', name: 'Richwood', state: 'OH', tagline: 'Union County' },
+  { id: 'larue', name: 'LaRue', state: 'OH', tagline: 'Marion County' },
+  { id: 'prospect', name: 'Prospect', state: 'OH', tagline: 'Marion County' },
+  { id: 'green-camp', name: 'Green Camp', state: 'OH', tagline: 'Marion County' },
 ];

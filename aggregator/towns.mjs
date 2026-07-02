@@ -24,6 +24,11 @@ const NAMES = [
   ['carey', 'Carey'],
   ['lima', 'Lima'],
   ['ada', 'Ada'],
+  ['kenton', 'Kenton'],
+  ['richwood', 'Richwood'],
+  ['larue', 'LaRue'],
+  ['prospect', 'Prospect'],
+  ['green-camp', 'Green Camp'],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';
