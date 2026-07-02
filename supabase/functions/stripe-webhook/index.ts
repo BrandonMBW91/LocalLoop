@@ -26,6 +26,8 @@ const CODE_TO_CITY: Record<string, string> = {
   toledo: 'toledo', perrysburg: 'perrysburg', bluffton: 'bluffton', ada: 'ada',
   waterville: 'waterville', northbaltimore: 'north-baltimore', carey: 'carey',
   leipsic: 'leipsic', arlington: 'arlington', pandora: 'pandora',
+  uppersandusky: 'upper-sandusky', kenton: 'kenton', richwood: 'richwood',
+  larue: 'larue', prospect: 'prospect', greencamp: 'green-camp',
 };
 const ALL_CITY_IDS = [...new Set(Object.values(CODE_TO_CITY))];
 

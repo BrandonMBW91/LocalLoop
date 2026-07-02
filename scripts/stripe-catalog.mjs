@@ -18,6 +18,8 @@ const TOWNS = [
   ['toledo', 'Toledo'], ['perrysburg', 'Perrysburg'], ['bluffton', 'Bluffton'], ['ada', 'Ada'],
   ['waterville', 'Waterville'], ['northbaltimore', 'North Baltimore'], ['carey', 'Carey'],
   ['leipsic', 'Leipsic'], ['arlington', 'Arlington'], ['pandora', 'Pandora'],
+  ['uppersandusky', 'Upper Sandusky'], ['kenton', 'Kenton'], ['richwood', 'Richwood'],
+  ['larue', 'LaRue'], ['prospect', 'Prospect'], ['greencamp', 'Green Camp'],
 ];
 
 const text = (key, label, optional = false) => ({ key, label: { type: 'custom', custom: label }, type: 'text', optional });

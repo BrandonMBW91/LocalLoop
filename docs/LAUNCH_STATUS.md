@@ -64,10 +64,10 @@ Stopped at Google Play Console **device verification** — Google requires a rea
 ## Post-launch prep (2026-06-15)
 
 ### ✅ Done & live
-- **SEO event pages** — `web/generate-events.mjs` builds branded, Google-indexable pages
+- **SEO event pages** — `aggregator/generate-events.mjs` builds branded, Google-indexable pages
   (hub + 18 town pages with schema.org Event JSON-LD), plus `sitemap.xml` + `robots.txt`.
   Live at `…/events/`. **This is your free organic-growth engine.**
-  - Regenerate when events change: `node web/generate-events.mjs && netlify deploy --prod --dir=site`
+  - Regenerate when events change: `node aggregator/generate-events.mjs && netlify deploy --prod --dir=site`
   - TODO (optional): automate daily via GitHub Action — needs a `NETLIFY_AUTH_TOKEN` repo secret.
   - After the app is LIVE: the event pages' "Download" button already points at the App Store URL.
   - Submit the sitemap to **Google Search Console** (free) to speed up indexing.

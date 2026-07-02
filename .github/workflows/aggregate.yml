@@ -38,3 +38,20 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
         run: node geocode.mjs
+      - name: Regenerate SEO event pages
+        working-directory: aggregator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node generate-events.mjs
+      - name: Deploy site to Netlify (localloop.io)
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          cd site && zip -qr ../site.zip . && cd ..
+          curl -sf -X POST "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys" \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            -H "Content-Type: application/zip" \
+            --data-binary @site.zip \
+            | head -c 300

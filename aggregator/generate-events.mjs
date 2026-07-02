@@ -13,7 +13,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { loadDotEnv } from '../aggregator/env.mjs';
+import { loadDotEnv } from './env.mjs';
 import { CITIES as APP_CITIES } from '../src/data/cities.js';
 
 loadDotEnv();
