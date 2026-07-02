@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { CITIES } from '../src/data/cities';
+import { CITIES, REGION_ORDER } from '../src/data/cities';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 
 export default function CityPickerScreen() {
@@ -20,6 +20,17 @@ export default function CityPickerScreen() {
       (c) => c.name.toLowerCase().includes(q) || (c.tagline || '').toLowerCase().includes(q)
     );
   }, [query]);
+
+  // Group the (filtered) towns by region, keeping REGION_ORDER and dropping any
+  // empty section (e.g. while searching).
+  const sections = useMemo(
+    () =>
+      REGION_ORDER.map((region) => ({
+        region,
+        items: filtered.filter((c) => (c.region || REGION_ORDER[0]) === region),
+      })).filter((s) => s.items.length > 0),
+    [filtered]
+  );
 
   const choose = (id) => {
     setCity(id);
@@ -54,34 +65,41 @@ export default function CityPickerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }}>
-        {filtered.map((c, i) => {
-          const selected = c.id === cityId;
-          return (
-            <Pressable
-              key={c.id}
-              onPress={() => choose(c.id)}
-              style={[styles.row, i > 0 && styles.rowBorder, selected && styles.rowSelected]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-            >
-              <View style={{ flex: 1 }}>
-                <ThemedText size="body" weight={selected ? 'bold' : 'regular'}>
-                  {c.name}, {c.state}
-                </ThemedText>
-                {c.tagline ? (
-                  <ThemedText size="small" color={colors.textMuted}>
-                    {c.tagline}
-                  </ThemedText>
-                ) : null}
-              </View>
-              <Ionicons
-                name={selected ? 'checkmark-circle' : 'ellipse-outline'}
-                size={26}
-                color={selected ? colors.primary : colors.textMuted}
-              />
-            </Pressable>
-          );
-        })}
+        {sections.map((section) => (
+          <View key={section.region}>
+            <ThemedText size="small" weight="bold" color={colors.textMuted} style={styles.sectionHeader}>
+              {section.region.toUpperCase()}
+            </ThemedText>
+            {section.items.map((c, i) => {
+              const selected = c.id === cityId;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => choose(c.id)}
+                  style={[styles.row, i > 0 && styles.rowBorder, selected && styles.rowSelected]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <ThemedText size="body" weight={selected ? 'bold' : 'regular'}>
+                      {c.name}, {c.state}
+                    </ThemedText>
+                    {c.tagline ? (
+                      <ThemedText size="small" color={colors.textMuted}>
+                        {c.tagline}
+                      </ThemedText>
+                    ) : null}
+                  </View>
+                  <Ionicons
+                    name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={26}
+                    color={selected ? colors.primary : colors.textMuted}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
 
         {filtered.length === 0 ? (
           <View style={styles.empty}>
@@ -112,6 +130,12 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   searchInput: { flex: 1, color: colors.text, paddingVertical: 12 },
+  sectionHeader: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+    letterSpacing: 0.5,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
