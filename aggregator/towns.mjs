@@ -6,6 +6,7 @@
 //   2) Otherwise, ignore a town name that's part of a STREET name
 //      ("Findlay Street", "Findlay Ave", etc.).
 const NAMES = [
+  ['upper-sandusky', 'Upper Sandusky'],
   ['north-baltimore', 'North Baltimore'],
   ['bowling-green', 'Bowling Green'],
   ['van-wert', 'Van Wert'],

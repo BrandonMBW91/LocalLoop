@@ -24,6 +24,7 @@ export const CITIES = [
   { id: 'leipsic', name: 'Leipsic', state: 'OH', region: NW, tagline: 'Named for Leipzig, Germany' },
   { id: 'arlington', name: 'Arlington', state: 'OH', region: NW, tagline: 'Flag Village, USA' },
   { id: 'pandora', name: 'Pandora', state: 'OH', region: NW, tagline: 'Swiss Mennonite Heritage' },
+  { id: 'upper-sandusky', name: 'Upper Sandusky', state: 'OH', region: NW, tagline: 'Wyandot County Seat' },
   // --- Central / West-Central Ohio ---
   { id: 'bellefontaine', name: 'Bellefontaine', state: 'OH', region: CENTRAL, tagline: "Ohio's Highest Point" },
   { id: 'kenton', name: 'Kenton', state: 'OH', region: CENTRAL, tagline: 'Cast-Iron Toy Capital' },
