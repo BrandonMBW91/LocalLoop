@@ -11,6 +11,7 @@ import { recordView } from '../../src/lib/db';
 import { colors, spacing, radius, categoryColor, categoryIcon } from '../../src/theme/theme';
 import { formatLongDate, timeRange } from '../../src/utils/dates';
 import { addToCalendarUrl } from '../../src/utils/calendar';
+import { SHARE_FOOTER } from '../../src/lib/links';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -81,7 +82,7 @@ export default function EventDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}\n\nFound on Local Loop.`,
+      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}${SHARE_FOOTER}`,
     }).catch(() => {});
   };
 

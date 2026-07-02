@@ -11,6 +11,7 @@ import { recordView } from '../../src/lib/db';
 import { CUISINE_EMOJI } from '../../src/data/foodTrucks';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { formatLongDate } from '../../src/utils/dates';
+import { SHARE_FOOTER } from '../../src/lib/links';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -66,7 +67,7 @@ export default function FoodTruckDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}\n\nFound on Local Loop.`,
+      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${SHARE_FOOTER}`,
     }).catch(() => {});
   };
 

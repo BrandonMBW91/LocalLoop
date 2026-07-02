@@ -10,6 +10,7 @@ import { useApp } from '../../src/context/AppContext';
 import { recordView } from '../../src/lib/db';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { dateRangeLabel } from '../../src/utils/dates';
+import { SHARE_FOOTER } from '../../src/lib/links';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -65,7 +66,7 @@ export default function GarageSaleDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart}–${sale.dailyEnd}\n${sale.address}\n\nFound on Local Loop.`,
+      message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart}–${sale.dailyEnd}\n${sale.address}${SHARE_FOOTER}`,
     }).catch(() => {});
   };
 
