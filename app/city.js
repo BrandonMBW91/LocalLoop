@@ -21,13 +21,15 @@ export default function CityPickerScreen() {
     );
   }, [query]);
 
-  // Group the (filtered) towns by region, keeping REGION_ORDER and dropping any
-  // empty section (e.g. while searching).
+  // Group the (filtered) towns by region, alphabetized within each section,
+  // keeping REGION_ORDER and dropping any empty section (e.g. while searching).
   const sections = useMemo(
     () =>
       REGION_ORDER.map((region) => ({
         region,
-        items: filtered.filter((c) => (c.region || REGION_ORDER[0]) === region),
+        items: filtered
+          .filter((c) => (c.region || REGION_ORDER[0]) === region)
+          .sort((a, b) => a.name.localeCompare(b.name)),
       })).filter((s) => s.items.length > 0),
     [filtered]
   );
