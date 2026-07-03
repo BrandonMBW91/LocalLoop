@@ -174,6 +174,17 @@ export async function fetchEvents(cityId) {
   return (data || []).map(rowToEvent);
 }
 
+// Single-row fetch by id, any town — powers deep links (localloop.io/event/<id>)
+// when the item isn't in the currently-loaded city. Returns null if missing.
+export async function fetchOneById(kind, id) {
+  const table = TABLE_BY_KIND[kind];
+  const mapper = kind === 'garage_sale' ? rowToSale : kind === 'food_truck' ? rowToTruck : rowToEvent;
+  if (!table || !id) return null;
+  const { data, error } = await supabase.from(table).select('*').eq('id', id).eq('status', 'approved').maybeSingle();
+  if (error || !data) return null;
+  return mapper(data);
+}
+
 // ---- Editor's Pick (admin-curated "This Week's Pick" per town) ----
 
 export async function fetchEditorPick(cityId) {

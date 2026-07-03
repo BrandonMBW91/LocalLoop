@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,11 +7,11 @@ import AdBanner from '../../src/components/AdBanner';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
-import { recordView } from '../../src/lib/db';
+import { recordView, fetchOneById } from '../../src/lib/db';
 import { colors, spacing, radius, categoryColor, categoryIcon } from '../../src/theme/theme';
 import { formatLongDate, timeRange } from '../../src/utils/dates';
 import { addToCalendarUrl } from '../../src/utils/calendar';
-import { SHARE_FOOTER } from '../../src/lib/links';
+import { shareUrl, shareFooter } from '../../src/lib/links';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -38,7 +38,18 @@ export default function EventDetailScreen() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, logEvent } = useApp();
-  const event = findEventById(id);
+  const cached = findEventById(id);
+  // Deep link (localloop.io/event/<id>) may reference an event outside the
+  // loaded city — fetch it directly when the cache misses.
+  const [fetched, setFetched] = useState(null);
+  useEffect(() => {
+    if (!cached && backendEnabled && id) {
+      let ok = true;
+      fetchOneById('event', id).then((e) => { if (ok) setFetched(e); }).catch(() => {});
+      return () => { ok = false; };
+    }
+  }, [cached, backendEnabled, id]);
+  const event = cached || fetched;
 
   // Record the view once per id, but only after the event has resolved, so the
   // logged category isn't undefined on the first-render race.
@@ -82,7 +93,7 @@ export default function EventDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}${SHARE_FOOTER}`,
+      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('event', id))}`,
     }).catch(() => {});
   };
 

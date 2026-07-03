@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,10 +7,10 @@ import AdBanner from '../../src/components/AdBanner';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
-import { recordView } from '../../src/lib/db';
+import { recordView, fetchOneById } from '../../src/lib/db';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { dateRangeLabel } from '../../src/utils/dates';
-import { SHARE_FOOTER } from '../../src/lib/links';
+import { shareUrl, shareFooter } from '../../src/lib/links';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -35,7 +35,16 @@ export default function GarageSaleDetailScreen() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const { findGarageSaleById, backendEnabled, isAdmin } = useApp();
-  const sale = findGarageSaleById(id);
+  const cached = findGarageSaleById(id);
+  const [fetched, setFetched] = useState(null);
+  useEffect(() => {
+    if (!cached && backendEnabled && id) {
+      let ok = true;
+      fetchOneById('garage_sale', id).then((s) => { if (ok) setFetched(s); }).catch(() => {});
+      return () => { ok = false; };
+    }
+  }, [cached, backendEnabled, id]);
+  const sale = cached || fetched;
 
   useEffect(() => {
     if (backendEnabled && id) recordView('garage_sale', id);
@@ -66,7 +75,7 @@ export default function GarageSaleDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart}–${sale.dailyEnd}\n${sale.address}${SHARE_FOOTER}`,
+      message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart}–${sale.dailyEnd}\n${sale.address}${shareFooter(shareUrl('garage-sale', sale.id))}`,
     }).catch(() => {});
   };
 

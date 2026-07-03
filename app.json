@@ -12,6 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.michaelwilliams.localloop",
+      "associatedDomains": ["applinks:localloop.io"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,11 +7,11 @@ import AdBanner from '../../src/components/AdBanner';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
-import { recordView } from '../../src/lib/db';
+import { recordView, fetchOneById } from '../../src/lib/db';
 import { CUISINE_EMOJI } from '../../src/data/foodTrucks';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { formatLongDate } from '../../src/utils/dates';
-import { SHARE_FOOTER } from '../../src/lib/links';
+import { shareUrl, shareFooter } from '../../src/lib/links';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -36,7 +36,16 @@ export default function FoodTruckDetailScreen() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const { findFoodTruckById, backendEnabled, isAdmin } = useApp();
-  const truck = findFoodTruckById(id);
+  const cached = findFoodTruckById(id);
+  const [fetched, setFetched] = useState(null);
+  useEffect(() => {
+    if (!cached && backendEnabled && id) {
+      let ok = true;
+      fetchOneById('food_truck', id).then((t) => { if (ok) setFetched(t); }).catch(() => {});
+      return () => { ok = false; };
+    }
+  }, [cached, backendEnabled, id]);
+  const truck = cached || fetched;
 
   useEffect(() => {
     if (backendEnabled && id) recordView('food_truck', id);
@@ -67,7 +76,7 @@ export default function FoodTruckDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${SHARE_FOOTER}`,
+      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('food-truck', truck.id))}`,
     }).catch(() => {});
   };
 
