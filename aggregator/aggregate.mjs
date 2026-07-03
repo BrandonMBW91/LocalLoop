@@ -17,6 +17,7 @@ import { classifyEvents, emojiFor } from './classify.mjs';
 import { deriveVenue } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
 import { cityFromLocation } from './towns.mjs';
+import { normalizeText, cleanLocation, cleanDescription } from '../src/lib/text.js';
 
 loadDotEnv();
 
@@ -37,13 +38,11 @@ const EMOJI = {
   Arts: '🎨', Community: '🤝', Market: '🛍️', Education: '📚',
 };
 
+// Strip tags, decode HTML entities (&#8217; &amp; &lt;p&gt;...), and flatten
+// smart punctuation, so nothing is ever stored as "Ohio&#8217;s" or with a
+// stray "—". Shared with the app + SEO generator via src/lib/text.js.
 function cleanText(s) {
-  return String(s || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 1200);
+  return normalizeText(String(s || '').replace(/<[^>]*>/g, ' ')).slice(0, 1200);
 }
 
 // Administrative noise that isn't a real public event — filtered out by title.
@@ -51,6 +50,11 @@ function cleanText(s) {
 // "no school/classes" only when NOT followed by a program word (No School Day Camp
 // is a real kids' event); "observed" only as a title-ending holiday marker.
 const JUNK_RE = /\b(closed|closure|cancel?led|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b|\bno (school|classes)\b(?!\s*(day\s*)?(camp|program|party|fun|movie|craft))|\bobserved\b[\])]?\s*(-.*)?$/i;
+
+// Municipal closure notices ("City offices will be closed in observance of...")
+// slip past the title filter because the title is a plain holiday name. Catch
+// them by the closure language that lands in the location/description instead.
+const CLOSURE_RE = /\b(offices?|city hall|building|library|branch|facilit)\w*\b[^.]{0,40}\bwill be closed\b|\bclosed in observance\b|\bin observance of\b[^.]{0,30}\bclosed\b/i;
 
 // Only keep https links (no javascript:/http: etc.) for the "Get Tickets" button.
 function httpsUrl(raw) {
@@ -115,20 +119,35 @@ function tokensEqual(a, b) {
   for (const t of a) if (!b.has(t)) return false;
   return true;
 }
+const etDay = (iso) => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+}).format(new Date(iso));
+
 function isNearDupe(a, b) {
   if (a.city_id !== b.city_id) return false;
-  if (Math.abs(new Date(a.start_at) - new Date(b.start_at)) > 5 * 60000) return false;
   const ta = titleTokens(a.title), tb = titleTokens(b.title);
-  if (!(tokensEqual(ta, tb) || jaccard(ta, tb) >= 0.75)) return false;
+  const titleSame = tokensEqual(ta, tb);
+  if (!(titleSame || jaccard(ta, tb) >= 0.75)) return false;
   const va = venueTokens(a.venue), vb = venueTokens(b.venue);
-  if (!va.size || !vb.size) return true; // a bare venue ("Eventbrite") can't disambiguate
-  return jaccard(va, vb) >= 0.5; // distinct branch names keep real events apart
+  const venueMatch = (!va.size || !vb.size) || jaccard(va, vb) >= 0.5;
+  if (!venueMatch) return false; // distinct branch names keep real events apart
+  // Identical title + venue on the same Eastern day = the same event, even if the
+  // start time was shifted (all-day holiday, or a timezone re-anchor between runs
+  // that would otherwise mint a fresh source_uid). Fuzzy title matches still need
+  // the tight 5-minute window so recurring sessions stay separate.
+  if (titleSame && etDay(a.start_at) === etDay(b.start_at)) return true;
+  return Math.abs(new Date(a.start_at) - new Date(b.start_at)) <= 5 * 60000;
 }
 
 function makeRow(ev, source, start, end) {
-  const { venue, address } = deriveVenue(ev.location, source.name);
+  const { venue: rawVenue, address: rawAddress } = deriveVenue(ev.location, source.name);
+  const venue = cleanLocation(rawVenue);
+  const address = cleanLocation(rawAddress);
   const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
+  const description = cleanDescription(ev.description) || `From ${source.name}.`;
+  // Not an event people attend, even though the title reads like a holiday.
+  if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
   // Assign to the town in the event's location, not the feed's host town.
   // null = the address names a city we don't serve (out of area) → drop it.
   const cityId = cityFromLocation(`${venue} ${address}`, source.city_id);
@@ -152,9 +171,9 @@ function makeRow(ev, source, start, end) {
     end_at: end ? end.toISOString() : null,
     venue,
     address,
-    price: priceFor(title, cleanText(ev.description)),
+    price: priceFor(title, description),
     host: source.name,
-    description: cleanText(ev.description) || `From ${source.name}.`,
+    description,
     source_uid,
     image_url: httpsUrl(ev.image),
     ticket_url: httpsUrl(ev.url),

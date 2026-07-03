@@ -15,6 +15,7 @@ import { dirname, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES as APP_CITIES, REGION_ORDER } from '../src/data/cities.js';
+import { cleanText, cleanLocation, cleanDescription } from '../src/lib/text.js';
 
 loadDotEnv();
 
@@ -65,7 +66,7 @@ function timeRange(e) {
   const s = etParts(e.start_at);
   if (!e.end_at) return s.time;
   const en = etParts(e.end_at);
-  return etDayKey(e.start_at) === etDayKey(e.end_at) ? `${s.time} – ${en.time}` : s.time;
+  return etDayKey(e.start_at) === etDayKey(e.end_at) ? `${s.time} - ${en.time}` : s.time;
 }
 
 // --- shared page chrome --------------------------------------------------------
@@ -97,7 +98,9 @@ nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;f
 .day-h{display:flex;align-items:baseline;justify-content:space-between;margin:22px 2px 8px;}
 .day-h b{font-size:20px;}
 .day-h span{color:var(--muted);font-size:14px;}
-.ev{display:flex;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 3px 8px rgba(0,0,0,.04);}
+.ev{display:flex;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 3px 8px rgba(0,0,0,.04);text-decoration:none;color:inherit;transition:box-shadow .15s ease,transform .15s ease;}
+.ev:hover{box-shadow:0 7px 18px rgba(0,0,0,.10);transform:translateY(-1px);}
+.ev .go{flex:0 0 auto;margin-left:auto;align-self:center;color:var(--green);font-size:26px;font-weight:700;line-height:1;padding-left:4px;}
 .chip{flex:0 0 56px;border-radius:12px;overflow:hidden;text-align:center;align-self:flex-start;}
 .chip .dow{color:#fff;font-size:10px;font-weight:800;letter-spacing:1px;padding:3px 0;}
 .chip .day{font-size:22px;font-weight:800;line-height:1.05;padding-top:5px;}
@@ -124,9 +127,9 @@ footer a{color:var(--green);text-decoration:none;}
 <nav><a href="/events/">All towns</a><a href="/advertise.html">For businesses</a></nav></header>`;
 
 const FOOT = `<div class="banner"><h2>Get the free app</h2>
-<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest Ohio, free.</p>
+<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest and Central Ohio, free.</p>
 <a class="get" href="${APP_STORE_URL}">Download Local Loop</a></div>
-<footer><div>© 2026 Local Loop · Northwest Ohio</div>
+<footer><div>© 2026 Local Loop · Northwest &amp; Central Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
 </div></body></html>`;
 
@@ -134,27 +137,38 @@ function eventCard(e) {
   const color = CATEGORY[e.category] || GREEN;
   const tint = color + '15';
   const p = etParts(e.start_at);
-  const venue = [e.venue, e.address].filter(Boolean)[0] || '';
-  return `<div class="ev">
+  const venue = cleanLocation([e.venue, e.address].filter(Boolean)[0] || '');
+  const title = cleanText(e.title) || 'Untitled event';
+  const href = e.id ? `/event/${e.id}` : APP_STORE_URL;
+  return `<a class="ev" href="${esc(href)}">
 <div class="chip" style="background:${tint}"><div class="dow" style="background:${color}">${esc(p.dow.toUpperCase())}</div><div class="day" style="color:${color}">${esc(p.day)}</div><div class="mon" style="color:${color}">${esc(p.mon)}</div></div>
 <div class="body"><span class="pill" style="color:${color};background:${tint}">${esc(e.category || 'Community')}</span>
-<h3>${esc(e.title)}</h3>
+<h3>${esc(title)}</h3>
 <div class="meta">${CLOCK_SVG}<span>${esc(timeRange(e))}</span></div>
-${venue ? `<div class="meta">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}</div></div>`;
+${venue ? `<div class="meta">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}</div>
+<span class="go" aria-hidden="true">›</span></a>`;
 }
 
 function eventLd(e, cityName) {
-  const loc = [e.venue, e.address].filter(Boolean).join(', ');
+  const venue = cleanLocation(e.venue);
+  const address = cleanLocation(e.address);
+  // deriveVenue often sets venue === address; avoid "Fort Meigs, Fort Meigs".
+  let loc;
+  if (!venue) loc = address;
+  else if (!address || address === venue || address.includes(venue)) loc = address || venue;
+  else loc = `${venue}, ${address}`;
+  const description = cleanDescription(e.description);
+  const host = cleanText(e.host);
   return {
     '@context': 'https://schema.org', '@type': 'Event',
-    name: e.title,
+    name: cleanText(e.title),
     startDate: e.start_at,
     ...(e.end_at ? { endDate: e.end_at } : {}),
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    location: { '@type': 'Place', name: e.venue || cityName, address: loc || `${cityName}, OH` },
-    ...(e.description ? { description: e.description.slice(0, 300) } : {}),
-    ...(e.host ? { organizer: { '@type': 'Organization', name: e.host } } : {}),
+    location: { '@type': 'Place', name: venue || cityName, address: loc || `${cityName}, OH` },
+    ...(description ? { description: description.slice(0, 300) } : {}),
+    ...(host ? { organizer: { '@type': 'Organization', name: host } } : {}),
   };
 }
 
@@ -179,13 +193,21 @@ async function main() {
     const { id, name, tagline } = c;
     const { data, error } = await sb
       .from('events')
-      .select('title,start_at,end_at,venue,address,host,description,category')
+      .select('id,title,start_at,end_at,venue,address,host,description,category')
       .eq('city_id', id).eq('status', 'approved')
       .gte('start_at', nowIso).lte('start_at', cutoff)
       .order('start_at', { ascending: true })
       .limit(300); // full 45-day horizon; stays under PostgREST's 1000 cap
     if (error) { console.error(`  ! ${id}: ${error.message}`); continue; }
-    const events = data || [];
+    // Render-time dedup guard: collapse same title+venue on the same ET day,
+    // so a page is never wrong even if a duplicate slips past ingest dedup.
+    const seen = new Set();
+    const events = (data || []).filter((e) => {
+      const k = `${(e.title || '').trim().toLowerCase()}|${(e.venue || '').trim().toLowerCase()}|${etDayKey(e.start_at)}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
     counts[id] = events.length;
     grandTotal += events.length;
 
@@ -202,8 +224,8 @@ async function main() {
 ${g.items.map(eventCard).join('\n')}`).join('\n')
       : `<div class="empty">No upcoming events listed yet. Check back soon, or add one free in the app.</div>`;
 
-    const title = `Things to Do in ${name}, Ohio — Upcoming Events | Local Loop`;
-    const desc = `${events.length} upcoming events in ${name}, OH — concerts, library programs, markets, festivals and more. Find local events with the free Local Loop app.`;
+    const title = `Things to Do in ${name}, Ohio: Upcoming Events | Local Loop`;
+    const desc = `${events.length} upcoming events in ${name}, OH. Concerts, library programs, markets, festivals and more, free with the Local Loop app.`;
     const ld = events.map((e) => eventLd(e, name));
 
     const html = `${HEAD(title, desc, `/events/${id}.html`)}
@@ -228,11 +250,11 @@ ${FOOT}`;
     return `<div class="region-h">${esc(region)}</div>\n${rows}`;
   }).join('\n');
 
-  const hubTitle = 'Local Events in Northwest Ohio — Findlay, Lima, Tiffin & more | Local Loop';
-  const hubDesc = `Browse ${grandTotal} upcoming events across ${APP_CITIES.length} Northwest and Central Ohio towns. Concerts, markets, library programs, festivals and more — free with the Local Loop app.`;
+  const hubTitle = 'Local Events in Northwest & Central Ohio: Findlay, Lima, Tiffin and more | Local Loop';
+  const hubDesc = `Browse ${grandTotal} upcoming events across ${APP_CITIES.length} Northwest and Central Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
   const hub = `${HEAD(hubTitle, hubDesc, '/events/')}
 <section class="town-hero"><div class="kicker">Local events across</div>
-<h1>Northwest Ohio</h1>
+<h1>Northwest &amp; Central Ohio</h1>
 <div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events in ${APP_CITIES.length} towns</span></div>
 <a class="get" href="${APP_STORE_URL}">Get the free app</a></section>
 ${regionSections}
