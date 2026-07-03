@@ -71,7 +71,24 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
         });
       }
-      const endsAt = product === 'featured_30' ? new Date(Date.now() + 30 * 86400000).toISOString() : null;
+      // Featured Listing is NOT a sponsor ad: it boosts one specific listing,
+      // which only the owner can identify. Fulfill by emailing the owner.
+      if (product === 'featured_30') {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'Local Loop <noreply@findlayevents.com>',
+            to: ['localloop@localloop.io'],
+            subject: `ACTION: Featured Listing purchased by ${business} (${resolvedCity})`,
+            text: `A Featured Listing (30 days, $25) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${resolvedCity}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
+          }),
+        });
+        return new Response(JSON.stringify({ received: true, fulfilled: 'featured_30 email sent' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      const endsAt = null;
 
       const rows = cityIds.map((city_id) => ({
         city_id,
@@ -91,6 +108,11 @@ Deno.serve(async (req) => {
     } else if (event.type === 'invoice.payment_failed') {
       const subId = event.data.object.subscription;
       if (subId) await supabase.from('sponsors').update({ active: false }).eq('stripe_subscription_id', subId);
+    } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') {
+      // A retry that succeeds (or any paid invoice) turns the ad back on —
+      // pairs with the payment_failed deactivation above.
+      const subId = event.data.object.subscription;
+      if (subId) await supabase.from('sponsors').update({ active: true }).eq('stripe_subscription_id', subId);
     }
   } catch (e) {
     console.error('stripe-webhook handler error:', (e as Error).message);
