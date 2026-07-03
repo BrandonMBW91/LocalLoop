@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["__APPLE_TEAM_ID__.com.michaelwilliams.localloop"],
+        "appIDs": ["3C95B37486.com.michaelwilliams.localloop"],
         "components": [
           { "/": "/event/*", "comment": "event detail deep link" },
           { "/": "/garage-sale/*", "comment": "garage sale detail deep link" },
