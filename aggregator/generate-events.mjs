@@ -183,7 +183,7 @@ async function main() {
       .eq('city_id', id).eq('status', 'approved')
       .gte('start_at', nowIso).lte('start_at', cutoff)
       .order('start_at', { ascending: true })
-      .limit(60);
+      .limit(300); // full 45-day horizon; stays under PostgREST's 1000 cap
     if (error) { console.error(`  ! ${id}: ${error.message}`); continue; }
     const events = data || [];
     counts[id] = events.length;
