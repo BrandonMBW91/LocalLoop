@@ -1,4 +1,13 @@
 import { supabase } from './supabase';
+import { cleanText, cleanLocation, cleanDescription } from './text';
+
+// Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
+// chronologically), used to expire past garage sales and food trucks.
+function todayKeyET() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
 
 // A listing is "featured" only while its paid promotion is still current.
 // (A daily job also flips the boolean off, but this keeps the badge honest the
@@ -17,15 +26,15 @@ function rowToEvent(r) {
   return {
     id: r.id,
     cityId: r.city_id,
-    title: r.title || 'Untitled event',
+    title: cleanText(r.title) || 'Untitled event',
     category: r.category || 'Community',
     emoji: r.emoji,
     start: r.start_at,
     end: r.end_at,
-    venue: r.venue || '',
-    address: r.address || '',
+    venue: cleanLocation(r.venue),
+    address: cleanLocation(r.address),
     price: r.price || 'See details',
-    host: r.host || 'Community submission',
+    host: cleanText(r.host) || 'Community submission',
     featured: isFeatured(r),
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
@@ -34,7 +43,7 @@ function rowToEvent(r) {
     imageUrl: r.image_url || null,
     ticketUrl: r.ticket_url || null,
     pending: r.status !== 'approved',
-    description: r.description || '',
+    description: cleanDescription(r.description),
   };
 }
 
@@ -60,22 +69,22 @@ function rowToSale(r) {
   return {
     id: r.id,
     cityId: r.city_id,
-    title: r.title || 'Garage sale',
+    title: cleanText(r.title) || 'Garage sale',
     type: r.type || 'Garage Sale',
     start: r.start_date,
     end: r.end_date,
     dailyStart: r.daily_start,
     dailyEnd: r.daily_end,
-    address: r.address || '',
-    neighborhood: r.neighborhood || '',
+    address: cleanLocation(r.address),
+    neighborhood: cleanLocation(r.neighborhood),
     items: r.items || [],
     images: r.images || [],
     featured: isFeatured(r),
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
-    host: r.host || 'Community submission',
+    host: cleanText(r.host) || 'Community submission',
     pending: r.status !== 'approved',
-    note: r.note || '',
+    note: cleanDescription(r.note),
   };
 }
 
@@ -101,19 +110,19 @@ function rowToTruck(r) {
   return {
     id: r.id,
     cityId: r.city_id,
-    name: r.name || 'Food truck',
+    name: cleanText(r.name) || 'Food truck',
     cuisine: r.cuisine || 'Other',
     date: r.date,
     startTime: r.start_time || '',
     endTime: r.end_time || '',
-    locationName: r.location_name || '',
-    address: r.address || '',
+    locationName: cleanLocation(r.location_name),
+    address: cleanLocation(r.address),
     featured: isFeatured(r),
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
-    host: r.host || 'Community submission',
+    host: cleanText(r.host) || 'Community submission',
     pending: r.status !== 'approved',
-    note: r.note || '',
+    note: cleanDescription(r.note),
   };
 }
 
@@ -160,14 +169,17 @@ export async function uploadSalePhotos(photos = []) {
 // ---- Reads (public sees approved; a signed-in user also sees their own) ----
 
 export async function fetchEvents(cityId) {
-  // Hide events that already happened (keep ones that started earlier today).
+  // Keep events that started earlier today, AND multi-day events that are still
+  // running (start_at in the past but end_at in the future) — a festival or fair
+  // shouldn't vanish on day two. Ongoing events bucket into "Today" in the UI.
   const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from('events')
     .select('*')
     .eq('city_id', cityId)
     .eq('status', 'approved')
-    .gte('start_at', cutoff)
+    .or(`start_at.gte.${cutoff},end_at.gte.${nowIso}`)
     .order('featured', { ascending: false })
     .order('start_at', { ascending: true });
   if (error) throw error;
@@ -227,7 +239,11 @@ export async function fetchGarageSales(cityId) {
     .order('featured', { ascending: false })
     .order('start_date', { ascending: true });
   if (error) throw error;
-  return (data || []).map(rowToSale);
+  // Drop sales that have already ended (no date filter exists in the query).
+  const today = todayKeyET();
+  return (data || [])
+    .filter((r) => (r.end_date || r.start_date || today) >= today)
+    .map(rowToSale);
 }
 
 export async function fetchFoodTrucks(cityId) {
@@ -239,7 +255,9 @@ export async function fetchFoodTrucks(cityId) {
     .order('featured', { ascending: false })
     .order('date', { ascending: true });
   if (error) throw error;
-  return (data || []).map(rowToTruck);
+  // Drop food trucks whose date has passed (no date filter exists in the query).
+  const today = todayKeyET();
+  return (data || []).filter((r) => (r.date || today) >= today).map(rowToTruck);
 }
 
 // ---- Writes (RLS forces status='pending' and stamps created_by) ----
