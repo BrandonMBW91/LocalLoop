@@ -3,5 +3,5 @@
 // App Store / Play binary build number. BUMP `BUILD` on every release (each OTA
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
-export const APP_VERSION = '1.0.1';
-export const BUILD = 60;
+export const APP_VERSION = '1.0.2';
+export const BUILD = 61;
