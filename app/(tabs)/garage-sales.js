@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ThemedText from '../../src/components/ThemedText';
 import GarageSaleCard from '../../src/components/GarageSaleCard';
 import CategoryChip from '../../src/components/CategoryChip';
@@ -18,6 +17,7 @@ import AdBanner from '../../src/components/AdBanner';
 import SectionHeader from '../../src/components/SectionHeader';
 import SkeletonList from '../../src/components/SkeletonCard';
 import EmptyState from '../../src/components/EmptyState';
+import CityHeaderControl from '../../src/components/CityHeaderControl';
 import { useApp } from '../../src/context/AppContext';
 import { SALE_ITEMS } from '../../src/data/garageSales';
 import { daysFromNow } from '../../src/utils/dates';
@@ -26,8 +26,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 
 export default function GarageSalesScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { city, scale, garageSales, sponsors, loadingData, refresh, backendEnabled, signedIn } = useApp();
+  const { scale, garageSales, sponsors, loadingData, loadError, refresh, backendEnabled, signedIn } = useApp();
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) {
@@ -46,6 +45,13 @@ export default function GarageSalesScreen() {
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
+  };
+
+  const isFiltering = activeItem !== 'All' || thisWeekOnly || query.trim().length > 0;
+  const clearFilters = () => {
+    setActiveItem('All');
+    setThisWeekOnly(false);
+    setQuery('');
   };
 
   const sales = garageSales;
@@ -87,27 +93,23 @@ export default function GarageSalesScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <View style={{ flex: 1 }}>
-          <ThemedText size="tiny" color={colors.textInverse} style={{ opacity: 0.85 }}>
-            GARAGE & YARD SALES IN
-          </ThemedText>
-          <ThemedText size="large" weight="bold" color={colors.textInverse}>
-            {city.name}, {city.state}
-          </ThemedText>
-        </View>
-        <Pressable
-          onPress={() => goPost('/garage-sale/new')}
-          style={styles.postBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Post a garage sale"
-        >
-          <Ionicons name="add" size={22 * Math.min(scale, 1.2)} color={colors.textInverse} />
-          <ThemedText size="small" weight="bold" color={colors.textInverse}>
-            Post Sale
-          </ThemedText>
-        </Pressable>
-      </View>
+      <CityHeaderControl
+        bg={colors.garageSale}
+        label="GARAGE & YARD SALES IN"
+        trailing={
+          <Pressable
+            onPress={() => goPost('/garage-sale/new')}
+            style={styles.postBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Post a garage sale"
+          >
+            <Ionicons name="add" size={22 * Math.min(scale, 1.2)} color={colors.textInverse} />
+            <ThemedText size="small" weight="bold" color={colors.textInverse}>
+              Post Sale
+            </ThemedText>
+          </Pressable>
+        }
+      />
 
       {/* Search */}
       <View style={styles.searchWrap}>
@@ -190,15 +192,34 @@ export default function GarageSalesScreen() {
           />
         }
         ListHeaderComponent={
-          loadingData ? null : (
-            <ThemedText size="small" color={colors.textMuted} style={styles.countLabel}>
-              {filtered.length} {filtered.length === 1 ? 'sale' : 'sales'} found
-            </ThemedText>
-          )
+          <>
+            {loadError ? (
+              <View style={styles.offlineBanner}>
+                <Ionicons name="cloud-offline-outline" size={18} color={colors.accent} />
+                <ThemedText size="small" color={colors.accent} style={{ flex: 1 }}>
+                  Couldn't refresh. Showing saved listings. Pull down to try again.
+                </ThemedText>
+              </View>
+            ) : null}
+            {loadingData ? null : (
+              <ThemedText size="small" color={colors.textMuted} style={styles.countLabel}>
+                {filtered.length} {filtered.length === 1 ? 'sale' : 'sales'} found
+              </ThemedText>
+            )}
+          </>
         }
         ListEmptyComponent={
           loadingData ? (
             <SkeletonList />
+          ) : isFiltering ? (
+            <EmptyState
+              icon="pricetags-outline"
+              title="No sales match that filter"
+              body="Try a different item or week, or clear your filters to see every sale."
+              actionLabel="Clear filters"
+              onAction={clearFilters}
+              accent={colors.garageSale}
+            />
           ) : (
             <EmptyState
               icon="pricetags-outline"
@@ -217,16 +238,16 @@ export default function GarageSalesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: {
-    backgroundColor: colors.garageSale,
+  offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
     gap: spacing.sm,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    backgroundColor: colors.accentLight,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   postBtn: {
     flexDirection: 'row',

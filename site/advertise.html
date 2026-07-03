@@ -3,8 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Advertise on Local Loop — Reach Northwest Ohio</title>
-<meta name="description" content="Put your business in front of locals across Northwest Ohio. Featured listings and town sponsorships, simple monthly rates." />
+<title>Advertise on Local Loop: Reach Northwest Ohio</title>
+<meta name="description" content="Put your business in front of locals across Northwest Ohio. Featured listings and town sponsorships, simple monthly rates that start low and grow with your town." />
+<link rel="canonical" href="https://localloop.io/advertise.html" />
+<meta property="og:title" content="Advertise on Local Loop: Reach Northwest Ohio" />
+<meta property="og:description" content="Featured listings and town sponsorships across 24 Northwest and Central Ohio towns. Simple monthly rates, no contracts." />
+<meta property="og:url" content="https://localloop.io/advertise.html" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F6F54'/%3E%3Cpath d='M16 7c-3.31 0-6 2.6-6 5.83 0 4.37 6 11.17 6 11.17s6-6.8 6-11.17C22 9.6 19.31 7 16 7zm0 8.1a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z' fill='%23fff'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F6F54'/%3E%3Cpath d='M16 7c-3.31 0-6 2.6-6 5.83 0 4.37 6 11.17 6 11.17s6-6.8 6-11.17C22 9.6 19.31 7 16 7zm0 8.1a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z' fill='%23fff'/%3E%3C/svg%3E" />
 <style>
   :root{--green:#1F6F54;--green-d:#15503D;--orange:#D9772B;--bg:#FBFAF7;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E2DED7;}
   *{box-sizing:border-box;}
@@ -32,7 +39,18 @@
   .steps h2{margin:0 0 16px;}
   .steps ol{margin:0;padding-left:22px;color:var(--muted);}
   .steps li{margin-bottom:8px;}
+  .amt small{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;}
   .foot-note{color:var(--muted);font-size:14px;text-align:center;margin:24px 0;}
+  .tiers{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;margin:36px 0;}
+  .tiers h2{margin:0 0 6px;}
+  .tiers p.lede{margin:0 0 18px;color:var(--muted);}
+  .tier-scroll{overflow-x:auto;}
+  table.tiers-table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;}
+  table.tiers-table th,table.tiers-table td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);}
+  table.tiers-table th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.4px;}
+  table.tiers-table td:first-child{font-weight:700;}
+  table.tiers-table tr.now td{background:#E7F2EE;}
+  .tier-badge{display:inline-block;font-size:11px;font-weight:700;color:var(--green);background:#fff;border:1px solid var(--green);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle;}
   footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
   footer a{color:var(--green);text-decoration:none;}
   @media(max-width:560px){.hero h1{font-size:30px;}}
@@ -50,18 +68,18 @@
 
   <section class="hero">
     <h1>Reach your neighbors</h1>
-    <p>Put your business in front of locals across Northwest Ohio who are looking for something to do. Founding rates for our first partners, locked in for a year, no contracts.</p>
+    <p>Put your business in front of locals across Northwest Ohio who are looking for something to do. Your rate is set by how many people use Local Loop in your town, so it starts low and grows only as your town does. Every town is at the Founding rate today. Sign up now and lock it in for a full year.</p>
   </section>
 
   <div class="grid">
     <div class="price feat">
       <span class="tag">★ Most popular</span>
       <h3>Town Sponsor</h3>
-      <div class="amt">$19<span>/month</span></div>
+      <div class="amt">$19<span>/month</span><small>Founding rate for your town</small></div>
       <ul>
         <li>Your ad shown between listings in your town</li>
-        <li>Logo, headline, and a link to your site</li>
-        <li>We report your views &amp; taps each month</li>
+        <li>Headline and a link to your site or phone</li>
+        <li>Ask us any time for your views and taps</li>
         <li>Cancel anytime</li>
       </ul>
       <a class="buy" href="https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00">Become a sponsor</a>
@@ -70,10 +88,10 @@
     <div class="price">
       <span class="tag">One-time</span>
       <h3>Featured Listing</h3>
-      <div class="amt">$25<span>/30 days</span></div>
+      <div class="amt">$25<span>/30 days</span><small>Founding rate, or $9 for 7 days</small></div>
       <ul>
         <li>Float an event, sale, or food truck to the top</li>
-        <li>★ Featured badge &amp; highlight</li>
+        <li>★ Featured badge and highlight</li>
         <li>Great for a one-time event or grand opening</li>
         <li>Also available 7 days for $9</li>
       </ul>
@@ -83,11 +101,11 @@
     <div class="price">
       <span class="tag">Best value</span>
       <h3>All of NW Ohio</h3>
-      <div class="amt">$79<span>/month</span></div>
+      <div class="amt">$79<span>/month</span><small>One flat rate for every town</small></div>
       <ul>
         <li>Your ad runs in every town we cover</li>
         <li>Maximum local reach across 24 towns</li>
-        <li>Monthly performance report</li>
+        <li>One price, no matter how each town grows</li>
         <li>Cancel anytime</li>
       </ul>
       <a class="buy" href="https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01">Sponsor the region</a>
@@ -107,13 +125,57 @@
     </div>
   </div>
 
+  <div class="tiers">
+    <h2>How the price works</h2>
+    <p class="lede">You always pay your own town's current rate. The rate is set by how many people use Local Loop in that town each month, so it starts low and only steps up as more of your neighbors join. Every town is at the Founding rate today. Sign up now and your rate is locked in for a full year, even as the town grows.</p>
+    <div class="tier-scroll">
+      <table class="tiers-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Town size (people using the app)</th>
+            <th>Town Sponsor</th>
+            <th>Featured 30 days</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="now">
+            <td>Founding<span class="tier-badge">Every town today</span></td>
+            <td>Starting out</td>
+            <td>$19/mo</td>
+            <td>$25</td>
+          </tr>
+          <tr>
+            <td>Local</td>
+            <td>50 or more</td>
+            <td>$29/mo</td>
+            <td>$35</td>
+          </tr>
+          <tr>
+            <td>Established</td>
+            <td>250 or more</td>
+            <td>$49/mo</td>
+            <td>$49</td>
+          </tr>
+          <tr>
+            <td>Premier</td>
+            <td>1,000 or more</td>
+            <td>$79/mo</td>
+            <td>$79</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="foot-note" style="text-align:left;margin:16px 0 0;">The 7-day Featured option follows the same tiers: $9, $12, $19, then $29. The All of NW Ohio plan is a single flat $79/mo across every town.</p>
+  </div>
+
   <div class="steps">
     <h2>How it works</h2>
     <ol>
       <li><strong>Pick a plan</strong> above and check out securely with Stripe (card or Apple/Google Pay). Prefer to talk first? Email us.</li>
       <li><strong>Tell us about your ad</strong>: your business name, headline, link, and town.</li>
       <li><strong>You go live</strong> in the app, with simple monthly billing.</li>
-      <li><strong>We send you the numbers</strong>: views and taps, so you see the reach you're getting.</li>
+      <li><strong>Ask us for your numbers</strong> any time: views and taps, so you see the reach you're getting.</li>
     </ol>
   </div>
 

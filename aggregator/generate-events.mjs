@@ -74,10 +74,10 @@ const PIN_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentCo
 const CLOCK_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
 const LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#1F6F54"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" transform="translate(176 176) scale(28)" fill="#fff"/><rect x="468" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="540" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#D9772B"/><rect x="448" y="452" width="128" height="8" fill="#fff"/><g fill="#fff"><rect x="462" y="474" width="20" height="20" rx="4"/><rect x="502" y="474" width="20" height="20" rx="4"/><rect x="542" y="474" width="20" height="20" rx="4"/><rect x="462" y="506" width="20" height="20" rx="4"/><rect x="502" y="506" width="20" height="20" rx="4"/></g></svg>`;
 
-const HEAD = (title, desc, path) => `<!DOCTYPE html><html lang="en"><head>
+const HEAD = (title, desc, path, noindex = false) => `<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${esc(title)}</title>
-<meta name="description" content="${esc(desc)}"/>
+<meta name="description" content="${esc(desc)}"/>${noindex ? '\n<meta name="robots" content="noindex,follow"/>' : ''}
 <link rel="canonical" href="${SITE}${path}"/>
 <meta property="og:title" content="${esc(title)}"/>
 <meta property="og:description" content="${esc(desc)}"/>
@@ -228,7 +228,7 @@ ${g.items.map(eventCard).join('\n')}`).join('\n')
     const desc = `${events.length} upcoming events in ${name}, OH. Concerts, library programs, markets, festivals and more, free with the Local Loop app.`;
     const ld = events.map((e) => eventLd(e, name));
 
-    const html = `${HEAD(title, desc, `/events/${id}.html`)}
+    const html = `${HEAD(title, desc, `/events/${id}.html`, events.length === 0)}
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <section class="town-hero"><div class="kicker">Things to do in</div>
 <h1>${esc(name)}, OH</h1>
@@ -265,7 +265,8 @@ ${FOOT}`;
   const today = new Date().toISOString().slice(0, 10);
   const urls = [
     `${SITE}/`, `${SITE}/events/`, `${SITE}/advertise.html`, `${SITE}/privacy.html`,
-    ...APP_CITIES.map((c) => `${SITE}/events/${c.id}.html`),
+    // Only list town pages that actually have events — don't ask Google to index empties.
+    ...APP_CITIES.filter((c) => (counts[c.id] || 0) > 0).map((c) => `${SITE}/events/${c.id}.html`),
   ];
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

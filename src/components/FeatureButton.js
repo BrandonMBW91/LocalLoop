@@ -71,7 +71,7 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
 
       <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
         {featured
-          ? `Featured${untilLabel ? ` until ${untilLabel}` : ''} — floats to the top of its list with a ★ badge.`
+          ? `Featured${untilLabel ? ` until ${untilLabel}` : ''}. Floats to the top of its list with a ★ badge.`
           : 'Not featured. Promote it to the top of its list.'}
       </ThemedText>
 
@@ -79,14 +79,29 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
         <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.sm }} />
       ) : (
         <View style={styles.row}>
-          <Pressable style={[styles.btn, styles.outline]} onPress={() => apply(7)}>
+          <Pressable
+            style={[styles.btn, styles.outline]}
+            onPress={() => apply(7)}
+            accessibilityRole="button"
+            accessibilityLabel={`Feature this ${noun} for 7 days`}
+          >
             <ThemedText size="small" weight="bold" color={colors.accent}>Feature 7 days</ThemedText>
           </Pressable>
-          <Pressable style={[styles.btn, styles.solid]} onPress={() => apply(30)}>
+          <Pressable
+            style={[styles.btn, styles.solid]}
+            onPress={() => apply(30)}
+            accessibilityRole="button"
+            accessibilityLabel={`Feature this ${noun} for 30 days`}
+          >
             <ThemedText size="small" weight="bold" color={colors.textInverse}>Feature 30 days</ThemedText>
           </Pressable>
           {featured ? (
-            <Pressable style={[styles.btn, styles.remove]} onPress={() => apply(0)}>
+            <Pressable
+              style={[styles.btn, styles.remove]}
+              onPress={() => apply(0)}
+              accessibilityRole="button"
+              accessibilityLabel={`Unfeature this ${noun}`}
+            >
               <ThemedText size="small" weight="bold" color={colors.danger}>Unfeature</ThemedText>
             </Pressable>
           ) : null}
@@ -96,7 +111,12 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
       {!busy ? (
         <>
           <View style={styles.divider} />
-          <Pressable style={styles.deleteBtn} onPress={confirmRemove} accessibilityRole="button">
+          <Pressable
+            style={styles.deleteBtn}
+            onPress={confirmRemove}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove this ${noun} from the app`}
+          >
             <Ionicons name="trash-outline" size={18} color={colors.danger} />
             <ThemedText size="small" weight="bold" color={colors.danger}>
               Remove this {noun} from the app

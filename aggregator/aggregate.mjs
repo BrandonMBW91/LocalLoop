@@ -51,6 +51,19 @@ function cleanText(s) {
 // is a real kids' event); "observed" only as a title-ending holiday marker.
 const JUNK_RE = /\b(closed|closure|cancel?led|staff only|by appointment|appointment only|private (event|rental|party|booking)|room reserved|reserved for|building reserved|holiday hours|regular hours|open hours|hours of operation|test event|placeholder)\b|\bno (school|classes)\b(?!\s*(day\s*)?(camp|program|party|fun|movie|craft))|\bobserved\b[\])]?\s*(-.*)?$/i;
 
+// National Weather Service alerts sometimes ride in on community iCal feeds
+// (e.g. Bluffton Icon) as fake "events." A weather warning is not something to
+// attend, so drop it. Matches "NWS ..." and any "<hazard> Warning/Watch/Advisory"
+// title (Extreme Heat, Winter Storm, Flood, Tornado, Severe Thunderstorm, etc.).
+const WEATHER_RE = /\bNWS\b|\b(heat|wind|winter storm|ice storm|snow|blizzard|flood|coastal flood|tornado|severe thunderstorm|thunderstorm|storm|frost|freeze|hard freeze|wind chill|dense fog|air quality|red flag|hurricane|tropical storm|high surf|rip current|excessive heat|extreme cold)\s+(warning|watch|advisory)\b|\b(warning|watch|advisory)\s+(until|in effect)\b/i;
+
+// Routine government committee/board/commission meetings are administrative
+// noise, not public events (Perrysburg council committees, library board
+// meetings, etc.). Guarded to the "... Meeting" phrasing plus "City Council" and
+// "Committee of the Whole", so real public programs ("Council on Aging talk")
+// aren't caught.
+const GOV_MEETING_RE = /\b(committee|board|commission|city council|council|trustees?|caucus|council of the whole|committee of the whole)\s+meeting\b|\bcity council\b|\bcommittee of the whole\b/i;
+
 // Municipal closure notices ("City offices will be closed in observance of...")
 // slip past the title filter because the title is a plain holiday name. Catch
 // them by the closure language that lands in the location/description instead.
@@ -145,6 +158,8 @@ function makeRow(ev, source, start, end) {
   const address = cleanLocation(rawAddress);
   const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
+  if (WEATHER_RE.test(title)) return null; // skip NWS/weather alerts (not events)
+  if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
   const description = cleanDescription(ev.description) || `From ${source.name}.`;
   // Not an event people attend, even though the title reads like a holiday.
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;

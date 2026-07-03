@@ -156,14 +156,23 @@ export default function SettingsScreen() {
           </View>
           <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
         </Pressable>
-        <View style={[styles.row, styles.rowBorder]}>
+        <Pressable
+          style={[styles.row, styles.rowBorder]}
+          onPress={() => router.push('/followed-venues')}
+          accessibilityRole="button"
+          accessibilityLabel="Followed venues"
+        >
           <Ionicons name="notifications" size={24} color={colors.primary} />
-          <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
-            {follows.length > 0
-              ? `Following ${follows.length} ${follows.length === 1 ? 'venue' : 'venues'}`
-              : 'Follow a venue to track its events'}
-          </ThemedText>
-        </View>
+          <View style={{ flex: 1, marginLeft: spacing.sm }}>
+            <ThemedText size="body" weight="bold">Followed venues</ThemedText>
+            <ThemedText size="small" color={colors.textMuted}>
+              {follows.length > 0
+                ? `Following ${follows.length} ${follows.length === 1 ? 'venue' : 'venues'}`
+                : 'Follow a venue to track its events'}
+            </ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+        </Pressable>
       </View>
 
       {/* Saved */}
@@ -314,7 +323,7 @@ export default function SettingsScreen() {
           onPress={() =>
             Linking.openURL(
               'mailto:localloop@localloop.io?subject=' +
-                encodeURIComponent('Local Loop — Feature Request')
+                encodeURIComponent('Local Loop Feature Request')
             )
           }
         >

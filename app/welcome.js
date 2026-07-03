@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
           Local Loop
         </ThemedText>
         <ThemedText size="subtitle" color={colors.textInverse} style={styles.tagline}>
-          Events, garage sales, and food trucks near you in Northwest Ohio — all in one place.
+          Events, garage sales, and food trucks near you in NW and Central Ohio, all in one place.
         </ThemedText>
       </View>
 

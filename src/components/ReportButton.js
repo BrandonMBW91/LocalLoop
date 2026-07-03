@@ -17,7 +17,7 @@ export default function ReportButton({ kind, id }) {
     } catch (e) {
       // Even if persistence fails, don't alarm the user; thank them anyway.
     }
-    // Confirm inline (the button label/icon flips to "Reported — thank you").
+    // Confirm inline (the button label/icon flips to "Reported. Thank you").
     // We intentionally don't pop a second Alert here: showing one right as the
     // reason-picker Alert dismisses can leave a phantom dialog on some devices
     // that swallows the next tap (the back button appeared to "break").
@@ -47,7 +47,7 @@ export default function ReportButton({ kind, id }) {
         color={colors.textMuted}
       />
       <ThemedText size="small" color={colors.textMuted}>
-        {done ? 'Reported — thank you' : 'Report this listing'}
+        {done ? 'Reported. Thank you' : 'Report this listing'}
       </ThemedText>
     </Pressable>
   );

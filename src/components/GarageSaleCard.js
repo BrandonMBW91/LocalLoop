@@ -98,7 +98,7 @@ function GarageSaleCard({ sale }) {
         <View style={styles.metaRow}>
           <Ionicons name="calendar-outline" size={15 * scale} color={colors.textMuted} />
           <ThemedText size="small" color={colors.textMuted}>
-            {dateRangeLabel(sale.start, sale.end)} · {sale.dailyStart}–{sale.dailyEnd}
+            {dateRangeLabel(sale.start, sale.end)} · {sale.dailyStart} to {sale.dailyEnd}
           </ThemedText>
         </View>
         <View style={styles.metaRow}>

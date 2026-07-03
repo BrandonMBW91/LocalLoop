@@ -86,9 +86,7 @@ export default function NewFoodTruckScreen() {
       await addSubmittedFoodTruck(truck);
       Alert.alert(
         'Thank you! 🚚',
-        'Your food truck stop has been submitted. It is reviewed and then shown to everyone in ' +
-          city.name +
-          '.',
+        `Your food truck stop has been submitted. It is reviewed, then shown to everyone in ${city.name}.`,
         [{ text: 'View Food Trucks', onPress: () => router.replace('/food-trucks') }]
       );
     } catch (e) {
@@ -118,7 +116,7 @@ export default function NewFoodTruckScreen() {
         <View style={styles.intro}>
           <ThemedText size="title" weight="bold">Post your food truck</ThemedText>
           <ThemedText size="body" color={colors.textMuted}>
-            Tell {city.name} where to find you today. It’s free.
+            Tell {city.name} where to find you today. Always free to post.
           </ThemedText>
         </View>
 
@@ -197,7 +195,7 @@ export default function NewFoodTruckScreen() {
           />
         </Field>
 
-        <Field label="Street address" hint="Start typing — pick from suggestions">
+        <Field label="Street address" hint="Start typing, then pick a suggestion">
           <AddressAutocomplete
             value={address}
             onChangeText={setAddress}
@@ -220,7 +218,7 @@ export default function NewFoodTruckScreen() {
           />
         </Field>
 
-        <Field label="Your contact" hint="Optional — not shown publicly">
+        <Field label="Your contact" hint="Optional. Not shown publicly.">
           <TextInput
             value={host}
             onChangeText={setHost}

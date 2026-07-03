@@ -107,7 +107,7 @@ export default function CityPickerScreen() {
           <View style={styles.empty}>
             <ThemedText style={{ fontSize: 40 }}>🔍</ThemedText>
             <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center' }}>
-              No town by that name yet. More are added as the app grows — tell us which one
+              No town by that name yet. More are added as the app grows. Tell us which one
               you’d like!
             </ThemedText>
           </View>

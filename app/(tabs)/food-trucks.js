@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ThemedText from '../../src/components/ThemedText';
 import FoodTruckCard from '../../src/components/FoodTruckCard';
 import CategoryChip from '../../src/components/CategoryChip';
@@ -18,6 +17,7 @@ import AdBanner from '../../src/components/AdBanner';
 import SectionHeader from '../../src/components/SectionHeader';
 import SkeletonList from '../../src/components/SkeletonCard';
 import EmptyState from '../../src/components/EmptyState';
+import CityHeaderControl from '../../src/components/CityHeaderControl';
 import { useApp } from '../../src/context/AppContext';
 import { CUISINES } from '../../src/data/foodTrucks';
 import { daysFromNow } from '../../src/utils/dates';
@@ -26,8 +26,7 @@ import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 
 export default function FoodTrucksScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { city, scale, foodTrucks, sponsors, loadingData, refresh, backendEnabled, signedIn } = useApp();
+  const { scale, foodTrucks, sponsors, loadingData, loadError, refresh, backendEnabled, signedIn } = useApp();
 
   // Require sign-in before reaching a post form when a backend is configured.
   const goPost = (path) => {
@@ -47,6 +46,13 @@ export default function FoodTrucksScreen() {
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
+  };
+
+  const isFiltering = activeCuisine !== 'All' || todayOnly || query.trim().length > 0;
+  const clearFilters = () => {
+    setActiveCuisine('All');
+    setTodayOnly(false);
+    setQuery('');
   };
 
   const filtered = useMemo(() => {
@@ -77,27 +83,23 @@ export default function FoodTrucksScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <View style={{ flex: 1 }}>
-          <ThemedText size="tiny" color={colors.textInverse} style={{ opacity: 0.85 }}>
-            FOOD TRUCKS IN
-          </ThemedText>
-          <ThemedText size="large" weight="bold" color={colors.textInverse}>
-            {city.name}, {city.state}
-          </ThemedText>
-        </View>
-        <Pressable
-          onPress={() => goPost('/food-truck/new')}
-          style={styles.postBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Post a food truck stop"
-        >
-          <Ionicons name="add" size={22 * Math.min(scale, 1.2)} color={colors.textInverse} />
-          <ThemedText size="small" weight="bold" color={colors.textInverse}>
-            Post Stop
-          </ThemedText>
-        </Pressable>
-      </View>
+      <CityHeaderControl
+        bg={colors.foodTruck}
+        label="FOOD TRUCKS IN"
+        trailing={
+          <Pressable
+            onPress={() => goPost('/food-truck/new')}
+            style={styles.postBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Post a food truck stop"
+          >
+            <Ionicons name="add" size={22 * Math.min(scale, 1.2)} color={colors.textInverse} />
+            <ThemedText size="small" weight="bold" color={colors.textInverse}>
+              Post Stop
+            </ThemedText>
+          </Pressable>
+        }
+      />
 
       <View style={styles.searchWrap}>
         <Ionicons name="search" size={22} color={colors.textMuted} />
@@ -178,15 +180,34 @@ export default function FoodTrucksScreen() {
           />
         }
         ListHeaderComponent={
-          loadingData ? null : (
-            <ThemedText size="small" color={colors.textMuted} style={styles.countLabel}>
-              {filtered.length} {filtered.length === 1 ? 'truck' : 'trucks'} out
-            </ThemedText>
-          )
+          <>
+            {loadError ? (
+              <View style={styles.offlineBanner}>
+                <Ionicons name="cloud-offline-outline" size={18} color={colors.accent} />
+                <ThemedText size="small" color={colors.accent} style={{ flex: 1 }}>
+                  Couldn't refresh. Showing saved listings. Pull down to try again.
+                </ThemedText>
+              </View>
+            ) : null}
+            {loadingData ? null : (
+              <ThemedText size="small" color={colors.textMuted} style={styles.countLabel}>
+                {filtered.length} {filtered.length === 1 ? 'truck' : 'trucks'} out
+              </ThemedText>
+            )}
+          </>
         }
         ListEmptyComponent={
           loadingData ? (
             <SkeletonList />
+          ) : isFiltering ? (
+            <EmptyState
+              icon="fast-food-outline"
+              title="No food trucks match that filter"
+              body="Try a different cuisine or day, or clear your filters to see every truck."
+              actionLabel="Clear filters"
+              onAction={clearFilters}
+              accent={colors.foodTruck}
+            />
           ) : (
             <EmptyState
               icon="fast-food-outline"
@@ -205,16 +226,16 @@ export default function FoodTrucksScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  header: {
-    backgroundColor: colors.foodTruck,
+  offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
     gap: spacing.sm,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    backgroundColor: colors.accentLight,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   postBtn: {
     flexDirection: 'row',

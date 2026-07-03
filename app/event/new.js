@@ -93,7 +93,7 @@ export default function SubmitScreen() {
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'View it', onPress: () => router.push(`/event/${dup.id}`) },
-            { text: 'It’s different — post', onPress: () => onSubmit(true) },
+            { text: 'It’s different, post it', onPress: () => onSubmit(true) },
           ]
         );
         return;
@@ -122,9 +122,7 @@ export default function SubmitScreen() {
       await addSubmittedEvent(event);
       Alert.alert(
         'Thank you! 🎉',
-        'Your event has been submitted. It will be reviewed and then shown to everyone in ' +
-          city.name +
-          '.',
+        `Your event has been submitted. It is reviewed, then shown to everyone in ${city.name}.`,
         [{ text: 'View Events', onPress: () => { reset(); router.replace('/'); } }]
       );
     } catch (e) {
@@ -156,7 +154,7 @@ export default function SubmitScreen() {
             Share a local event
           </ThemedText>
           <ThemedText size="body" color={colors.textMuted}>
-            Tell your neighbors in {city.name} what’s happening. It’s free.
+            Tell your neighbors in {city.name} what’s happening. Always free to post.
           </ThemedText>
         </View>
 
@@ -217,7 +215,7 @@ export default function SubmitScreen() {
           />
         </Field>
 
-        <Field label="Street address" hint="Start typing — pick from the suggestions">
+        <Field label="Street address" hint="Start typing, then pick a suggestion">
           <AddressAutocomplete
             value={address}
             onChangeText={setAddress}
@@ -249,7 +247,7 @@ export default function SubmitScreen() {
           />
         </Field>
 
-        <Field label="Your contact (organizer)" hint="Optional — not shown publicly">
+        <Field label="Your contact (organizer)" hint="Optional. Not shown publicly.">
           <TextInput
             value={contact}
             onChangeText={setContact}

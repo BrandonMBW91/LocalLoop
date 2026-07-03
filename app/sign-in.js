@@ -132,8 +132,8 @@ export default function SignInScreen() {
               Sign in to post
             </ThemedText>
             <ThemedText size="body" color={colors.textMuted} style={styles.center}>
-              We’ll email you a one-time code. You only need this to post —
-              browsing is always open.
+              We’ll email you a one-time code. You only need it to post.
+              Browsing is always free and open.
             </ThemedText>
             <TextInput
               value={email}

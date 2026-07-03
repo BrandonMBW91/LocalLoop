@@ -22,6 +22,35 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// UTC offset (in minutes) of America/New_York at a given instant. Handles the
+// EDT/EST switch so the weekend window lines up with Eastern local time, not UTC.
+function easternOffsetMinutes(at: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', timeZoneName: 'shortOffset',
+  }).formatToParts(at);
+  const tz = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT-5';
+  const m = tz.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);
+  if (!m) return -300; // fall back to EST (-5h)
+  return Number(m[1]) * 60 + (m[1].startsWith('-') ? -1 : 1) * Number(m[2] || 0);
+}
+
+// The UTC instant of the START of the next Monday in Eastern time. "This weekend"
+// runs until then, so Sunday-evening events (which fall between Sun 8pm ET and
+// Mon midnight ET) are still included instead of being cut off at Mon 00:00 UTC.
+function nextMondayStartET(now: Date): Date {
+  const offMin = easternOffsetMinutes(now);
+  // Shift to Eastern wall-clock so we can find the local day, then figure out
+  // how many days until the next Monday.
+  const etNow = new Date(now.getTime() + offMin * 60000);
+  const etDay = etNow.getUTCDay(); // 0 Sun .. 6 Sat, in Eastern local terms
+  const daysToMon = (8 - etDay) % 7 || 7;
+  // Eastern midnight of that Monday, expressed as a UTC instant.
+  const etMidnight = Date.UTC(
+    etNow.getUTCFullYear(), etNow.getUTCMonth(), etNow.getUTCDate() + daysToMon, 0, 0, 0, 0,
+  );
+  return new Date(etMidnight - offMin * 60000);
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get('CRON_SECRET');
   const provided = req.headers.get('x-cron-secret') || '';
@@ -34,13 +63,12 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
-  // "This weekend" = from now until the start of next Monday (local-ish, UTC).
+  // "This weekend" = from now until the start of next Monday in Eastern time.
+  // Anchoring the end to Eastern midnight (not UTC midnight) keeps Sunday-evening
+  // events in the window; a plain Mon 00:00 UTC cutoff is only Sun 8pm ET and
+  // dropped everything happening Sunday night.
   const now = new Date();
-  const day = now.getUTCDay(); // 0 Sun .. 6 Sat
-  const daysToMon = (8 - day) % 7 || 7;
-  const end = new Date(now);
-  end.setUTCDate(now.getUTCDate() + daysToMon);
-  end.setUTCHours(0, 0, 0, 0);
+  const end = nextMondayStartET(now);
 
   const { data: tokens } = await supabase.from('push_tokens').select('token, city_id');
   if (!tokens?.length) {

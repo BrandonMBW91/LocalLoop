@@ -8,7 +8,10 @@ import { colors, radius } from '../theme/theme';
 // in the caller's accent color so each kind of listing keeps its identity.
 export default function DateChip({ date, accent = colors.primary, scale = 1 }) {
   const { weekday, day, month } = calendarBits(date);
-  const s = Math.min(scale, 1.2);
+  // Let the chip (and its big day number) grow with the Text Size setting up to
+  // Extra Large, since the date is primary info a low-vision user turns the size
+  // up to read. Width is derived from the same factor so it grows without clipping.
+  const s = Math.min(scale, 1.35);
   return (
     <View style={[styles.chip, { width: Math.round(58 * s) }]}>
       <View style={[styles.head, { backgroundColor: accent }]}>

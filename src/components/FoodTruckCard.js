@@ -58,7 +58,7 @@ function FoodTruckCard({ truck }) {
         <View style={styles.metaRow}>
           <Ionicons name="time-outline" size={15 * scale} color={colors.textMuted} />
           <ThemedText size="small" color={colors.textMuted}>
-            {relativeDay(truck.date)} · {truck.startTime}–{truck.endTime}
+            {relativeDay(truck.date)} · {truck.startTime} to {truck.endTime}
           </ThemedText>
         </View>
         <View style={styles.metaRow}>

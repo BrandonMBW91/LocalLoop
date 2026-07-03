@@ -101,9 +101,7 @@ export default function NewGarageSaleScreen() {
       await addSubmittedGarageSale(sale);
       Alert.alert(
         'Thank you! 🪧',
-        'Your garage sale has been submitted. It is reviewed and then shown to everyone in ' +
-          city.name +
-          '.',
+        `Your garage sale has been submitted. It is reviewed, then shown to everyone in ${city.name}.`,
         [{ text: 'View Garage Sales', onPress: () => router.replace('/garage-sales') }]
       );
     } catch (e) {
@@ -133,12 +131,12 @@ export default function NewGarageSaleScreen() {
         <View style={styles.intro}>
           <ThemedText size="title" weight="bold">Post your garage sale</ThemedText>
           <ThemedText size="body" color={colors.textMuted}>
-            Let your neighbors in {city.name} know. It’s free.
+            Let your neighbors in {city.name} know. Always free to post.
           </ThemedText>
           <View style={styles.ruleNote}>
             <Ionicons name="information-circle" size={18} color={colors.garageSale} />
             <ThemedText size="small" color={colors.garageSale} style={{ flex: 1 }}>
-              This is for yard / garage / estate / moving sales — not for selling a
+              This is for yard / garage / estate / moving sales, not for selling a
               single item.
             </ThemedText>
           </View>
@@ -217,7 +215,7 @@ export default function NewGarageSaleScreen() {
           />
         </Field>
 
-        <Field label="Address" hint="Start typing — pick from suggestions" required>
+        <Field label="Address" hint="Start typing, then pick a suggestion" required>
           <AddressAutocomplete
             value={address}
             onChangeText={setAddress}
@@ -257,7 +255,7 @@ export default function NewGarageSaleScreen() {
           </View>
         </Field>
 
-        <Field label="Photos" hint="Add up to 4 — show off your best items">
+        <Field label="Photos" hint="Add up to 4. Show off your best items.">
           <PhotoPicker
             photos={photos}
             onChange={setPhotos}
@@ -279,7 +277,7 @@ export default function NewGarageSaleScreen() {
           />
         </Field>
 
-        <Field label="Your name or contact" hint="Optional — not shown publicly">
+        <Field label="Your name or contact" hint="Optional. Not shown publicly.">
           <TextInput
             value={host}
             onChangeText={setHost}

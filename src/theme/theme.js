@@ -6,7 +6,8 @@ export const colors = {
   primary: '#1F6F54', // deep green (Findlay parks / Flag City feel)
   primaryDark: '#15503D',
   primaryLight: '#E7F2EE',
-  accent: '#B85C12', // warm orange for CTAs — darkened so white text clears WCAG AA
+  accent: '#A0500F', // warm orange for CTAs. Darkened so it clears WCAG AA both as
+  // white-on-accent (buttons) and as accent text on accentLight (FEATURED pill, deals banner).
   accentLight: '#FBEBDD',
 
   background: '#FBFAF7',
@@ -36,8 +37,8 @@ export const colors = {
   category: {
     Music: '#6A3FB0',
     Family: '#1C6A9E',
-    Food: '#A85410',
-    Sports: '#197A41',
+    Food: '#9E4E0F',
+    Sports: '#15723C',
     Arts: '#A62E6B',
     Community: '#1F6566',
     Market: '#786017',
@@ -64,7 +65,7 @@ export const radius = {
 // Base font sizes BEFORE the user's accessibility scale is applied.
 // Already larger than a typical app default.
 export const baseFont = {
-  tiny: 13,
+  tiny: 14,
   small: 15,
   body: 18,
   subtitle: 20,

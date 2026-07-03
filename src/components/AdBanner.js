@@ -10,6 +10,13 @@ import { colors, spacing, radius } from '../theme/theme';
 // a windowed list re-mounts AdBanner repeatedly as it scrolls in/out of view.
 const countedImpressions = new Set();
 
+// A tel: link means "call this business"; anything else is a website to open.
+function ctaFor(linkUrl) {
+  if (!linkUrl) return null;
+  if (/^tel:/i.test(linkUrl)) return { label: 'Call', icon: 'call' };
+  return { label: 'Visit site', icon: 'open-outline' };
+}
+
 // Shows a real local sponsor when one is booked for the current city. Renders
 // nothing when there's no sponsor — we don't clutter the public feed with a
 // "your ad could be here" placeholder (that pitch lives on the Advertise screen).
@@ -27,6 +34,7 @@ export default function AdBanner({ index = 0 }) {
   }, [backendEnabled, sponsor?.id]);
 
   if (sponsor) {
+    const cta = ctaFor(sponsor.linkUrl);
     const open = () => {
       if (backendEnabled && sponsor.id) trackSponsor(sponsor.id, 'click');
       if (sponsor.linkUrl) Linking.openURL(sponsor.linkUrl).catch(() => {});
@@ -38,19 +46,29 @@ export default function AdBanner({ index = 0 }) {
           disabled={!sponsor.linkUrl}
           style={styles.sponsor}
           accessibilityRole={sponsor.linkUrl ? 'link' : 'text'}
-          accessibilityLabel={`Sponsored: ${sponsor.title}`}
+          accessibilityLabel={
+            cta
+              ? `Sponsored by ${sponsor.title}. ${cta.label}.`
+              : `Sponsored by ${sponsor.title}`
+          }
         >
+          {/* Accent bar signals a paid, premium slot without shouting "AD". */}
+          <View style={styles.accentBar} />
           {sponsor.imageUrl ? (
             <Image source={{ uri: sponsor.imageUrl }} style={styles.thumb} resizeMode="cover" />
           ) : (
             <View style={[styles.thumb, styles.thumbFallback]}>
-              <Ionicons name="storefront" size={26} color={colors.accent} />
+              <Ionicons name="storefront" size={28} color={colors.accent} />
             </View>
           )}
-          <View style={{ flex: 1 }}>
-            <ThemedText size="tiny" color={colors.textMuted} style={styles.tag}>
-              SPONSORED
-            </ThemedText>
+          <View style={styles.copy}>
+            <View style={styles.tagRow}>
+              <View style={styles.tagPill}>
+                <ThemedText size="tiny" weight="bold" color={colors.accent} style={styles.tag}>
+                  LOCAL SPONSOR
+                </ThemedText>
+              </View>
+            </View>
             <ThemedText size="body" weight="bold" numberOfLines={1}>
               {sponsor.title}
             </ThemedText>
@@ -59,10 +77,15 @@ export default function AdBanner({ index = 0 }) {
                 {sponsor.body}
               </ThemedText>
             ) : null}
+            {cta ? (
+              <View style={styles.ctaRow}>
+                <ThemedText size="small" weight="bold" color={colors.accent}>
+                  {cta.label}
+                </ThemedText>
+                <Ionicons name={cta.icon} size={16} color={colors.accent} />
+              </View>
+            ) : null}
           </View>
-          {sponsor.linkUrl ? (
-            <Ionicons name="open-outline" size={20} color={colors.textMuted} />
-          ) : null}
         </Pressable>
       </View>
     );
@@ -82,22 +105,52 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderWidth: 1,
     borderColor: colors.accentLight,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.accentLight,
     borderRadius: radius.md,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingRight: spacing.md,
+    paddingLeft: spacing.md,
+    overflow: 'hidden',
+  },
+  accentBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: colors.accent,
   },
   thumb: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.surface,
   },
   thumbFallback: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accentLight,
+    backgroundColor: colors.surface,
+  },
+  copy: {
+    flex: 1,
+    gap: 2,
+  },
+  tagRow: {
+    flexDirection: 'row',
+  },
+  tagPill: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
   },
   tag: {
     letterSpacing: 1,
+  },
+  ctaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xs,
   },
 });

@@ -111,7 +111,7 @@ export default function PromoteScreen() {
       <Benefit
         icon="storefront"
         title="Sponsor a spot"
-        body="Run a small ad between listings — shown only to people in your town."
+        body="Run a small ad between listings, shown only to people in your town."
       />
       <Benefit
         icon="heart"
@@ -136,13 +136,13 @@ export default function PromoteScreen() {
         <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={`$${rate.featured7}`} />
         <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${buyable ? ' · tap to buy' : ''}`} price={`$${rate.featured30}`} url={buyable ? CHECKOUT.featured30 : undefined} />
         <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${buyable ? ' · tap to buy' : ''}`} price={`$${rate.sponsor}/mo`} url={buyable ? CHECKOUT.town : undefined} />
-        <RateRow label="All of NW Ohio" sub={`Every town · monthly${buyable ? ' · tap to buy' : ''}`} price="$79/mo" url={buyable ? CHECKOUT.region : undefined} />
+        <RateRow label="All towns" sub={`Every town we cover · monthly${buyable ? ' · tap to buy' : ''}`} price="$79/mo" url={buyable ? CHECKOUT.region : undefined} />
         <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
         {rate.nextTierAt
-          ? `Rates rise as ${city.name} grows — lock in today's rate for a full year. No contracts.`
-          : `Founding rates for our first local partners — locked in for a year. No contracts.`}
+          ? `You pay the ${rate.name} rate shown above. Rates step up as ${city.name} grows, so start now to lock in today's price for a full year. No contracts.`
+          : `You pay the ${rate.name} rate shown above, locked in for a full year. No contracts.`}
       </ThemedText>
 
       {buyable ? (
@@ -167,7 +167,7 @@ export default function PromoteScreen() {
       </Pressable>
 
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
-        Tap above and we’ll get you set up and send a simple invoice — no in-app
+        Tap above and we’ll get you set up and send a simple invoice. No in-app
         purchase, no long-term contract.
       </ThemedText>
     </ScrollView>

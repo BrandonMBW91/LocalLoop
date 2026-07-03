@@ -11,12 +11,12 @@ const RULES = [
     icon: 'home',
     title: 'Garage sales are SALES, not single items',
     body:
-      'The Garage Sales section is for actual yard, garage, estate, or moving sales — a real event where you’re selling lots of things. It is NOT for listing one item for sale (like a single couch or TV). Single-item posts will be removed.',
+      'The Garage Sales section is for actual yard, garage, estate, or moving sales, a real event where you’re selling lots of things. It is NOT for listing one item for sale (like a single couch or TV). Single-item posts will be removed.',
   },
   {
     icon: 'location',
     title: 'Real, local listings only',
-    body: 'Post genuine events, sales, and food trucks happening in your community — no advertisements, spam, or links to other sites.',
+    body: 'Post genuine events, sales, and food trucks happening in your community. No advertisements, spam, or links to other sites.',
   },
   {
     icon: 'happy',
@@ -79,7 +79,7 @@ export default function RulesScreen() {
         <Pressable style={styles.agreeBtn} onPress={onAgree} accessibilityRole="button">
           <Ionicons name="checkmark" size={22} color={colors.textInverse} />
           <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
-            I Agree — Continue
+            I Agree, Continue
           </ThemedText>
         </Pressable>
         <Pressable style={styles.cancelBtn} onPress={() => router.back()}>

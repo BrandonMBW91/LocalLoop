@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "primaryColor": "#1F6F54",
-    "description": "Local events, garage sales, and food trucks across Northwest Ohio.",
+    "description": "Local events, garage sales, and food trucks across 24 NW and Central Ohio towns.",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.michaelwilliams.localloop",

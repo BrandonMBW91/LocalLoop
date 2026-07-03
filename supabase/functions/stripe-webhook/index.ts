@@ -36,6 +36,26 @@ function field(session: any, key: string): string {
   return (f?.text?.value || f?.dropdown?.value || '').trim();
 }
 
+const FROM = 'Local Loop <noreply@findlayevents.com>';
+const OWNER = 'localloop@localloop.io';
+
+async function resendSend(to: string, subject: string, text: string) {
+  const key = Deno.env.get('RESEND_API_KEY');
+  if (!key) return; // email is best-effort; never fail the webhook over it
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: FROM, to: [to], subject, text }),
+    });
+  } catch (e) {
+    console.error('resend send failed:', (e as Error).message);
+  }
+}
+
+// Notify the owner (fulfillment / exceptions).
+const sendEmail = (subject: string, text: string) => resendSend(OWNER, subject, text);
+
 Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature');
   const raw = await req.text();
@@ -66,7 +86,13 @@ Deno.serve(async (req) => {
       const resolvedCity = town ? CODE_TO_CITY[town] : null;
       const cityIds = product === 'all_region' ? ALL_CITY_IDS : (resolvedCity ? [resolvedCity] : []);
       if (cityIds.length === 0) {
+        // The buyer WAS charged but we couldn't resolve a town, so no ad exists.
+        // Never let that vanish silently. Alert the owner to place it by hand.
         console.error('stripe-webhook: unknown town, skipping', { town, session: s.id });
+        await sendEmail(
+          `ACTION: paid ad with unknown town from ${business}`,
+          `A ${product} ad was purchased but the town could not be matched, so NO ad was created.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown value received: ${town || '(blank)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FIX: contact the buyer to confirm their town, then add the ad from the Manage Sponsors screen.`,
+        );
         return new Response(JSON.stringify({ received: true, skipped: 'unknown town' }), {
           headers: { 'Content-Type': 'application/json' },
         });
@@ -74,16 +100,18 @@ Deno.serve(async (req) => {
       // Featured Listing is NOT a sponsor ad: it boosts one specific listing,
       // which only the owner can identify. Fulfill by emailing the owner.
       if (product === 'featured_30') {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'Local Loop <noreply@findlayevents.com>',
-            to: ['localloop@localloop.io'],
-            subject: `ACTION: Featured Listing purchased by ${business} (${resolvedCity})`,
-            text: `A Featured Listing (30 days, $25) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${resolvedCity}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
-          }),
-        });
+        await sendEmail(
+          `ACTION: Featured Listing purchased by ${business} (${resolvedCity})`,
+          `A Featured Listing (30 days, $25) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${resolvedCity}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
+        );
+        const buyerEmail = s.customer_details?.email;
+        if (buyerEmail) {
+          await resendSend(
+            buyerEmail,
+            'Your Local Loop featured listing is on its way',
+            `Thanks for supporting Local Loop.\n\nWe got your Featured Listing for ${resolvedCity} (30 days). We'll feature your listing in the app shortly. If we can't tell which listing is yours, we'll reply to this email to ask.\n\nQuestions? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
+          );
+        }
         return new Response(JSON.stringify({ received: true, fulfilled: 'featured_30 email sent' }), {
           headers: { 'Content-Type': 'application/json' },
         });
@@ -102,7 +130,24 @@ Deno.serve(async (req) => {
         stripe_session_id: s.id,
       }));
       // Idempotent against Stripe retries/replays (unique on session_id + city_id).
-      await supabase.from('sponsors').upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true });
+      const { error: upsertErr } = await supabase
+        .from('sponsors')
+        .upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true });
+      if (upsertErr) throw upsertErr;
+
+      // Tell the buyer their ad is live so they don't panic (or dispute the charge)
+      // after landing on Stripe's bare receipt page. Best-effort, never blocks.
+      const buyerEmail = s.customer_details?.email;
+      if (buyerEmail) {
+        const where = product === 'all_region'
+          ? 'every town Local Loop covers'
+          : resolvedCity;
+        await resendSend(
+          buyerEmail,
+          'Your Local Loop ad is live',
+          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nWant to add a logo, or change your headline or link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+        );
+      }
     } else if (event.type === 'customer.subscription.deleted') {
       await supabase.from('sponsors').update({ active: false }).eq('stripe_subscription_id', event.data.object.id);
     } else if (event.type === 'invoice.payment_failed') {
