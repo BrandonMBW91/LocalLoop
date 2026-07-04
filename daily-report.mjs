@@ -122,8 +122,10 @@ console.log = (...a) => { REPORT.push(a.map(String).join(' ')); _log(...a); };
 
 console.log(`\n================  LOCAL LOOP — DAILY REPORT  ================`);
 console.log(`  ${stamp}\n`);
-console.log(`  REACH — devices that opened the app`);
-console.log(`    Opened (last 24h):      ${dev24}   |   all-time ${devTotal}`);
+console.log(`  INSTALLS`);
+console.log(`    Total installs:         ${devTotal}   (devices that have opened the app)`);
+console.log(`  REACH — app opens`);
+console.log(`    Opened (last 24h):      ${dev24}`);
 console.log(`    By town (24h):          ${fmtMap(byCity)}`);
 console.log(`  ENGAGEMENT — in-app actions (taps), excludes opens`);
 console.log(`    Actions (last 24h):     ${act24}   |   all-time ${actTotal}`);
@@ -173,7 +175,8 @@ function buildReportHtml() {
   const boostSec = boostLine ? sec('SINCE THE AD BOOST', `<div>${big((boostLine.newDev >= 0 ? '+' : '') + boostLine.newDev)} new devices ${muted('(' + BOOST.baselineDevices + ' to ' + devTotal + ', over ' + boostLine.hrs + 'h)')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${boostLine.opensSince} opens and ${boostLine.actionsSince} taps since it started</div>`) : '';
   return `<div style="background:#f4f2ee;padding:16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">`
     + `<tr><td style="background:#1F6F54;padding:20px 18px;"><div style="color:#cfe6dd;font-size:12px;letter-spacing:1.5px;font-weight:700;">LOCAL LOOP &middot; DAILY REPORT</div><div style="color:#ffffff;font-size:20px;font-weight:800;margin-top:3px;">${esc(stamp)}</div></td></tr>`
-    + sec('REACH &middot; app opens', `<div>${big(dev24)} today ${muted('· ' + devTotal + ' all-time')}</div><div style="font-size:14px;color:#555;margin-top:4px;">By town: ${esc(fmtMap(byCity))}</div>`)
+    + sec('INSTALLS', `<div>${big(devTotal)} <span style="font-size:15px;">total installs</span></div><div style="font-size:13px;color:#8a8a8a;margin-top:3px;">devices that have opened the app</div>`)
+    + sec('REACH &middot; app opens', `<div>${big(dev24)} today</div><div style="font-size:14px;color:#555;margin-top:4px;">By town: ${esc(fmtMap(byCity))}</div>`)
     + sec('ENGAGEMENT &middot; taps', `<div>${big(act24)} today ${muted('· ' + actTotal + ' all-time')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${activeDevs.size} active devices</div><div style="font-size:14px;color:#555;margin-top:2px;">${esc(fmtMap(byType))}</div>${Object.keys(searches).length ? `<div style="font-size:14px;color:#555;margin-top:2px;">Top searches: ${esc(fmtMap(searches))}</div>` : ''}`)
     + boostSec
     + sec('SUBMISSIONS', `<div style="font-size:14px;color:#333;line-height:1.7;">Events: <b>${evUser24}</b> today <span style="color:#8a8a8a;">(${evUserTotal} all-time)</span><br>Garage sales: <b>${gs24}</b> today <span style="color:#8a8a8a;">(${gsTotal})</span><br>Food trucks: <b>${ft24}</b> today <span style="color:#8a8a8a;">(${ftTotal})</span></div>`)
