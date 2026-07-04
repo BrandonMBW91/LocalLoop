@@ -161,14 +161,34 @@ console.log(`    earlier days count only devices that tapped something.`);
 console.log(`=============================================================\n`);
 console.log = _log;
 
+// A phone-friendly HTML email built from the raw values (not the fixed-width
+// terminal text, which is unreadable on a narrow screen). Table layout with
+// stacked rows so it reflows cleanly in Gmail / iOS Mail.
+function buildReportHtml() {
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const big = (v) => `<span style="font-size:23px;font-weight:800;color:#191919;">${esc(v)}</span>`;
+  const muted = (s) => `<span style="color:#8a8a8a;font-size:14px;">${esc(s)}</span>`;
+  const sec = (title, inner) => `<tr><td style="padding:14px 18px;border-bottom:1px solid #efede8;"><div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:#1F6F54;margin-bottom:6px;">${title}</div>${inner}</td></tr>`;
+  const trendRows = trendDays.map(([d, dev, act]) => `<tr><td style="padding:4px 0;color:#555;font-size:13px;">${esc(d)}${d === todayKey ? ' <span style="color:#B85C12;">(today)</span>' : ''}</td><td style="padding:4px 0;text-align:right;font-size:13px;color:#191919;"><b>${dev}</b> opens</td><td style="padding:4px 0;text-align:right;font-size:13px;color:#8a8a8a;">${act} taps</td></tr>`).join('');
+  const boostSec = boostLine ? sec('SINCE THE AD BOOST', `<div>${big((boostLine.newDev >= 0 ? '+' : '') + boostLine.newDev)} new devices ${muted('(' + BOOST.baselineDevices + ' to ' + devTotal + ', over ' + boostLine.hrs + 'h)')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${boostLine.opensSince} opens and ${boostLine.actionsSince} taps since it started</div>`) : '';
+  return `<div style="background:#f4f2ee;padding:16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">`
+    + `<tr><td style="background:#1F6F54;padding:20px 18px;"><div style="color:#cfe6dd;font-size:12px;letter-spacing:1.5px;font-weight:700;">LOCAL LOOP &middot; DAILY REPORT</div><div style="color:#ffffff;font-size:20px;font-weight:800;margin-top:3px;">${esc(stamp)}</div></td></tr>`
+    + sec('REACH &middot; app opens', `<div>${big(dev24)} today ${muted('· ' + devTotal + ' all-time')}</div><div style="font-size:14px;color:#555;margin-top:4px;">By town: ${esc(fmtMap(byCity))}</div>`)
+    + sec('ENGAGEMENT &middot; taps', `<div>${big(act24)} today ${muted('· ' + actTotal + ' all-time')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${activeDevs.size} active devices</div><div style="font-size:14px;color:#555;margin-top:2px;">${esc(fmtMap(byType))}</div>${Object.keys(searches).length ? `<div style="font-size:14px;color:#555;margin-top:2px;">Top searches: ${esc(fmtMap(searches))}</div>` : ''}`)
+    + boostSec
+    + sec('SUBMISSIONS', `<div style="font-size:14px;color:#333;line-height:1.7;">Events: <b>${evUser24}</b> today <span style="color:#8a8a8a;">(${evUserTotal} all-time)</span><br>Garage sales: <b>${gs24}</b> today <span style="color:#8a8a8a;">(${gsTotal})</span><br>Food trucks: <b>${ft24}</b> today <span style="color:#8a8a8a;">(${ftTotal})</span></div>`)
+    + sec('7-DAY TREND', `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${trendRows}</table>`)
+    + sec('CONTENT', `<div>${big(eventsLive)} <span style="font-size:15px;">live events in the app</span></div>`)
+    + `<tr><td style="padding:14px 18px;background:#faf9f6;font-size:12px;color:#9a9a9a;line-height:1.6;">"Opens" is the in-app proxy; true installs live in App Store Connect, Analytics (Apple lags about a day). The 24h headline is a rolling window, so it will not match a single trend row.</td></tr>`
+    + `</table></div>`;
+}
+
 // Deliver the report to the owner's inbox (so the morning run doesn't vanish
 // into a background session). Run: node daily-report.mjs --email
 if (process.argv.includes('--email')) {
   try {
     const key = g('RESEND_API_KEY');
     if (!key) throw new Error('missing RESEND_API_KEY in .env');
-    const body = REPORT.join('\n');
-    const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     const day = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -177,8 +197,8 @@ if (process.argv.includes('--email')) {
         from: 'Local Loop <noreply@findlayevents.com>',
         to: ['michabw91@gmail.com'],
         subject: `Local Loop daily report: ${day}`,
-        text: body,
-        html: `<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;white-space:pre-wrap">${esc(body)}</pre>`,
+        text: REPORT.join('\n'),
+        html: buildReportHtml(),
       }),
     });
     if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()).slice(0, 200));
