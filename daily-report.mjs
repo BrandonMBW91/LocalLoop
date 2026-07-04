@@ -115,6 +115,11 @@ if (BOOST.active) {
 const fmtMap = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ') || '—';
 const stamp = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
+// Capture the printed report so `--email` can also mail it to the owner.
+const REPORT = [];
+const _log = console.log;
+console.log = (...a) => { REPORT.push(a.map(String).join(' ')); _log(...a); };
+
 console.log(`\n================  LOCAL LOOP — DAILY REPORT  ================`);
 console.log(`  ${stamp}\n`);
 console.log(`  REACH — devices that opened the app`);
@@ -154,3 +159,31 @@ console.log(`  • From the 1.0.1 update on, every app open is logged, so the tr
 console.log(`    "active" count now includes openers and lines up with Reach;`);
 console.log(`    earlier days count only devices that tapped something.`);
 console.log(`=============================================================\n`);
+console.log = _log;
+
+// Deliver the report to the owner's inbox (so the morning run doesn't vanish
+// into a background session). Run: node daily-report.mjs --email
+if (process.argv.includes('--email')) {
+  try {
+    const key = g('RESEND_API_KEY');
+    if (!key) throw new Error('missing RESEND_API_KEY in .env');
+    const body = REPORT.join('\n');
+    const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const day = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Local Loop <noreply@findlayevents.com>',
+        to: ['michabw91@gmail.com'],
+        subject: `Local Loop daily report: ${day}`,
+        text: body,
+        html: `<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;white-space:pre-wrap">${esc(body)}</pre>`,
+      }),
+    });
+    if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()).slice(0, 200));
+    _log('  [report emailed to michabw91@gmail.com]');
+  } catch (e) {
+    console.error('  email failed:', e.message);
+  }
+}
