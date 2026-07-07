@@ -39,7 +39,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 624">
 <text x="562" y="322" font-family="Arial, Helvetica, sans-serif" font-weight="800"
       font-size="132" letter-spacing="2" fill="#F7F2E7">LOCAL LOOP</text>
 <text x="566" y="388" font-family="Arial, Helvetica, sans-serif" font-weight="700"
-      font-size="33" letter-spacing="7" fill="#E7B15C">FINDLAY &amp; NORTHWEST OHIO</text>
+      font-size="33" letter-spacing="7" fill="#E7B15C">NORTHWEST &amp; CENTRAL OHIO</text>
 </svg>`;
 
 const png = new Resvg(svg, {
