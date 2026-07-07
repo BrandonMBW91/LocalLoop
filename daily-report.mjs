@@ -25,13 +25,19 @@ const dayAgo = new Date(Date.now() - 86400000).toISOString();
 const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
 // --- Facebook boost / ad tracking ---
-// Update when a boost goes live or ends. baselineDevices = the all-time device
-// total at the moment the boost started (so "new devices since" = growth from it).
+// baselineDevices = all-time device total when the boost started.
+// When a boost ends: set active=false, fill in endedAt + endDevices (the all-time
+// device total the moment it ended). Metrics are then frozen to the [startedAt,
+// endedAt] window so organic growth after the ad doesn't keep inflating them.
+// When a new boost starts: set active=true, reset startedAt/baselineDevices,
+// clear endedAt/endDevices.
 const BOOST = {
-  active: true,
+  active: false,
   startedAt: '2026-06-30T22:00:00Z', // ~6:00 PM ET, Jun 30 2026
+  endedAt: '2026-07-06T12:00:00Z',   // ad has ended
   baselineDevices: 32,
-  note: '$10/day, 4 days, Findlay +25mi, engagement goal',
+  endDevices: 80,                    // all-time device total when the ad ended
+  note: '$10/day, Findlay +25mi, engagement goal',
 };
 
 async function count(path) {
@@ -78,6 +84,21 @@ const act24 = actEvs.length;
 const byCity = {};
 for (const d of await rows(`device_activity?select=city_id&last_seen=gte.${dayAgo}`)) byCity[d.city_id] = (byCity[d.city_id] || 0) + 1;
 
+// Real user posts: created_by is set = a signed-in local. Our own curated posts
+// come in via the service role with no created_by, so this filters them out.
+const uPostWhen = (t) => { const d = Math.floor((Date.now() - new Date(t)) / 86400000); return d <= 0 ? 'today' : d === 1 ? '1d ago' : d + 'd ago'; };
+const [uEv, uGs, uFt] = await Promise.all([
+  rows(`events?select=title,city_id,created_at&source_uid=is.null&created_by=not.is.null&created_at=gte.${weekAgo}&order=created_at.desc`),
+  rows(`garage_sales?select=title,city_id,created_at&created_by=not.is.null&created_at=gte.${weekAgo}&order=created_at.desc`),
+  rows(`food_trucks?select=name,city_id,created_at&created_by=not.is.null&created_at=gte.${weekAgo}&order=created_at.desc`),
+]);
+const userPosts = [
+  ...uEv.map((x) => ({ kind: 'Event', title: x.title, town: x.city_id, at: x.created_at })),
+  ...uGs.map((x) => ({ kind: 'Sale', title: x.title, town: x.city_id, at: x.created_at })),
+  ...uFt.map((x) => ({ kind: 'Truck', title: x.name, town: x.city_id, at: x.created_at })),
+].sort((a, b) => new Date(b.at) - new Date(a.at));
+const userPosts24 = userPosts.filter((p) => p.at >= dayAgo).length;
+
 // 7-day trend, bucketed by local calendar day. "active" = distinct devices that
 // did anything that day (includes openers via app_open going forward); "actions"
 // = taps only (excludes app_open).
@@ -98,18 +119,24 @@ for (let i = 6; i >= 0; i--) {
   trendDays.push([k, t.devices.size, t.actions]);
 }
 
-// Since-boost metrics (only when a boost is flagged active).
+// Boost metrics — measured over the ad window [startedAt, endedAt|now]. Shown
+// while the ad is live and retrospectively after it ends (frozen to the window).
 let boostLine = null;
-if (BOOST.active) {
+if (BOOST.startedAt && (BOOST.active || BOOST.endedAt)) {
+  const end = BOOST.active ? null : BOOST.endedAt;
+  const lte = end ? `&created_at=lte.${end}` : '';
   const [opensSince, actionsSince] = await Promise.all([
-    count(`app_events?select=id&event=eq.app_open&created_at=gte.${BOOST.startedAt}`),
-    count(`app_events?select=id&event=neq.app_open&created_at=gte.${BOOST.startedAt}`),
+    count(`app_events?select=id&event=eq.app_open&created_at=gte.${BOOST.startedAt}${lte}`),
+    count(`app_events?select=id&event=neq.app_open&created_at=gte.${BOOST.startedAt}${lte}`),
   ]);
-  const evSince = await rows(`app_events?select=device_id&created_at=gte.${BOOST.startedAt}&limit=8000`);
+  const evSince = await rows(`app_events?select=device_id&created_at=gte.${BOOST.startedAt}${lte}&limit=8000`);
   const devActiveSince = new Set(evSince.map((e) => e.device_id).filter(Boolean)).size;
-  const hrs = Math.max(1, Math.round((Date.now() - new Date(BOOST.startedAt).getTime()) / 3600000));
-  const newDev = devTotal - BOOST.baselineDevices;
-  boostLine = { hrs, newDev, devActiveSince, opensSince, actionsSince };
+  const endMs = end ? new Date(end).getTime() : Date.now();
+  const days = Math.max(1, Math.round((endMs - new Date(BOOST.startedAt).getTime()) / 86400000));
+  // While live, new devices = growth to now; once ended, frozen to endDevices.
+  const finalDev = BOOST.active ? devTotal : (BOOST.endDevices ?? devTotal);
+  const newDev = finalDev - BOOST.baselineDevices;
+  boostLine = { days, newDev, finalDev, devActiveSince, opensSince, actionsSince, ended: !BOOST.active };
 }
 
 const fmtMap = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ') || '—';
@@ -133,16 +160,22 @@ console.log(`    Active devices (24h):   ${activeDevs.size}   (openers who tappe
 console.log(`    Action mix (24h):       ${fmtMap(byType)}`);
 console.log(`    Top searches (24h):     ${fmtMap(searches)}`);
 if (boostLine) {
-  console.log(`  SINCE BOOST — ${BOOST.note}`);
-  console.log(`    Live for:               ${boostLine.hrs}h`);
-  console.log(`    New devices since:      ${boostLine.newDev >= 0 ? '+' + boostLine.newDev : boostLine.newDev}   (${BOOST.baselineDevices} -> ${devTotal} all-time)`);
-  console.log(`    Devices active since:   ${boostLine.devActiveSince}`);
-  console.log(`    Opens / actions since:  ${boostLine.opensSince} opens · ${boostLine.actionsSince} actions`);
+  console.log(`  ${boostLine.ended ? 'AD BOOST (ended)' : 'SINCE BOOST'} — ${BOOST.note}`);
+  console.log(`    ${boostLine.ended ? 'Ran for:' : 'Live for:'}                ${boostLine.days} days`);
+  console.log(`    Devices added:          ${boostLine.newDev >= 0 ? '+' + boostLine.newDev : boostLine.newDev}   (${BOOST.baselineDevices} -> ${boostLine.finalDev} all-time)`);
+  console.log(`    Devices active:         ${boostLine.devActiveSince}`);
+  console.log(`    Opens / actions:        ${boostLine.opensSince} opens · ${boostLine.actionsSince} actions`);
 }
 console.log(`  SUBMISSIONS — content posted (includes our own listings)`);
 console.log(`    Events:                 ${evUser24} in 24h   |   all-time ${evUserTotal}`);
 console.log(`    Garage sales:           ${gs24} in 24h   |   all-time ${gsTotal}`);
 console.log(`    Food trucks:            ${ft24} in 24h   |   all-time ${ftTotal}`);
+console.log(`  NEW USER POSTS — real locals (${userPosts24} in 24h, last 7 days below)`);
+if (userPosts.length) {
+  userPosts.slice(0, 10).forEach((p) => console.log(`    ${uPostWhen(p.at).padEnd(7)} ${p.kind.padEnd(6)} ${p.title}  ·  ${p.town || '?'}`));
+} else {
+  console.log(`    none in the last 7 days`);
+}
 console.log(`  7-DAY TREND  (by calendar day · active devices / actions)`);
 console.log(`    date          active  actions`);
 for (const [d, dev, act] of trendDays) {
@@ -172,7 +205,7 @@ function buildReportHtml() {
   const muted = (s) => `<span style="color:#8a8a8a;font-size:14px;">${esc(s)}</span>`;
   const sec = (title, inner) => `<tr><td style="padding:14px 18px;border-bottom:1px solid #efede8;"><div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:#1F6F54;margin-bottom:6px;">${title}</div>${inner}</td></tr>`;
   const trendRows = trendDays.map(([d, dev, act]) => `<tr><td style="padding:4px 0;color:#555;font-size:13px;">${esc(d)}${d === todayKey ? ' <span style="color:#B85C12;">(today)</span>' : ''}</td><td style="padding:4px 0;text-align:right;font-size:13px;color:#191919;"><b>${dev}</b> opens</td><td style="padding:4px 0;text-align:right;font-size:13px;color:#8a8a8a;">${act} taps</td></tr>`).join('');
-  const boostSec = boostLine ? sec('SINCE THE AD BOOST', `<div>${big((boostLine.newDev >= 0 ? '+' : '') + boostLine.newDev)} new devices ${muted('(' + BOOST.baselineDevices + ' to ' + devTotal + ', over ' + boostLine.hrs + 'h)')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${boostLine.opensSince} opens and ${boostLine.actionsSince} taps since it started</div>`) : '';
+  const boostSec = boostLine ? sec(boostLine.ended ? 'AD BOOST (ended)' : 'SINCE THE AD BOOST', `<div>${big((boostLine.newDev >= 0 ? '+' : '') + boostLine.newDev)} new devices ${muted('(' + BOOST.baselineDevices + ' to ' + boostLine.finalDev + ', over ' + boostLine.days + ' days)')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${boostLine.opensSince} opens and ${boostLine.actionsSince} taps ${boostLine.ended ? 'during the ad' : 'since it started'}</div>`) : '';
   return `<div style="background:#f4f2ee;padding:16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">`
     + `<tr><td style="background:#1F6F54;padding:20px 18px;"><div style="color:#cfe6dd;font-size:12px;letter-spacing:1.5px;font-weight:700;">LOCAL LOOP &middot; DAILY REPORT</div><div style="color:#ffffff;font-size:20px;font-weight:800;margin-top:3px;">${esc(stamp)}</div></td></tr>`
     + sec('INSTALLS', `<div>${big(devTotal)} <span style="font-size:15px;">total installs</span></div><div style="font-size:13px;color:#8a8a8a;margin-top:3px;">devices that have opened the app</div>`)
@@ -180,6 +213,7 @@ function buildReportHtml() {
     + sec('ENGAGEMENT &middot; taps', `<div>${big(act24)} today ${muted('· ' + actTotal + ' all-time')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${activeDevs.size} active devices</div><div style="font-size:14px;color:#555;margin-top:2px;">${esc(fmtMap(byType))}</div>${Object.keys(searches).length ? `<div style="font-size:14px;color:#555;margin-top:2px;">Top searches: ${esc(fmtMap(searches))}</div>` : ''}`)
     + boostSec
     + sec('SUBMISSIONS', `<div style="font-size:14px;color:#333;line-height:1.7;">Events: <b>${evUser24}</b> today <span style="color:#8a8a8a;">(${evUserTotal} all-time)</span><br>Garage sales: <b>${gs24}</b> today <span style="color:#8a8a8a;">(${gsTotal})</span><br>Food trucks: <b>${ft24}</b> today <span style="color:#8a8a8a;">(${ftTotal})</span></div>`)
+    + (userPosts.length ? sec('NEW USER POSTS &middot; real locals', `<div style="font-size:12px;color:#8a8a8a;margin-bottom:6px;">${userPosts24} in the last 24h</div>` + userPosts.slice(0, 8).map((p) => `<div style="font-size:14px;color:#333;margin:5px 0;"><b>${esc(p.title)}</b><br><span style="color:#8a8a8a;font-size:13px;">${esc(p.kind + ' · ' + (p.town || '?') + ' · ' + uPostWhen(p.at))}</span></div>`).join('')) : '')
     + sec('7-DAY TREND', `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${trendRows}</table>`)
     + sec('CONTENT', `<div>${big(eventsLive)} <span style="font-size:15px;">live events in the app</span></div>`)
     + `<tr><td style="padding:14px 18px;background:#faf9f6;font-size:12px;color:#9a9a9a;line-height:1.6;">"Opens" is the in-app proxy; true installs live in App Store Connect, Analytics (Apple lags about a day). The 24h headline is a rolling window, so it will not match a single trend row.</td></tr>`
