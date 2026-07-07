@@ -10,15 +10,13 @@ import { colors, spacing, radius } from '../src/theme/theme';
 // Hosted advertise page + live Stripe Payment Links. Purchases stay on the web
 // (advertising services are exempt from IAP; no Apple cut).
 const ADVERTISE_URL = 'https://localloop.io/advertise.html';
-const CHECKOUT = {
-  town: 'https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00', // Town Sponsor $19/mo
-  region: 'https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01', // All-Region $79/mo
-  featured30: 'https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02', // Featured 30d $25
+// Stripe payment links, keyed by tier. All-Region ($79/mo) is flat across tiers.
+// Tiers listed here are tap-to-buy; any higher tier falls back to the email flow.
+const REGION_LINK = 'https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01'; // All-Region $79/mo
+const CHECKOUT_BY_TIER = {
+  Founding: { town: 'https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00', featured30: 'https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02' }, // $19 / $25
+  Local: { town: 'https://buy.stripe.com/9B65kE1yT24i6CqbMP4Vy03', featured30: 'https://buy.stripe.com/7sY28s91l8sG1i6bMP4Vy04' }, // $29 / $35
 };
-// The Payment Links above charge FIXED founding prices. Only expose tap-to-buy
-// while the displayed tier price still matches what Stripe will charge —
-// otherwise fall back to the email flow (create per-tier links when tiers rise).
-const LINK_PRICES = { sponsor: 19, featured30: 25 };
 
 function Benefit({ icon, title, body }) {
   return (
@@ -72,8 +70,9 @@ export default function PromoteScreen() {
   }, [cityId, backendEnabled]);
 
   const rate = rateForUsers(users);
-  // Checkout links are valid only while tier prices equal the fixed link prices.
-  const buyable = rate.sponsor === LINK_PRICES.sponsor && rate.featured30 === LINK_PRICES.featured30;
+  // Tap-to-buy only for tiers we have live payment links for; others go to email.
+  const links = CHECKOUT_BY_TIER[rate.name] || null;
+  const buyable = !!links;
 
   return (
     <ScrollView
@@ -134,9 +133,9 @@ export default function PromoteScreen() {
       </View>
       <View style={styles.rateCard}>
         <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={`$${rate.featured7}`} />
-        <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${buyable ? ' · tap to buy' : ''}`} price={`$${rate.featured30}`} url={buyable ? CHECKOUT.featured30 : undefined} />
-        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${buyable ? ' · tap to buy' : ''}`} price={`$${rate.sponsor}/mo`} url={buyable ? CHECKOUT.town : undefined} />
-        <RateRow label="All towns" sub={`Every town we cover · monthly${buyable ? ' · tap to buy' : ''}`} price="$79/mo" url={buyable ? CHECKOUT.region : undefined} />
+        <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${links ? ' · tap to buy' : ''}`} price={`$${rate.featured30}`} url={links ? links.featured30 : undefined} />
+        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${links ? ' · tap to buy' : ''}`} price={`$${rate.sponsor}/mo`} url={links ? links.town : undefined} />
+        <RateRow label="All towns" sub="Every town we cover · monthly · tap to buy" price="$79/mo" url={REGION_LINK} />
         <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
@@ -146,7 +145,7 @@ export default function PromoteScreen() {
       </ThemedText>
 
       {buyable ? (
-        <Pressable style={styles.cta} onPress={() => Linking.openURL(CHECKOUT.town)}>
+        <Pressable style={styles.cta} onPress={() => Linking.openURL(links.town)}>
           <Ionicons name="card" size={22} color={colors.textInverse} />
           <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
             Become a Town Sponsor · ${rate.sponsor}/mo

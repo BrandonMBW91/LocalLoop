@@ -1,190 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Advertise on Local Loop: Reach Northwest Ohio</title>
-<meta name="description" content="Put your business in front of locals across Northwest Ohio. Featured listings and town sponsorships, simple monthly rates that start low and grow with your town." />
-<link rel="canonical" href="https://localloop.io/advertise.html" />
-<meta property="og:title" content="Advertise on Local Loop: Reach Northwest Ohio" />
-<meta property="og:description" content="Featured listings and town sponsorships across 24 Northwest and Central Ohio towns. Simple monthly rates, no contracts." />
-<meta property="og:url" content="https://localloop.io/advertise.html" />
-<meta property="og:type" content="website" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F6F54'/%3E%3Cpath d='M16 7c-3.31 0-6 2.6-6 5.83 0 4.37 6 11.17 6 11.17s6-6.8 6-11.17C22 9.6 19.31 7 16 7zm0 8.1a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z' fill='%23fff'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F6F54'/%3E%3Cpath d='M16 7c-3.31 0-6 2.6-6 5.83 0 4.37 6 11.17 6 11.17s6-6.8 6-11.17C22 9.6 19.31 7 16 7zm0 8.1a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z' fill='%23fff'/%3E%3C/svg%3E" />
-<style>
-  :root{--green:#1F6F54;--green-d:#15503D;--orange:#D9772B;--bg:#FBFAF7;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E2DED7;}
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;}
-  .wrap{max-width:1000px;margin:0 auto;padding:0 20px;}
-  header{display:flex;align-items:center;justify-content:space-between;padding:18px 0;}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;text-decoration:none;color:var(--ink);}
-  nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:18px;}
-  .hero{text-align:center;padding:40px 0 24px;}
-  .hero h1{font-size:38px;line-height:1.15;margin:0 0 12px;}
-  .hero p{font-size:19px;color:var(--muted);max-width:620px;margin:0 auto;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:32px 0;}
-  .price{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;}
-  .price.feat{border:2px solid var(--orange);}
-  .tag{font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--orange);text-transform:uppercase;}
-  .price h3{margin:6px 0 2px;font-size:22px;}
-  .amt{font-size:34px;font-weight:800;color:var(--green);margin:6px 0;}
-  .amt span{font-size:16px;font-weight:600;color:var(--muted);}
-  .price ul{list-style:none;padding:0;margin:10px 0 20px;color:var(--muted);font-size:15px;}
-  .price li{padding:5px 0 5px 24px;position:relative;}
-  .price li:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700;}
-  .buy{margin-top:auto;display:block;text-align:center;background:var(--green);color:#fff;text-decoration:none;font-weight:700;padding:13px;border-radius:999px;}
-  .buy.alt{background:var(--orange);}
-  .steps{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;margin:36px 0;}
-  .steps h2{margin:0 0 16px;}
-  .steps ol{margin:0;padding-left:22px;color:var(--muted);}
-  .steps li{margin-bottom:8px;}
-  .amt small{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;}
-  .foot-note{color:var(--muted);font-size:14px;text-align:center;margin:24px 0;}
-  .tiers{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;margin:36px 0;}
-  .tiers h2{margin:0 0 6px;}
-  .tiers p.lede{margin:0 0 18px;color:var(--muted);}
-  .tier-scroll{overflow-x:auto;}
-  table.tiers-table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;}
-  table.tiers-table th,table.tiers-table td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);}
-  table.tiers-table th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.4px;}
-  table.tiers-table td:first-child{font-weight:700;}
-  table.tiers-table tr.now td{background:#E7F2EE;}
-  .tier-badge{display:inline-block;font-size:11px;font-weight:700;color:var(--green);background:#fff;border:1px solid var(--green);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle;}
-  footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-  footer a{color:var(--green);text-decoration:none;}
-  @media(max-width:560px){.hero h1{font-size:30px;}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <a class="brand" href="/">
-      <svg width="36" height="36" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#1F6F54"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" transform="translate(176 176) scale(28)" fill="#fff"/><rect x="468" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="540" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#D9772B"/><rect x="448" y="452" width="128" height="8" fill="#fff"/><g fill="#fff"><rect x="462" y="474" width="20" height="20" rx="4"/><rect x="502" y="474" width="20" height="20" rx="4"/><rect x="542" y="474" width="20" height="20" rx="4"/><rect x="462" y="506" width="20" height="20" rx="4"/><rect x="502" y="506" width="20" height="20" rx="4"/></g></svg>
-      Local Loop
-    </a>
-    <nav><a href="/">Home</a></nav>
-  </header>
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Advertise on Local Loop: Reach Your Town</title>
+<meta name="description" content="Put your business in front of locals across 37 Ohio towns. Your rate is set by real usage in your town — pick your town to see today's price."/>
+<link rel="canonical" href="https://localloop.io/advertise.html"/>
+<meta property="og:title" content="Advertise on Local Loop"/><meta property="og:description" content="Featured listings and town sponsorships across 37 Ohio towns. Pick your town for today's rate."/>
+<meta property="og:url" content="https://localloop.io/advertise.html"/><meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F6F54'/%3E%3C/svg%3E"/>
+<style>:root{--green:#1F6F54;--green-d:#15503D;--orange:#D9772B;--bg:#FBFAF7;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E2DED7;}*{box-sizing:border-box;}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;}.wrap{max-width:1000px;margin:0 auto;padding:0 20px;}header{display:flex;align-items:center;justify-content:space-between;padding:18px 0;}.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;text-decoration:none;color:var(--ink);}nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:18px;}.hero{text-align:center;padding:40px 0 10px;}.hero h1{font-size:38px;line-height:1.15;margin:0 0 12px;}.hero p{font-size:19px;color:var(--muted);max-width:620px;margin:0 auto;}.picker{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:18px auto 0;max-width:560px;}.picker label{font-weight:600;}.picker select{font-size:16px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}#rateNote{font-weight:600;color:var(--green-d);}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:24px 0;}.price{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;}.price.feat{border:2px solid var(--orange);}.tag{font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--orange);text-transform:uppercase;}.price h3{margin:6px 0 2px;font-size:22px;}.amt{font-size:34px;font-weight:800;color:var(--green);margin:6px 0;}.amt span{font-size:16px;font-weight:600;color:var(--muted);}.amt small{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;}.price ul{list-style:none;padding:0;margin:10px 0 20px;color:var(--muted);font-size:15px;}.price li{padding:5px 0 5px 24px;position:relative;}.price li:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700;}.buy{margin-top:auto;display:block;text-align:center;background:var(--green);color:#fff;text-decoration:none;font-weight:700;padding:13px;border-radius:999px;}.buy.alt{background:var(--orange);}.steps,.tiers{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;margin:36px 0;}.steps h2,.tiers h2{margin:0 0 16px;}.steps ol{margin:0;padding-left:22px;color:var(--muted);}.steps li{margin-bottom:8px;}.tiers p.lede{margin:0 0 18px;color:var(--muted);}.tier-scroll{overflow-x:auto;}table.tiers-table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;}table.tiers-table th,table.tiers-table td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);}table.tiers-table th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.4px;}table.tiers-table td:first-child{font-weight:700;}table.tiers-table tr.now td{background:#E7F2EE;}.tier-badge{display:inline-block;font-size:11px;font-weight:700;color:var(--green);background:#fff;border:1px solid var(--green);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle;}.foot-note{color:var(--muted);font-size:14px;text-align:center;margin:24px 0;}footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}footer a{color:var(--green);text-decoration:none;}@media(max-width:560px){.hero h1{font-size:30px;}}</style></head><body><div class="wrap">
+<header><a class="brand" href="/"><svg width="32" height="32" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#1F6F54"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#D9772B"/></svg> Local Loop</a><nav><a href="/">Home</a></nav></header>
 
-  <section class="hero">
-    <h1>Reach your neighbors</h1>
-    <p>Put your business in front of locals across Northwest Ohio who are looking for something to do. Your rate is set by how many people use Local Loop in your town, so it starts low and grows only as your town does. Every town is at the Founding rate today. Sign up now and lock it in for a full year.</p>
-  </section>
+<section class="hero">
+  <h1>Reach your neighbors</h1>
+  <p>Put your business in front of locals who are looking for something to do. Your rate is set by how many people use Local Loop in your town, so it starts low and only grows as your town does. Sign up now and lock today's rate in for a full year.</p>
+  <div class="picker"><label for="townPick">Your town:</label><select id="townPick" aria-label="Choose your town"><optgroup label="Northwest Ohio"><option value="findlay" selected>Findlay</option><option value="fostoria">Fostoria</option><option value="tiffin">Tiffin</option><option value="bowling-green">Bowling Green</option><option value="sandusky">Sandusky</option><option value="lima">Lima</option><option value="van-wert">Van Wert</option><option value="toledo">Toledo</option><option value="perrysburg">Perrysburg</option><option value="bluffton">Bluffton</option><option value="ada">Ada</option><option value="waterville">Waterville</option><option value="north-baltimore">North Baltimore</option><option value="carey">Carey</option><option value="leipsic">Leipsic</option><option value="arlington">Arlington</option><option value="pandora">Pandora</option><option value="upper-sandusky">Upper Sandusky</option></optgroup><optgroup label="Central Ohio"><option value="bellefontaine">Bellefontaine</option><option value="kenton">Kenton</option><option value="richwood">Richwood</option><option value="larue">LaRue</option><option value="prospect">Prospect</option><option value="green-camp">Green Camp</option></optgroup><optgroup label="Northeast Ohio"><option value="akron">Akron</option><option value="cuyahoga-falls">Cuyahoga Falls</option><option value="kent">Kent</option><option value="stow">Stow</option><option value="hudson">Hudson</option><option value="tallmadge">Tallmadge</option><option value="barberton">Barberton</option><option value="wadsworth">Wadsworth</option><option value="canton">Canton</option><option value="massillon">Massillon</option><option value="north-canton">North Canton</option><option value="hartville">Hartville</option><option value="alliance">Alliance</option></optgroup></select><span id="rateNote"></span></div>
+</section>
 
-  <div class="grid">
-    <div class="price feat">
-      <span class="tag">★ Most popular</span>
-      <h3>Town Sponsor</h3>
-      <div class="amt">$19<span>/month</span><small>Founding rate for your town</small></div>
-      <ul>
-        <li>Your ad shown between listings in your town</li>
-        <li>Headline and a link to your site or phone</li>
-        <li>Ask us any time for your views and taps</li>
-        <li>Cancel anytime</li>
-      </ul>
-      <a class="buy" href="https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00">Become a sponsor</a>
-    </div>
-
-    <div class="price">
-      <span class="tag">One-time</span>
-      <h3>Featured Listing</h3>
-      <div class="amt">$25<span>/30 days</span><small>Founding rate, or $9 for 7 days</small></div>
-      <ul>
-        <li>Float an event, sale, or food truck to the top</li>
-        <li>★ Featured badge and highlight</li>
-        <li>Great for a one-time event or grand opening</li>
-        <li>Also available 7 days for $9</li>
-      </ul>
-      <a class="buy alt" href="https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02">Feature my listing</a>
-    </div>
-
-    <div class="price">
-      <span class="tag">Best value</span>
-      <h3>All of NW Ohio</h3>
-      <div class="amt">$79<span>/month</span><small>One flat rate for every town</small></div>
-      <ul>
-        <li>Your ad runs in every town we cover</li>
-        <li>Maximum local reach across 24 towns</li>
-        <li>One price, no matter how each town grows</li>
-        <li>Cancel anytime</li>
-      </ul>
-      <a class="buy" href="https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01">Sponsor the region</a>
-    </div>
-
-    <div class="price">
-      <span class="tag">Custom</span>
-      <h3>Something Different</h3>
-      <div class="amt">Let's talk</div>
-      <ul>
-        <li>Multiple towns, longer runs, or bigger placements</li>
-        <li>Event and season sponsorships</li>
-        <li>Nonprofits and community organizations</li>
-        <li>We'll build a plan around your goals</li>
-      </ul>
-      <a class="buy alt" href="mailto:localloop@localloop.io?subject=Custom%20advertising%20plan%20-%20Local%20Loop">Email us to discuss</a>
-    </div>
+<div class="grid">
+  <div class="price feat">
+    <span class="tag">★ Most popular</span><h3>Town Sponsor</h3>
+    <div class="amt" id="sponsorAmt"></div>
+    <ul><li>Your ad shown between listings in your town</li><li>Headline and a link to your site or phone</li><li>Ask us any time for your views and taps</li><li>Cancel anytime</li></ul>
+    <a class="buy" id="sponsorBuy" href="#">Become a sponsor</a>
   </div>
-
-  <div class="tiers">
-    <h2>How the price works</h2>
-    <p class="lede">You always pay your own town's current rate. The rate is set by how many people use Local Loop in that town each month, so it starts low and only steps up as more of your neighbors join. Every town is at the Founding rate today. Sign up now and your rate is locked in for a full year, even as the town grows.</p>
-    <div class="tier-scroll">
-      <table class="tiers-table">
-        <thead>
-          <tr>
-            <th>Tier</th>
-            <th>Town size (people using the app)</th>
-            <th>Town Sponsor</th>
-            <th>Featured 30 days</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="now">
-            <td>Founding<span class="tier-badge">Every town today</span></td>
-            <td>Starting out</td>
-            <td>$19/mo</td>
-            <td>$25</td>
-          </tr>
-          <tr>
-            <td>Local</td>
-            <td>50 or more</td>
-            <td>$29/mo</td>
-            <td>$35</td>
-          </tr>
-          <tr>
-            <td>Established</td>
-            <td>250 or more</td>
-            <td>$49/mo</td>
-            <td>$49</td>
-          </tr>
-          <tr>
-            <td>Premier</td>
-            <td>1,000 or more</td>
-            <td>$79/mo</td>
-            <td>$79</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="foot-note" style="text-align:left;margin:16px 0 0;">The 7-day Featured option follows the same tiers: $9, $12, $19, then $29. The All of NW Ohio plan is a single flat $79/mo across every town.</p>
+  <div class="price">
+    <span class="tag">One-time</span><h3>Featured Listing</h3>
+    <div class="amt" id="featAmt"></div>
+    <ul><li>Float an event, sale, or food truck to the top</li><li>★ Featured badge and highlight</li><li>Great for a one-time event or grand opening</li><li>Shorter 7-day option available too</li></ul>
+    <a class="buy alt" id="featBuy" href="#">Feature my listing</a>
   </div>
-
-  <div class="steps">
-    <h2>How it works</h2>
-    <ol>
-      <li><strong>Pick a plan</strong> above and check out securely with Stripe (card or Apple/Google Pay). Prefer to talk first? Email us.</li>
-      <li><strong>Tell us about your ad</strong>: your business name, headline, link, and town.</li>
-      <li><strong>You go live</strong> in the app, with simple monthly billing.</li>
-      <li><strong>Ask us for your numbers</strong> any time: views and taps, so you see the reach you're getting.</li>
-    </ol>
+  <div class="price">
+    <span class="tag">Best value</span><h3>All of Our Region</h3>
+    <div class="amt">$79<span>/month</span><small>One flat rate for every town</small></div>
+    <ul><li>Your ad runs in every town we cover</li><li>Maximum local reach across 37 towns</li><li>One price, no matter how each town grows</li><li>Cancel anytime</li></ul>
+    <a class="buy" href="https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01">Sponsor the region</a>
   </div>
-
-  <p class="foot-note">Questions, or want to feature an event for a single weekend? Email <a href="mailto:localloop@localloop.io">localloop@localloop.io</a> and we'll set you up.</p>
-
-  <footer>
-    <div>© 2026 Local Loop · Northwest Ohio</div>
-    <div><a href="/">Home</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:localloop@localloop.io">Contact</a></div>
-  </footer>
+  <div class="price">
+    <span class="tag">Custom</span><h3>Something Different</h3>
+    <div class="amt">Let's talk</div>
+    <ul><li>Multiple towns, longer runs, or bigger placements</li><li>Event and season sponsorships</li><li>Nonprofits and community organizations</li><li>We'll build a plan around your goals</li></ul>
+    <a class="buy alt" href="mailto:localloop@localloop.io?subject=Advertising%20on%20Local%20Loop">Email us to discuss</a>
+  </div>
 </div>
-</body>
-</html>
+
+<div class="tiers">
+  <h2>How the price works</h2>
+  <p class="lede">You always pay your own town's current rate, set by how many people use Local Loop there each month. It starts low and only steps up as more neighbors join. Sign up now and your rate is locked in for a full year, even as the town grows.</p>
+  <div class="tier-scroll"><table class="tiers-table"><thead><tr><th>Tier</th><th>Town size (people using the app)</th><th>Town Sponsor</th><th>Featured 30 days</th></tr></thead><tbody>
+  <tr data-tier="Founding"><td>Founding<span class="tier-badge" style="display:none">Your town</span></td><td>Starting out</td><td>$19/mo</td><td>$25</td></tr><tr data-tier="Local"><td>Local<span class="tier-badge" style="display:none">Your town</span></td><td>50 or more</td><td>$29/mo</td><td>$35</td></tr><tr data-tier="Established"><td>Established<span class="tier-badge" style="display:none">Your town</span></td><td>250 or more</td><td>$49/mo</td><td>$49</td></tr><tr data-tier="Premier"><td>Premier<span class="tier-badge" style="display:none">Your town</span></td><td>1,000 or more</td><td>$79/mo</td><td>$79</td></tr>
+  </tbody></table></div>
+  <p class="foot-note" style="text-align:left;margin:16px 0 0;">The 7-day Featured option follows the same tiers ($9, $12, $19, then $29), by email. The All-Region plan is a flat $79/mo across every town.</p>
+</div>
+
+<div class="steps"><h2>How it works</h2><ol>
+  <li><strong>Pick your town</strong> above to see today's rate, then check out securely with Stripe (card or Apple/Google Pay). Prefer to talk first? Email us.</li>
+  <li><strong>Tell us about your ad</strong>: your business name, headline, link, and town.</li>
+  <li><strong>You go live</strong> in the app, with simple monthly billing.</li>
+  <li><strong>Ask us for your numbers</strong> any time: views and taps, so you see the reach you're getting.</li>
+</ol></div>
+
+<p class="foot-note">Questions, or want to feature an event for a single weekend? Email <a href="mailto:localloop@localloop.io">localloop@localloop.io</a> and we'll set you up.</p>
+<footer><div>© 2026 Local Loop</div><div><a href="/">Home</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:localloop@localloop.io">Contact</a></div></footer>
+</div>
+<script>
+var DATA={"findlay":{"name":"Findlay","users":75,"tier":"Local","sponsor":29,"featured30":35,"townLink":"https://buy.stripe.com/9B65kE1yT24i6CqbMP4Vy03","feat30Link":"https://buy.stripe.com/7sY28s91l8sG1i6bMP4Vy04"},"fostoria":{"name":"Fostoria","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"tiffin":{"name":"Tiffin","users":1,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"bowling-green":{"name":"Bowling Green","users":3,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"sandusky":{"name":"Sandusky","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"lima":{"name":"Lima","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"van-wert":{"name":"Van Wert","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"toledo":{"name":"Toledo","users":42,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"perrysburg":{"name":"Perrysburg","users":1,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"bluffton":{"name":"Bluffton","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"ada":{"name":"Ada","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"waterville":{"name":"Waterville","users":1,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"north-baltimore":{"name":"North Baltimore","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"carey":{"name":"Carey","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"leipsic":{"name":"Leipsic","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"arlington":{"name":"Arlington","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"pandora":{"name":"Pandora","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"upper-sandusky":{"name":"Upper Sandusky","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"bellefontaine":{"name":"Bellefontaine","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"kenton":{"name":"Kenton","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"richwood":{"name":"Richwood","users":1,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"larue":{"name":"LaRue","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"prospect":{"name":"Prospect","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"green-camp":{"name":"Green Camp","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"akron":{"name":"Akron","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"cuyahoga-falls":{"name":"Cuyahoga Falls","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"kent":{"name":"Kent","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"stow":{"name":"Stow","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"hudson":{"name":"Hudson","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"tallmadge":{"name":"Tallmadge","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"barberton":{"name":"Barberton","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"wadsworth":{"name":"Wadsworth","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"canton":{"name":"Canton","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"massillon":{"name":"Massillon","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"north-canton":{"name":"North Canton","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"hartville":{"name":"Hartville","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"},"alliance":{"name":"Alliance","users":0,"tier":"Founding","sponsor":19,"featured30":25,"townLink":"https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00","feat30Link":"https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02"}},MAIL="mailto:localloop@localloop.io?subject=Advertising%20on%20Local%20Loop";
+var sel=document.getElementById('townPick');
+function up(){
+  var t=DATA[sel.value]; if(!t)return;
+  document.getElementById('sponsorAmt').innerHTML='$'+t.sponsor+'<span>/month</span><small>'+t.tier+' rate in '+t.name+'</small>';
+  document.getElementById('featAmt').innerHTML='$'+t.featured30+'<span>/30 days</span><small>'+t.tier+' rate in '+t.name+'</small>';
+  var sb=document.getElementById('sponsorBuy'), fb=document.getElementById('featBuy');
+  if(t.townLink){sb.href=t.townLink;sb.textContent='Become a sponsor';}else{sb.href=MAIL;sb.textContent='Email us to sponsor';}
+  if(t.feat30Link){fb.href=t.feat30Link;fb.textContent='Feature my listing';}else{fb.href=MAIL;fb.textContent='Email us to feature';}
+  document.getElementById('rateNote').textContent=t.name+' is at the '+t.tier+' rate ('+t.users+' active this month).';
+  document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){
+    var on=r.getAttribute('data-tier')===t.tier; r.classList.toggle('now',on);
+    var b=r.querySelector('.tier-badge'); if(b)b.style.display=on?'':'none';
+  });
+}
+sel.addEventListener('change',up); up();
+</script>
+</body></html>

@@ -49,3 +49,10 @@ yarn-error.*
 *.html.bak
 
 outreach/
+
+# App Store Connect API key (secret)
+.asc/
+*.p8
+
+# Local Loop FB routine runtime state
+.fb-featured.json

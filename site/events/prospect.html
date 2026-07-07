@@ -55,10 +55,31 @@ footer a{color:var(--green);text-decoration:none;}
 <h1>Prospect, OH</h1>
 <div class="tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>On the Scioto River</span></div>
 <a class="get" href="https://apps.apple.com/app/id6780306721">Get the free app</a></section>
-<div class="empty">No upcoming events listed yet. Check back soon, or add one free in the app.</div>
+<div class="empty">No upcoming events listed yet. Check back soon, or add one free in the app.</div><div class="empty" id="noneLeft" style="display:none">That's a wrap for today. Check back tomorrow, or open the app for garage sales and food trucks too.</div>
 <div class="banner"><h2>Get the free app</h2>
 <p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest and Central Ohio, free.</p>
 <a class="get" href="https://apps.apple.com/app/id6780306721">Download Local Loop</a></div>
 <footer><div>© 2026 Local Loop · Northwest &amp; Central Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
+<script>
+/* Keep this static page current: hide events once they're over (by the viewer's
+   clock), update each day's count, hide emptied days, note when today is done. */
+(function(){
+  function refresh(){
+    var now=Date.now(), anyVisible=false;
+    document.querySelectorAll('section.day').forEach(function(sec){
+      var visible=0;
+      sec.querySelectorAll('.ev').forEach(function(el){
+        var end=Number(el.getAttribute('data-end'))||0;
+        var over=end&&end<now; el.style.display=over?'none':''; if(!over)visible++;
+      });
+      sec.style.display=visible?'':'none';
+      var c=sec.querySelector('.cnt'); if(c)c.textContent=visible+' event'+(visible===1?'':'s');
+      if(visible)anyVisible=true;
+    });
+    var none=document.getElementById('noneLeft'); if(none)none.style.display=anyVisible?'none':'';
+  }
+  refresh(); setInterval(refresh,60000);
+})();
+</script>
 </div></body></html>

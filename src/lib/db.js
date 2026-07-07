@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { cleanText, cleanLocation, cleanDescription } from './text';
+import { effectiveEndMs } from './eventTime';
 
 // Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
 // chronologically), used to expire past garage sales and food trucks.
@@ -183,7 +184,13 @@ export async function fetchEvents(cityId) {
     .order('featured', { ascending: false })
     .order('start_at', { ascending: true });
   if (error) throw error;
-  return (data || []).map(rowToEvent);
+  // Drop events that have already ended — by their real end time, or an estimate
+  // for the ~6% of feeds that omit one — so a noon event doesn't sit on "today"
+  // until midnight. Upcoming and still-running events are kept.
+  const now = Date.now();
+  return (data || [])
+    .map(rowToEvent)
+    .filter((e) => effectiveEndMs(e.start, e.end, e.title, e.category) >= now);
 }
 
 // Single-row fetch by id, any town — powers deep links (localloop.io/event/<id>)

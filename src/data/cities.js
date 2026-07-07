@@ -1,9 +1,10 @@
 // Supported cities. Findlay is the launch market. `region` groups towns in the
 // picker; REGION_ORDER controls the section order.
 
-export const REGION_ORDER = ['Northwest Ohio', 'Central Ohio'];
+export const REGION_ORDER = ['Northwest Ohio', 'Central Ohio', 'Northeast Ohio'];
 const NW = 'Northwest Ohio';
 const CENTRAL = 'Central Ohio';
+const NE = 'Northeast Ohio';
 
 export const CITIES = [
   // --- Northwest Ohio ---
@@ -32,4 +33,20 @@ export const CITIES = [
   { id: 'larue', name: 'LaRue', state: 'OH', region: CENTRAL, tagline: 'Smallest NFL Town Ever' },
   { id: 'prospect', name: 'Prospect', state: 'OH', region: CENTRAL, tagline: 'On the Scioto River' },
   { id: 'green-camp', name: 'Green Camp', state: 'OH', region: CENTRAL, tagline: 'War of 1812 Camp Town' },
+  // --- Northeast Ohio (Akron & Canton metros) ---
+  // All carry live content from the local-feed aggregator (libraries, city
+  // calendars, universities, parks, downtowns) plus Ticketmaster.
+  { id: 'akron', name: 'Akron', state: 'OH', region: NE, tagline: 'The Rubber City' },
+  { id: 'cuyahoga-falls', name: 'Cuyahoga Falls', state: 'OH', region: NE, tagline: 'On the Cuyahoga River' },
+  { id: 'kent', name: 'Kent', state: 'OH', region: NE, tagline: 'Home of Kent State' },
+  { id: 'stow', name: 'Stow', state: 'OH', region: NE, tagline: 'Home of Silver Springs' },
+  { id: 'hudson', name: 'Hudson', state: 'OH', region: NE, tagline: 'Historic village green' },
+  { id: 'tallmadge', name: 'Tallmadge', state: 'OH', region: NE, tagline: 'The Circle City' },
+  { id: 'barberton', name: 'Barberton', state: 'OH', region: NE, tagline: 'The Magic City' },
+  { id: 'wadsworth', name: 'Wadsworth', state: 'OH', region: NE, tagline: 'The Grizzly City' },
+  { id: 'canton', name: 'Canton', state: 'OH', region: NE, tagline: 'Home of the Pro Football Hall of Fame' },
+  { id: 'massillon', name: 'Massillon', state: 'OH', region: NE, tagline: 'Tiger Town' },
+  { id: 'north-canton', name: 'North Canton', state: 'OH', region: NE, tagline: 'The Hoover City' },
+  { id: 'hartville', name: 'Hartville', state: 'OH', region: NE, tagline: 'Home of the MarketPlace' },
+  { id: 'alliance', name: 'Alliance', state: 'OH', region: NE, tagline: 'The Carnation City' },
 ];

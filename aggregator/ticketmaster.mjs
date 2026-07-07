@@ -10,19 +10,13 @@ import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { cityFromLocation } from './towns.mjs';
+import { ANCHORS, geohash } from './geo.mjs';
 
 loadDotEnv();
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const KEY = process.env.TICKETMASTER_API_KEY;
 const HORIZON_DAYS = 90;
-
-// city_id -> the city name Ticketmaster files venues under.
-const CITY_QUERY = {
-  toledo: 'Toledo', findlay: 'Findlay', lima: 'Lima', sandusky: 'Sandusky',
-  'bowling-green': 'Bowling Green', tiffin: 'Tiffin', 'van-wert': 'Van Wert',
-  bellefontaine: 'Bellefontaine', fostoria: 'Fostoria', perrysburg: 'Perrysburg',
-};
 
 // Ticketmaster classification segment -> our app category.
 const SEGMENT_CAT = {
@@ -48,16 +42,23 @@ function pickImage(images) {
   return pool[0].url;
 }
 
-async function fetchCity(city) {
+async function fetchAnchor(a) {
   const now = new Date().toISOString().slice(0, 19) + 'Z';
   const end = new Date(Date.now() + HORIZON_DAYS * 86400000).toISOString().slice(0, 19) + 'Z';
-  const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}`
-    + `&city=${encodeURIComponent(city)}&stateCode=OH&countryCode=US&size=100&sort=date,asc`
-    + `&startDateTime=${now}&endDateTime=${end}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 150)}`);
-  const data = await res.json();
-  return data._embedded?.events || [];
+  const gp = geohash(a.lat, a.lng);
+  const out = [];
+  for (let page = 0; page < 5; page++) {
+    const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}`
+      + `&geoPoint=${gp}&radius=${a.radius}&unit=miles&countryCode=US&size=100&page=${page}&sort=date,asc`
+      + `&startDateTime=${now}&endDateTime=${end}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 150)}`);
+    const data = await res.json();
+    const evs = data._embedded?.events || [];
+    out.push(...evs);
+    if (page + 1 >= (data.page?.totalPages || 1) || evs.length === 0) break;
+  }
+  return out;
 }
 
 function toRow(ev, cityId) {
@@ -105,23 +106,23 @@ async function main() {
   }
   const seen = new Set();
   const rows = [];
-  for (const [cityId, cityName] of Object.entries(CITY_QUERY)) {
+  for (const a of ANCHORS) {
     let events = [];
     try {
-      events = await fetchCity(cityName);
+      events = await fetchAnchor(a);
     } catch (e) {
-      console.error(`  ! ${cityName}: ${e.message}`);
+      console.error(`  ! ${a.name}: ${e.message}`);
       continue;
     }
     let n = 0;
     for (const ev of events) {
-      const row = toRow(ev, cityId);
+      const row = toRow(ev, a.city);
       if (!row || seen.has(row.source_uid)) continue;
       seen.add(row.source_uid);
       rows.push(row);
       n++;
     }
-    console.log(`  ${cityName}: ${n} events`);
+    console.log(`  ${a.name}: ${n} events`);
   }
 
   if (DRY_RUN) {

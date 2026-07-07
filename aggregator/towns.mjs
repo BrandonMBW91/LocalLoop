@@ -30,6 +30,21 @@ const NAMES = [
   ['larue', 'LaRue'],
   ['prospect', 'Prospect'],
   ['green-camp', 'Green Camp'],
+  // Northeast Ohio (Akron / Canton). "North Canton" before "Canton" so it wins;
+  // "Green" is intentionally omitted (too generic — collides with Bowling Green / Green Camp).
+  ['north-canton', 'North Canton'],
+  ['cuyahoga-falls', 'Cuyahoga Falls'],
+  ['akron', 'Akron'],
+  ['canton', 'Canton'],
+  ['massillon', 'Massillon'],
+  ['kent', 'Kent'],
+  ['stow', 'Stow'],
+  ['hudson', 'Hudson'],
+  ['barberton', 'Barberton'],
+  ['tallmadge', 'Tallmadge'],
+  ['wadsworth', 'Wadsworth'],
+  ['hartville', 'Hartville'],
+  ['alliance', 'Alliance'],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

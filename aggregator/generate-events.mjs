@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES as APP_CITIES, REGION_ORDER } from '../src/data/cities.js';
 import { cleanText, cleanLocation, cleanDescription } from '../src/lib/text.js';
+import { effectiveEndMs } from '../src/lib/eventTime.js';
 
 loadDotEnv();
 
@@ -131,6 +132,27 @@ const FOOT = `<div class="banner"><h2>Get the free app</h2>
 <a class="get" href="${APP_STORE_URL}">Download Local Loop</a></div>
 <footer><div>© 2026 Local Loop · Northwest &amp; Central Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
+<script>
+/* Keep this static page current: hide events once they're over (by the viewer's
+   clock), update each day's count, hide emptied days, note when today is done. */
+(function(){
+  function refresh(){
+    var now=Date.now(), anyVisible=false;
+    document.querySelectorAll('section.day').forEach(function(sec){
+      var visible=0;
+      sec.querySelectorAll('.ev').forEach(function(el){
+        var end=Number(el.getAttribute('data-end'))||0;
+        var over=end&&end<now; el.style.display=over?'none':''; if(!over)visible++;
+      });
+      sec.style.display=visible?'':'none';
+      var c=sec.querySelector('.cnt'); if(c)c.textContent=visible+' event'+(visible===1?'':'s');
+      if(visible)anyVisible=true;
+    });
+    var none=document.getElementById('noneLeft'); if(none)none.style.display=anyVisible?'none':'';
+  }
+  refresh(); setInterval(refresh,60000);
+})();
+</script>
 </div></body></html>`;
 
 function eventCard(e) {
@@ -140,7 +162,7 @@ function eventCard(e) {
   const venue = cleanLocation([e.venue, e.address].filter(Boolean)[0] || '');
   const title = cleanText(e.title) || 'Untitled event';
   const href = e.id ? `/event/${e.id}` : APP_STORE_URL;
-  return `<a class="ev" href="${esc(href)}">
+  return `<a class="ev" data-end="${effectiveEndMs(e.start_at, e.end_at, e.title, e.category)}" href="${esc(href)}">
 <div class="chip" style="background:${tint}"><div class="dow" style="background:${color}">${esc(p.dow.toUpperCase())}</div><div class="day" style="color:${color}">${esc(p.day)}</div><div class="mon" style="color:${color}">${esc(p.mon)}</div></div>
 <div class="body"><span class="pill" style="color:${color};background:${tint}">${esc(e.category || 'Community')}</span>
 <h3>${esc(title)}</h3>
@@ -182,7 +204,9 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
 
   const nowIso = new Date().toISOString();
-  const cutoff = new Date(Date.now() + HORIZON_DAYS * 86400000).toISOString();
+  const nowMs = Date.now();
+  const backIso = new Date(nowMs - 12 * 3600 * 1000).toISOString(); // reach back so still-running events stay
+  const cutoff = new Date(nowMs + HORIZON_DAYS * 86400000).toISOString();
   const todayKey = etDayKey(nowIso);
   const tomorrowKey = etDayKey(new Date(Date.now() + 86400000).toISOString());
 
@@ -195,19 +219,23 @@ async function main() {
       .from('events')
       .select('id,title,start_at,end_at,venue,address,host,description,category')
       .eq('city_id', id).eq('status', 'approved')
-      .gte('start_at', nowIso).lte('start_at', cutoff)
+      .gte('start_at', backIso).lte('start_at', cutoff)
       .order('start_at', { ascending: true })
       .limit(300); // full 45-day horizon; stays under PostgREST's 1000 cap
     if (error) { console.error(`  ! ${id}: ${error.message}`); continue; }
     // Render-time dedup guard: collapse same title+venue on the same ET day,
     // so a page is never wrong even if a duplicate slips past ingest dedup.
     const seen = new Set();
-    const events = (data || []).filter((e) => {
-      const k = `${(e.title || '').trim().toLowerCase()}|${(e.venue || '').trim().toLowerCase()}|${etDayKey(e.start_at)}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+    const events = (data || [])
+      // Drop events already over (real end, or an estimate) so a morning event
+      // isn't still shown at night. Ongoing events stay. Client JS trims further live.
+      .filter((e) => effectiveEndMs(e.start_at, e.end_at, e.title, e.category) >= nowMs)
+      .filter((e) => {
+        const k = `${(e.title || '').trim().toLowerCase()}|${(e.venue || '').trim().toLowerCase()}|${etDayKey(e.start_at)}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
     counts[id] = events.length;
     grandTotal += events.length;
 
@@ -219,10 +247,11 @@ async function main() {
       if (g && g.key === k) g.items.push(e);
       else groups.push({ key: k, items: [e] });
     }
-    const body = events.length
-      ? groups.map((g) => `<div class="day-h"><b>${esc(dayLabel(g.key, todayKey, tomorrowKey, g.items[0].start_at))}</b><span>${g.items.length} event${g.items.length === 1 ? '' : 's'}</span></div>
-${g.items.map(eventCard).join('\n')}`).join('\n')
-      : `<div class="empty">No upcoming events listed yet. Check back soon, or add one free in the app.</div>`;
+    const body = (events.length
+      ? groups.map((g) => `<section class="day"><div class="day-h"><b>${esc(dayLabel(g.key, todayKey, tomorrowKey, g.items[0].start_at))}</b><span class="cnt">${g.items.length} event${g.items.length === 1 ? '' : 's'}</span></div>
+${g.items.map(eventCard).join('\n')}</section>`).join('\n')
+      : `<div class="empty">No upcoming events listed yet. Check back soon, or add one free in the app.</div>`)
+      + `<div class="empty" id="noneLeft" style="display:none">That's a wrap for today. Check back tomorrow, or open the app for garage sales and food trucks too.</div>`;
 
     const title = `Things to Do in ${name}, Ohio: Upcoming Events | Local Loop`;
     const desc = `${events.length} upcoming events in ${name}, OH. Concerts, library programs, markets, festivals and more, free with the Local Loop app.`;
