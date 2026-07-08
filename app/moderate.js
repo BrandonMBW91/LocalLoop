@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, RefreshControl, ActivityIndicator, Alert, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { fetchPending, setPostStatus, fetchReported, dismissReports } from '../src/lib/db';
-import { colors, spacing, radius, categoryColor } from '../src/theme/theme';
+import { colors, spacing, radius } from '../src/theme/theme';
 import { formatShortDate } from '../src/utils/dates';
 
 const KIND_LABEL = { event: 'EVENT', garage_sale: 'GARAGE SALE', food_truck: 'FOOD TRUCK' };
@@ -17,11 +17,70 @@ const KIND_COLOR = {
 function itemFields(item) {
   return {
     title: item.title || item.name || 'Untitled',
-    when: item.start || item.date,
+    when: item.start || item.date || item.start_at,
     where: item.venue || item.locationName || item.address,
     detail: item.description || item.note || '',
-    submittedBy: item.host || '',
+    submittedBy: item.host || item.submitted_by || '',
+    image: item.image_url || item.imageUrl || null,
   };
+}
+
+// The tappable body of a queue card — badges, an optional photo thumbnail, and a
+// short preview. Tapping it opens the full submission so the moderator can see
+// exactly what was posted (full text + photo) before deciding.
+function CardBody({ item, reported, onOpen }) {
+  const f = itemFields(item);
+  const accent = KIND_COLOR[item.kind] || colors.primary;
+  return (
+    <Pressable onPress={() => onOpen(item, reported)} accessibilityRole="button" accessibilityLabel={`View full ${KIND_LABEL[item.kind] || 'post'}: ${f.title}`}>
+      <View style={styles.kindRow}>
+        <View style={[styles.kindBadge, { backgroundColor: accent }]}>
+          <ThemedText size="tiny" weight="bold" color={colors.textInverse}>{KIND_LABEL[item.kind]}</ThemedText>
+        </View>
+        {reported ? (
+          <View style={[styles.kindBadge, styles.flagBadge]}>
+            <ThemedText size="tiny" weight="bold" color={colors.danger}>
+              🚩 {item.reportCount} {item.reportCount === 1 ? 'report' : 'reports'}
+            </ThemedText>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.bodyRow}>
+        {f.image ? (
+          <Image source={{ uri: f.image }} style={styles.thumb} resizeMode="cover" />
+        ) : null}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <ThemedText size="subtitle" weight="bold" numberOfLines={2}>{f.title}</ThemedText>
+          {reported && item.reasons?.length ? (
+            <ThemedText size="small" color={colors.danger} style={{ marginTop: 2 }} numberOfLines={2}>
+              Reason: {item.reasons.join(', ')}
+            </ThemedText>
+          ) : null}
+          {f.when ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
+              <ThemedText size="small" color={colors.textMuted}>{formatShortDate(f.when)}</ThemedText>
+            </View>
+          ) : null}
+          {f.where ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={16} color={colors.textMuted} />
+              <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>{f.where}</ThemedText>
+            </View>
+          ) : null}
+        </View>
+      </View>
+
+      {f.detail ? (
+        <ThemedText size="small" color={colors.text} style={{ marginTop: 6 }} numberOfLines={2}>{f.detail}</ThemedText>
+      ) : null}
+      <View style={styles.viewCue}>
+        <Ionicons name="eye-outline" size={15} color={colors.primary} />
+        <ThemedText size="small" weight="bold" color={colors.primary}>Tap to see the full post</ThemedText>
+      </View>
+    </Pressable>
+  );
 }
 
 export default function ModerateScreen() {
@@ -30,6 +89,7 @@ export default function ModerateScreen() {
   const [reported, setReported] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [preview, setPreview] = useState(null); // { item, reported }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +107,9 @@ export default function ModerateScreen() {
   useEffect(() => {
     if (isAdmin) load();
   }, [isAdmin, load]);
+
+  const openPreview = (item, isReported) => setPreview({ item, reported: isReported });
+  const closePreview = () => setPreview(null);
 
   const decide = async (item, status) => {
     setBusyId(item.id);
@@ -133,69 +196,21 @@ export default function ModerateScreen() {
                 </ThemedText>
               </View>
               <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
-                These are published but a user flagged them. Keep them up, or remove them.
+                These are published but a user flagged them. Tap to review, then keep them up or remove them.
               </ThemedText>
 
               {reported.map((item) => {
-                const f = itemFields(item);
-                const accent = KIND_COLOR[item.kind] || colors.primary;
                 const busy = busyId === item.id;
                 return (
                   <View key={`rep-${item.kind}-${item.id}`} style={[styles.card, styles.reportedCard]}>
-                    <View style={styles.kindRow}>
-                      <View style={[styles.kindBadge, { backgroundColor: accent }]}>
-                        <ThemedText size="tiny" weight="bold" color={colors.textInverse}>
-                          {KIND_LABEL[item.kind]}
-                        </ThemedText>
-                      </View>
-                      <View style={[styles.kindBadge, styles.flagBadge]}>
-                        <ThemedText size="tiny" weight="bold" color={colors.danger}>
-                          🚩 {item.reportCount} {item.reportCount === 1 ? 'report' : 'reports'}
-                        </ThemedText>
-                      </View>
-                    </View>
-
-                    <ThemedText size="subtitle" weight="bold">{f.title}</ThemedText>
-                    {item.reasons?.length ? (
-                      <ThemedText size="small" color={colors.danger} style={{ marginTop: 2 }}>
-                        Reason: {item.reasons.join(', ')}
-                      </ThemedText>
-                    ) : null}
-                    {f.when ? (
-                      <View style={styles.metaRow}>
-                        <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
-                        <ThemedText size="small" color={colors.textMuted}>{formatShortDate(f.when)}</ThemedText>
-                      </View>
-                    ) : null}
-                    {f.where ? (
-                      <View style={styles.metaRow}>
-                        <Ionicons name="location-outline" size={16} color={colors.textMuted} />
-                        <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>{f.where}</ThemedText>
-                      </View>
-                    ) : null}
-                    {f.detail ? (
-                      <ThemedText size="small" color={colors.text} style={{ marginTop: 6 }} numberOfLines={4}>
-                        {f.detail}
-                      </ThemedText>
-                    ) : null}
-
+                    <CardBody item={item} reported onOpen={openPreview} />
                     <View style={styles.actions}>
-                      <Pressable
-                        style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]}
-                        onPress={() => removeReported(item)}
-                        disabled={busy}
-                      >
+                      <Pressable style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]} onPress={() => removeReported(item)} disabled={busy}>
                         <Ionicons name="trash-outline" size={20} color={colors.danger} />
                         <ThemedText size="body" weight="bold" color={colors.danger}>Remove</ThemedText>
                       </Pressable>
-                      <Pressable
-                        style={[styles.btn, styles.keep, busy && { opacity: 0.5 }]}
-                        onPress={() => keepReported(item)}
-                        disabled={busy}
-                      >
-                        {busy ? (
-                          <ActivityIndicator size="small" color={colors.textInverse} />
-                        ) : (
+                      <Pressable style={[styles.btn, styles.keep, busy && { opacity: 0.5 }]} onPress={() => keepReported(item)} disabled={busy}>
+                        {busy ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
                           <>
                             <Ionicons name="checkmark" size={20} color={colors.textInverse} />
                             <ThemedText size="body" weight="bold" color={colors.textInverse}>Keep</ThemedText>
@@ -220,59 +235,21 @@ export default function ModerateScreen() {
               </View>
               <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
                 These passed the automatic filter but looked worth a human check (a link,
-                a phone number, or flagged wording). Approve to publish, or reject.
+                a phone number, or flagged wording). Tap to see the full post, then approve or reject.
               </ThemedText>
 
               {items.map((item) => {
-                const f = itemFields(item);
-                const accent = KIND_COLOR[item.kind] || colors.primary;
                 const busy = busyId === item.id;
                 return (
                   <View key={`${item.kind}-${item.id}`} style={styles.card}>
-                    <View style={styles.kindRow}>
-                      <View style={[styles.kindBadge, { backgroundColor: accent }]}>
-                        <ThemedText size="tiny" weight="bold" color={colors.textInverse}>
-                          {KIND_LABEL[item.kind]}
-                        </ThemedText>
-                      </View>
-                    </View>
-
-                    <ThemedText size="subtitle" weight="bold">{f.title}</ThemedText>
-                    {f.when ? (
-                      <View style={styles.metaRow}>
-                        <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
-                        <ThemedText size="small" color={colors.textMuted}>{formatShortDate(f.when)}</ThemedText>
-                      </View>
-                    ) : null}
-                    {f.where ? (
-                      <View style={styles.metaRow}>
-                        <Ionicons name="location-outline" size={16} color={colors.textMuted} />
-                        <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>{f.where}</ThemedText>
-                      </View>
-                    ) : null}
-                    {f.detail ? (
-                      <ThemedText size="small" color={colors.text} style={{ marginTop: 6 }} numberOfLines={4}>
-                        {f.detail}
-                      </ThemedText>
-                    ) : null}
-
+                    <CardBody item={item} reported={false} onOpen={openPreview} />
                     <View style={styles.actions}>
-                      <Pressable
-                        style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]}
-                        onPress={() => decide(item, 'rejected')}
-                        disabled={busy}
-                      >
+                      <Pressable style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]} onPress={() => decide(item, 'rejected')} disabled={busy}>
                         <Ionicons name="close" size={20} color={colors.danger} />
                         <ThemedText size="body" weight="bold" color={colors.danger}>Reject</ThemedText>
                       </Pressable>
-                      <Pressable
-                        style={[styles.btn, styles.approve, busy && { opacity: 0.5 }]}
-                        onPress={() => decide(item, 'approved')}
-                        disabled={busy}
-                      >
-                        {busy ? (
-                          <ActivityIndicator size="small" color={colors.textInverse} />
-                        ) : (
+                      <Pressable style={[styles.btn, styles.approve, busy && { opacity: 0.5 }]} onPress={() => decide(item, 'approved')} disabled={busy}>
+                        {busy ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
                           <>
                             <Ionicons name="checkmark" size={20} color={colors.textInverse} />
                             <ThemedText size="body" weight="bold" color={colors.textInverse}>Approve</ThemedText>
@@ -287,7 +264,103 @@ export default function ModerateScreen() {
           ) : null}
         </>
       )}
+
+      {/* Full-post preview — what the submitter actually posted. */}
+      <PreviewModal
+        preview={preview}
+        busy={preview ? busyId === preview.item.id : false}
+        onClose={closePreview}
+        onApprove={(item) => { decide(item, 'approved'); closePreview(); }}
+        onReject={(item) => { decide(item, 'rejected'); closePreview(); }}
+        onKeep={(item) => { keepReported(item); closePreview(); }}
+        onRemove={(item) => { removeReported(item); closePreview(); }}
+      />
     </ScrollView>
+  );
+}
+
+function PreviewModal({ preview, busy, onClose, onApprove, onReject, onKeep, onRemove }) {
+  if (!preview) return null;
+  const { item, reported } = preview;
+  const f = itemFields(item);
+  const accent = KIND_COLOR[item.kind] || colors.primary;
+  return (
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={styles.modalScreen}>
+        <View style={styles.modalHead}>
+          <View style={[styles.kindBadge, { backgroundColor: accent }]}>
+            <ThemedText size="tiny" weight="bold" color={colors.textInverse}>{KIND_LABEL[item.kind]}</ThemedText>
+          </View>
+          <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Close preview">
+            <Ionicons name="close" size={28} color={colors.text} />
+          </Pressable>
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}>
+          {f.image ? (
+            <Image source={{ uri: f.image }} style={styles.modalImage} resizeMode="cover" />
+          ) : null}
+          <ThemedText size="title" weight="bold" style={{ marginTop: f.image ? spacing.md : 0 }}>{f.title}</ThemedText>
+
+          {reported && item.reasons?.length ? (
+            <View style={[styles.kindBadge, styles.flagBadge, { alignSelf: 'flex-start', marginTop: spacing.sm }]}>
+              <ThemedText size="small" weight="bold" color={colors.danger}>🚩 Reported: {item.reasons.join(', ')}</ThemedText>
+            </View>
+          ) : null}
+
+          {f.when ? (
+            <View style={[styles.metaRow, { marginTop: spacing.sm }]}>
+              <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
+              <ThemedText size="body" color={colors.textMuted}>{formatShortDate(f.when)}</ThemedText>
+            </View>
+          ) : null}
+          {f.where ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={18} color={colors.textMuted} />
+              <ThemedText size="body" color={colors.textMuted}>{f.where}</ThemedText>
+            </View>
+          ) : null}
+          {f.submittedBy ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="person-outline" size={18} color={colors.textMuted} />
+              <ThemedText size="body" color={colors.textMuted}>Submitted by {f.submittedBy}</ThemedText>
+            </View>
+          ) : null}
+
+          {f.detail ? (
+            <ThemedText size="body" color={colors.text} style={{ marginTop: spacing.md, lineHeight: 26 }}>{f.detail}</ThemedText>
+          ) : (
+            <ThemedText size="small" color={colors.textMuted} style={{ marginTop: spacing.md }}>No description provided.</ThemedText>
+          )}
+        </ScrollView>
+
+        <View style={[styles.actions, styles.modalActions]}>
+          {reported ? (
+            <>
+              <Pressable style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]} onPress={() => onRemove(item)} disabled={busy}>
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                <ThemedText size="body" weight="bold" color={colors.danger}>Remove</ThemedText>
+              </Pressable>
+              <Pressable style={[styles.btn, styles.keep, busy && { opacity: 0.5 }]} onPress={() => onKeep(item)} disabled={busy}>
+                <Ionicons name="checkmark" size={20} color={colors.textInverse} />
+                <ThemedText size="body" weight="bold" color={colors.textInverse}>Keep</ThemedText>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Pressable style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]} onPress={() => onReject(item)} disabled={busy}>
+                <Ionicons name="close" size={20} color={colors.danger} />
+                <ThemedText size="body" weight="bold" color={colors.danger}>Reject</ThemedText>
+              </Pressable>
+              <Pressable style={[styles.btn, styles.approve, busy && { opacity: 0.5 }]} onPress={() => onApprove(item)} disabled={busy}>
+                <Ionicons name="checkmark" size={20} color={colors.textInverse} />
+                <ThemedText size="body" weight="bold" color={colors.textInverse}>Approve</ThemedText>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -307,7 +380,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     marginBottom: spacing.md,
-    gap: 4,
+    gap: spacing.xs,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -320,7 +393,10 @@ const styles = StyleSheet.create({
   kindRow: { flexDirection: 'row', marginBottom: 2, gap: 6, flexWrap: 'wrap' },
   kindBadge: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
   flagBadge: { backgroundColor: colors.accentLight },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bodyRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  thumb: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  viewCue: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
   actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   btn: {
     flex: 1,
@@ -335,4 +411,20 @@ const styles = StyleSheet.create({
   reject: { borderWidth: 1.5, borderColor: colors.danger, backgroundColor: colors.surface },
   approve: { backgroundColor: colors.success },
   keep: { backgroundColor: colors.primary },
+  modalScreen: { flex: 1, backgroundColor: colors.background },
+  modalHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalImage: { width: '100%', height: 220, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  modalActions: {
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: 0,
+  },
 });

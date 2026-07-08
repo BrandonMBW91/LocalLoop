@@ -28,7 +28,7 @@ export default function SkeletonList({ count = 6 }) {
   );
 }
 
-const block = '#ECE9E2';
+const block = colors.skeleton;
 
 const styles = StyleSheet.create({
   card: {

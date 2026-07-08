@@ -12,7 +12,7 @@ import { colors, spacing, radius } from '../src/theme/theme';
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { city, completeOnboarding } = useApp();
+  const { completeOnboarding } = useApp();
 
   const chooseTown = () => router.push({ pathname: '/city', params: { onboarding: '1' } });
   const useDefault = () => {
@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
           Local Loop
         </ThemedText>
         <ThemedText size="subtitle" color={colors.textInverse} style={styles.tagline}>
-          Events, garage sales, and food trucks near you in NW and Central Ohio, all in one place.
+          Events, garage sales, and food trucks near you across Northwest, Central, and Northeast Ohio.
         </ThemedText>
       </View>
 
@@ -47,10 +47,10 @@ export default function WelcomeScreen() {
           onPress={useDefault}
           style={styles.secondaryBtn}
           accessibilityRole="button"
-          accessibilityLabel={`Continue with ${city.name}`}
+          accessibilityLabel="Skip for now"
         >
           <ThemedText size="body" weight="semibold" color={colors.textInverse} style={{ opacity: 0.95 }}>
-            Continue with {city.name}
+            Skip for now
           </ThemedText>
         </Pressable>
       </View>

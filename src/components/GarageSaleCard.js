@@ -86,7 +86,7 @@ function GarageSaleCard({ sale }) {
           ) : null}
           {badge ? (
             <View style={styles.whenPill}>
-              <ThemedText size="tiny" weight="bold" color={colors.success}>{badge}</ThemedText>
+              <ThemedText size="tiny" weight="bold" color={colors.primary}>{badge}</ThemedText>
             </View>
           ) : null}
         </View>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   pill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 2 },
   whenPill: {
-    backgroundColor: '#E5F2E8',
+    backgroundColor: colors.primaryLight,
     borderRadius: radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,

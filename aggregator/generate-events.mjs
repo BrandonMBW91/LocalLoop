@@ -131,9 +131,9 @@ footer a{color:var(--green);text-decoration:none;}
 <nav><a href="/events/">All towns</a><a href="/advertise.html">For businesses</a></nav></header>`;
 
 const FOOT = `<div class="banner"><h2>Get the free app</h2>
-<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest and Central Ohio, free.</p>
+<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest, Central, and Northeast Ohio, free.</p>
 <a class="get" href="${APP_STORE_URL}">Download Local Loop</a></div>
-<footer><div>© 2026 Local Loop · Northwest &amp; Central Ohio</div>
+<footer><div>© 2026 Local Loop · Northwest, Central &amp; Northeast Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
 <script>
 /* Keep this static page current: hide events once they're over (by the viewer's

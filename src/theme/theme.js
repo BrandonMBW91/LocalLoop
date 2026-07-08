@@ -24,6 +24,7 @@ export const colors = {
 
   border: '#E4DED4', //                 (REVERT: '#E2DED7')
   shadow: '#000000',
+  skeleton: '#ECE9E2', // neutral list-loading placeholder (SkeletonCard)
 
   success: '#256B29', // darkened so it clears WCAG AA on the light "when" chips
   danger: '#C0392B',
