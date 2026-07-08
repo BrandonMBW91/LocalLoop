@@ -1,0 +1,27 @@
+name: Weekend digest push
+
+# Fires the weekend-digest edge function every Friday morning — sends each
+# registered device a "what's on this weekend near you" push, scoped to its town.
+# The function itself gates on the x-cron-secret header (see its AUTH note).
+on:
+  schedule:
+    - cron: '0 13 * * 5' # Fridays 13:00 UTC = 9am EDT (8am in winter EST)
+  workflow_dispatch: {} # manual test-fire from the Actions tab
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call weekend-digest function
+        env:
+          SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -o pipefail
+          curl -sf -X POST \
+            "https://wtaefyspddadcrnovumk.supabase.co/functions/v1/weekend-digest" \
+            -H "Authorization: Bearer $SERVICE_ROLE" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -o out.json
+          cat out.json
+          grep -q '"sent"' out.json
