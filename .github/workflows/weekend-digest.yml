@@ -5,8 +5,14 @@ name: Weekend digest push
 # The function itself gates on the x-cron-secret header (see its AUTH note).
 on:
   schedule:
-    - cron: '0 13 * * 5' # Fridays 13:00 UTC = 9am EDT (8am in winter EST)
-  workflow_dispatch: {} # manual test-fire from the Actions tab
+    - cron: '0 13 * * 5'  # Fridays 13:00 UTC = 9am EDT — SEND the digest
+    - cron: '30 13 * * 5' # 13:30 UTC — RECEIPTS pass: Expo reports DeviceNotRegistered
+                          # (= app uninstalled) ~15 min after send; prune those tokens
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'send or receipts'
+        default: 'send'
 
 jobs:
   send:
@@ -16,12 +22,15 @@ jobs:
         env:
           SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # The 13:30 schedule (and a manual "receipts" dispatch) runs the receipts pass.
+          MODE: ${{ (github.event.schedule == '30 13 * * 5' || inputs.mode == 'receipts') && 'receipts' || 'send' }}
         run: |
           set -o pipefail
-          curl -sf -X POST \
-            "https://wtaefyspddadcrnovumk.supabase.co/functions/v1/weekend-digest" \
+          URL="https://wtaefyspddadcrnovumk.supabase.co/functions/v1/weekend-digest"
+          if [ "$MODE" = "receipts" ]; then URL="$URL?mode=receipts"; fi
+          curl -sf -X POST "$URL" \
             -H "Authorization: Bearer $SERVICE_ROLE" \
             -H "x-cron-secret: $CRON_SECRET" \
             -o out.json
           cat out.json
-          grep -q '"sent"' out.json
+          grep -qE '"sent"|"receiptsChecked"' out.json

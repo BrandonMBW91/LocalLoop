@@ -63,6 +63,12 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  // Follow-up pass (~30 min after send): fetch Expo receipts and prune tokens
+  // whose receipt says DeviceNotRegistered — our uninstall signal.
+  if (new URL(req.url).searchParams.get('mode') === 'receipts') {
+    return checkReceipts(supabase);
+  }
+
   // "This weekend" = from now until the start of next Monday in Eastern time.
   // Anchoring the end to Eastern midnight (not UTC midnight) keeps Sunday-evening
   // events in the window; a plain Mon 00:00 UTC cutoff is only Sun 8pm ET and
@@ -104,16 +110,82 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Expo push API accepts up to 100 messages per request.
+  // Expo push API accepts up to 100 messages per request. Keep each ticket id
+  // paired with its token so the receipts pass (?mode=receipts, run ~30 min
+  // later) can detect DeviceNotRegistered = the app was uninstalled.
+  let removedAtSend = 0;
+  const ticketRows: Array<{ ticket_id: string; token: string }> = [];
   for (let i = 0; i < messages.length; i += 100) {
-    await fetch('https://exp.host/--/api/v2/push/send', {
+    const batch = messages.slice(i, i + 100);
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(messages.slice(i, i + 100)),
+      body: JSON.stringify(batch),
     });
+    try {
+      const tickets = (await res.json())?.data || [];
+      for (let j = 0; j < tickets.length; j++) {
+        const t = tickets[j];
+        const token = batch[j]?.to as string;
+        if (!token) continue;
+        if (t?.status === 'ok' && t.id) {
+          ticketRows.push({ ticket_id: t.id, token });
+        } else if (t?.details?.error === 'DeviceNotRegistered') {
+          // Uninstalled (or token revoked) — stop pushing to it.
+          await supabase.from('push_tokens').delete().eq('token', token);
+          removedAtSend++;
+        }
+      }
+    } catch { /* ticket parsing is best-effort; the send itself succeeded */ }
+  }
+  if (ticketRows.length) {
+    await supabase.from('push_tickets').upsert(ticketRows, { onConflict: 'ticket_id', ignoreDuplicates: true });
   }
 
-  return new Response(JSON.stringify({ sent: messages.length }), {
+  return new Response(JSON.stringify({ sent: messages.length, removedAtSend, receiptsPending: ticketRows.length }), {
     headers: { 'Content-Type': 'application/json' },
   });
 });
+
+// Receipts pass: Expo only knows DeviceNotRegistered for sure after handing the
+// push to FCM/APNs, reported via receipts ~15 min post-send. The Friday workflow
+// calls ?mode=receipts at 13:30 UTC; any receipt marked DeviceNotRegistered means
+// the app was UNINSTALLED — we delete that push token and log it.
+async function checkReceipts(supabase: ReturnType<typeof createClient>): Promise<Response> {
+  const { data: pending } = await supabase
+    .from('push_tickets')
+    .select('ticket_id, token')
+    .lt('created_at', new Date(Date.now() - 5 * 60000).toISOString());
+  if (!pending?.length) {
+    return new Response(JSON.stringify({ receiptsChecked: 0, uninstalled: 0 }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const byId = new Map(pending.map((p) => [p.ticket_id, p.token]));
+  let uninstalled = 0;
+  let checked = 0;
+  const ids = [...byId.keys()];
+  for (let i = 0; i < ids.length; i += 300) {
+    const res = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ ids: ids.slice(i, i + 300) }),
+    });
+    const receipts = (await res.json())?.data || {};
+    for (const [id, r] of Object.entries(receipts) as Array<[string, any]>) {
+      checked++;
+      const token = byId.get(id);
+      if (token && r?.status === 'error' && r?.details?.error === 'DeviceNotRegistered') {
+        await supabase.from('push_tokens').delete().eq('token', token);
+        uninstalled++;
+        console.log('uninstall detected, token removed:', token.slice(0, 24) + '…');
+      }
+      await supabase.from('push_tickets').delete().eq('ticket_id', id);
+    }
+  }
+  // Receipts Expo never produced expire after ~24h — sweep stale rows.
+  await supabase.from('push_tickets').delete().lt('created_at', new Date(Date.now() - 2 * 86400000).toISOString());
+  return new Response(JSON.stringify({ receiptsChecked: checked, uninstalled }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
