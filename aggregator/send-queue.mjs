@@ -24,11 +24,12 @@
 //   • Send window: only sends Mon-Sat 08:00-20:00 ET by default (--force or
 //     SEND_ANYTIME=1 to override; OUTREACH_SEND_DAYS/START/END to tune). Sweeps
 //     still run outside the window; only the outbound send is gated.
-//   • Follow-ups (opt-in): set OUTREACH_FOLLOWUP_DAYS=N to send a second-touch
-//     nudge N days after the first email to anyone who hasn't replied/opted out.
-//     Follow-ups share the daily quota (sent before new first-touches) so total
-//     volume stays inside the warm-up, and never go to repliers (replied.txt) or
-//     opt-outs. 0 (default) = off. Uses drafts in outreach/followups/.
+//   • Follow-ups: a second-touch nudge auto-activates once warmed up (>= 40 good
+//     sends, the ramp ceiling) with a 6-day delay, to anyone who hasn't replied
+//     (replied.txt) / opted out / bounced. Override with OUTREACH_FOLLOWUP_DAYS
+//     (0 forces off, N sets the delay) or OUTREACH_FOLLOWUP_ACTIVATE_AT. They
+//     share the daily quota (sent before new first-touches) so total volume stays
+//     inside the warm-up. Drafts live in outreach/followups/.
 //   • Circuit breaker: >15% bounce rate (min 10 sent) pauses everything with ALERT.
 //   • Writes outreach/last-run.json each run for observability.
 
@@ -96,11 +97,10 @@ const queueTos = new Set(queue.map((d) => d.to));
 const bounced = new Set(readLines(BOUNCED).map((l) => l.split(/\s+/)[0].toLowerCase()));
 const suppressed = new Set(readLines(SUPPRESS).map((l) => l.split(/\s+/)[0].toLowerCase()));
 
-// Second-touch follow-ups (opt-in). OUTREACH_FOLLOWUP_DAYS = N sends a follow-up
-// N calendar days after the first touch to anyone who hasn't replied/opted out/
-// bounced. 0 (default) disables it entirely. Follow-ups share the daily quota
+// Second-touch follow-ups. Delay in days is computed after we know the warm-up
+// state (see FOLLOWUP_DAYS below): auto-on once the domain is warmed up, or an
+// explicit OUTREACH_FOLLOWUP_DAYS overrides. Follow-ups share the daily quota
 // (sent BEFORE new first-touches) so total volume stays inside the warm-up.
-const FOLLOWUP_DAYS = Math.max(0, Number(process.env.OUTREACH_FOLLOWUP_DAYS || g('OUTREACH_FOLLOWUP_DAYS') || 0));
 const FOLLOWUP_LOG = join(OUTREACH, 'followup-log.txt');
 const REPLIED = join(OUTREACH, 'replied.txt');
 const replied = new Set(readLines(REPLIED).map((l) => l.split(/\s+/)[0].toLowerCase()));
@@ -282,6 +282,14 @@ const logEntries = readLines(LOG).map((l) => ({ ts: localDay(l.split(/\s+/)[0]),
 const goodAllTime = logEntries.filter((e) => !bounced.has(e.to)).length;
 const goodToday = logEntries.filter((e) => e.ts === today && !bounced.has(e.to)).length;
 const loggedTos = new Set(logEntries.map((e) => e.to).filter(Boolean));
+
+// Follow-ups auto-activate once the domain is warmed up — at FOLLOWUP_ACTIVATE_AT
+// good sends (default 40, the same point the daily ramp reaches its ceiling) —
+// using a 6-day delay. An explicit OUTREACH_FOLLOWUP_DAYS overrides in either
+// direction: set 0 to force off, or any N to set the delay regardless of warm-up.
+const FU_ENV = process.env.OUTREACH_FOLLOWUP_DAYS ?? g('OUTREACH_FOLLOWUP_DAYS');
+const FU_ACTIVATE_AT = Number(process.env.OUTREACH_FOLLOWUP_ACTIVATE_AT || g('OUTREACH_FOLLOWUP_ACTIVATE_AT') || 40);
+const FOLLOWUP_DAYS = (FU_ENV != null && FU_ENV !== '') ? Math.max(0, Number(FU_ENV)) : (goodAllTime >= FU_ACTIVATE_AT ? 6 : 0);
 
 // First-touch day per email (sent-log.txt holds first touches only; follow-ups
 // have their own log). Used to decide when a follow-up is due.
