@@ -219,6 +219,7 @@ export function AppProvider({ children }) {
   const logEvent = useCallback(
     (event, props = {}) => {
       if (isAdmin) return;
+      if (Platform.OS === 'web') return; // dev/preview sessions must never pollute analytics
       trackEvent({ event, props, deviceId, cityId });
     },
     [deviceId, cityId, isAdmin]
@@ -276,8 +277,9 @@ export function AppProvider({ children }) {
   // user-based ad pricing.
   useEffect(() => {
     setupAndroidChannel(); // Android needs a channel to display any notification (no-op on iOS)
-    // Skip entirely for the admin/owner so their device never enters the metrics.
-    if (isSupabaseEnabled && !isAdmin && deviceId && cityId) {
+    // Skip for the admin/owner AND for web (dev/preview) — neither may enter the
+    // metrics ('web' rows polluted the iOS/Android split before this guard).
+    if (isSupabaseEnabled && !isAdmin && Platform.OS !== 'web' && deviceId && cityId) {
       recordDeviceActivity(deviceId, cityId, Platform.OS);
       // Log one app_open per launch so daily opens are tracked historically in
       // app_events (device_activity is upsert-only and keeps no per-day history).

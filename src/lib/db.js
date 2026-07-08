@@ -575,6 +575,32 @@ export async function recordDeviceActivity(deviceId, cityId, platform) {
   }
 }
 
+// Events with coordinates inside a map viewport — ANY town. Powers the map's
+// zoom-out discovery: it opens framed on your town, and panning/zooming fetches
+// whatever else lives in the visible area, so neighboring towns' events appear
+// as you widen. Small projection, capped, soonest-first.
+export async function fetchEventsInBounds({ w, s, e, n }, limit = 250) {
+  try {
+    const nowIso = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('events')
+      .select('id, title, lat, lng, category')
+      .eq('status', 'approved')
+      .gte('start_at', nowIso)
+      .not('lat', 'is', null)
+      .gte('lat', s)
+      .lte('lat', n)
+      .gte('lng', w)
+      .lte('lng', e)
+      .order('start_at', { ascending: true })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    return [];
+  }
+}
+
 // Town ids the aggregator currently has upcoming events for. The picker shows only
 // these (+ the user's current selection) so an empty "ghost" town is never shown,
 // and a town reappears the moment the daily aggregator finds it an event. Returns
