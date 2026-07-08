@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
 import DateChip from './DateChip';
+import Pill from './Pill';
 import { colors, spacing, radius, categoryColor } from '../theme/theme';
 import { useApp } from '../context/AppContext';
 import { relativeDay, timeRange } from '../utils/dates';
@@ -30,18 +31,9 @@ function EventCard({ event }) {
 
         <View style={styles.body}>
           <View style={styles.topRow}>
-            <View style={[styles.catPill, { backgroundColor: accent + '18' }]}>
-              <ThemedText size="tiny" weight="bold" color={accent}>
-                {event.category.toUpperCase()}
-              </ThemedText>
-            </View>
+            <Pill label={event.category.toUpperCase()} color={accent} bg={accent + '18'} />
             {event.featured ? (
-              <View style={styles.featuredPill}>
-                <Ionicons name="star" size={11} color={colors.accent} />
-                <ThemedText size="tiny" weight="bold" color={colors.accent}>
-                  FEATURED
-                </ThemedText>
-              </View>
+              <Pill label="FEATURED" color={colors.accent} bg={colors.accentLight} icon="star" />
             ) : null}
           </View>
 
@@ -122,20 +114,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     flexWrap: 'wrap',
-  },
-  catPill: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 2,
-  },
-  featuredPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.accentLight,
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
   },
   metaRow: {
     flexDirection: 'row',

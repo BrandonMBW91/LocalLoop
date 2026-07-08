@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
 import DateChip from './DateChip';
+import Pill from './Pill';
 import { colors, spacing, radius } from '../theme/theme';
 import { useApp } from '../context/AppContext';
 import { dateRangeLabel, daysFromNow } from '../utils/dates';
@@ -73,22 +74,11 @@ function GarageSaleCard({ sale }) {
 
       <View style={styles.body}>
         <View style={styles.topRow}>
-          <View style={[styles.pill, { backgroundColor: accent + '18' }]}>
-            <ThemedText size="tiny" weight="bold" color={accent}>
-              {sale.type.toUpperCase()}
-            </ThemedText>
-          </View>
+          <Pill label={sale.type.toUpperCase()} color={accent} bg={accent + '18'} />
           {sale.featured ? (
-            <View style={styles.featuredPill}>
-              <Ionicons name="star" size={11} color={colors.accent} />
-              <ThemedText size="tiny" weight="bold" color={colors.accent}>FEATURED</ThemedText>
-            </View>
+            <Pill label="FEATURED" color={colors.accent} bg={colors.accentLight} icon="star" />
           ) : null}
-          {badge ? (
-            <View style={styles.whenPill}>
-              <ThemedText size="tiny" weight="bold" color={colors.primary}>{badge}</ThemedText>
-            </View>
-          ) : null}
+          {badge ? <Pill label={badge} color={colors.primary} bg={colors.primaryLight} /> : null}
         </View>
 
         <ThemedText size="subtitle" weight="bold" numberOfLines={2}>
@@ -155,22 +145,6 @@ const styles = StyleSheet.create({
   },
   body: { flex: 1, gap: 4 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  pill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 2 },
-  whenPill: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  featuredPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.accentLight,
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tagRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   tag: {

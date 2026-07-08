@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
 import DateChip from './DateChip';
+import Pill from './Pill';
 import { colors, spacing, radius } from '../theme/theme';
 import { useApp } from '../context/AppContext';
 import { CUISINE_EMOJI } from '../data/foodTrucks';
@@ -33,22 +34,15 @@ function FoodTruckCard({ truck }) {
 
       <View style={styles.body}>
         <View style={styles.topRow}>
-          <View style={[styles.pill, { backgroundColor: accent + '18' }]}>
-            <ThemedText size="tiny" weight="bold" color={accent}>
-              {CUISINE_EMOJI[truck.cuisine] ? `${CUISINE_EMOJI[truck.cuisine]} ` : ''}{truck.cuisine.toUpperCase()}
-            </ThemedText>
-          </View>
+          <Pill
+            label={`${CUISINE_EMOJI[truck.cuisine] ? `${CUISINE_EMOJI[truck.cuisine]} ` : ''}${truck.cuisine.toUpperCase()}`}
+            color={accent}
+            bg={accent + '18'}
+          />
           {truck.featured ? (
-            <View style={styles.featuredPill}>
-              <Ionicons name="star" size={11} color={colors.accent} />
-              <ThemedText size="tiny" weight="bold" color={colors.accent}>FEATURED</ThemedText>
-            </View>
+            <Pill label="FEATURED" color={colors.accent} bg={colors.accentLight} icon="star" />
           ) : null}
-          {badge ? (
-            <View style={[styles.whenPill, { backgroundColor: badge.color + '1F' }]}>
-              <ThemedText size="tiny" weight="bold" color={badge.color}>{badge.label}</ThemedText>
-            </View>
-          ) : null}
+          {badge ? <Pill label={badge.label} color={badge.color} bg={badge.color + '1F'} /> : null}
         </View>
 
         <ThemedText size="subtitle" weight="bold" numberOfLines={2}>
@@ -98,17 +92,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   body: { flex: 1, gap: 4 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  pill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 2 },
-  whenPill: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  featuredPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.accentLight,
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });
 

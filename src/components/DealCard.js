@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable, Image, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
+import Pill from './Pill';
 import { useApp } from '../context/AppContext';
 import { recordDealView } from '../lib/db';
 import { colors, spacing, radius } from '../theme/theme';
@@ -34,10 +35,7 @@ export default function DealCard({ deal }) {
               {(deal.businessName || 'Local business').toUpperCase()}
             </ThemedText>
             {deal.featured ? (
-              <View style={styles.featuredPill}>
-                <Ionicons name="star" size={11} color={colors.accent} />
-                <ThemedText size="tiny" weight="bold" color={colors.accent}>FEATURED</ThemedText>
-              </View>
+              <Pill label="FEATURED" color={colors.accent} bg={colors.accentLight} icon="star" />
             ) : null}
           </View>
           <ThemedText size="subtitle" weight="bold" numberOfLines={2}>
@@ -96,10 +94,6 @@ const styles = StyleSheet.create({
   thumb: { borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
   thumbIcon: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentLight },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 },
-  featuredPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: colors.accentLight, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2,
-  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
