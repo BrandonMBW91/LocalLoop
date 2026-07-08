@@ -3,11 +3,13 @@ import { Tabs, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/theme/theme';
 import { useApp } from '../../src/context/AppContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Big, clearly-labeled bottom tabs. Only three destinations to keep
 // navigation simple for every age group.
 export default function TabsLayout() {
   const { hydrated, onboarded, scale } = useApp();
+  const insets = useSafeAreaInsets(); // so the tab bar clears the system nav bar
 
   // Don't flash the tabs before we know whether to show the welcome screen.
   if (!hydrated) return null;
@@ -26,8 +28,12 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          height: Math.round(68 * navScale),
-          paddingBottom: 10,
+          // Add the bottom safe-area inset so the tab bar sits ABOVE the system
+          // navigation bar (Android edge-to-edge gesture/3-button bar, iOS home
+          // indicator) instead of being covered by it. insets.bottom is 0 on
+          // devices without one, so this is a no-op there.
+          height: Math.round(68 * navScale) + insets.bottom,
+          paddingBottom: insets.bottom + 10,
           paddingTop: 6,
           borderTopColor: colors.border,
         },

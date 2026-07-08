@@ -17,6 +17,7 @@ export const CITIES = [
   { id: 'van-wert', name: 'Van Wert', state: 'OH', region: NW, tagline: 'Peony Capital of Ohio' },
   { id: 'toledo', name: 'Toledo', state: 'OH', region: NW, tagline: 'The Glass City' },
   { id: 'perrysburg', name: 'Perrysburg', state: 'OH', region: NW, tagline: 'Historic riverfront town' },
+  { id: 'sylvania', name: 'Sylvania', state: 'OH', region: NW, tagline: 'Home of the Red Bird Arts District' },
   { id: 'bluffton', name: 'Bluffton', state: 'OH', region: NW, tagline: 'Home of Bluffton University' },
   { id: 'ada', name: 'Ada', state: 'OH', region: NW, tagline: 'Home of Ohio Northern' },
   { id: 'waterville', name: 'Waterville', state: 'OH', region: NW, tagline: 'Along the Maumee River' },

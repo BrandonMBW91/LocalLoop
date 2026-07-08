@@ -13,6 +13,7 @@ export const NAMES = [
   ['van-wert', 'Van Wert'],
   ['bellefontaine', 'Bellefontaine'],
   ['perrysburg', 'Perrysburg'],
+  ['sylvania', 'Sylvania'],
   ['waterville', 'Waterville'],
   ['sandusky', 'Sandusky'],
   ['fostoria', 'Fostoria'],
