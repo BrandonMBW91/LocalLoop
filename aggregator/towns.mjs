@@ -89,6 +89,16 @@ export const NAMES = [
   ['catawba-island', "Catawba Island"],
   ['put-in-bay', "Put-in-Bay"],
   ['kelleys-island', "Kelleys Island"],
+  ['youngstown', "Youngstown"],
+  ['warren', "Warren"],
+  ['boardman', "Boardman"],
+  ['austintown', "Austintown"],
+  ['niles', "Niles"],
+  ['girard', "Girard"],
+  ['struthers', "Struthers"],
+  ['canfield', "Canfield"],
+  ['salem', "Salem"],
+  ['columbiana', "Columbiana"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

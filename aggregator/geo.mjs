@@ -24,6 +24,7 @@ export const ANCHORS = [
   { name: 'Miami Valley / Piqua-Troy', city: 'troy', lat: 40.100, lng: -84.220, radius: 22 }, // Sidney, Piqua, Troy, Versailles
   { name: 'Greenville / Darke', city: 'greenville', lat: 40.100, lng: -84.630, radius: 20 },
   { name: 'Defiance / NW corner', city: 'defiance', lat: 41.400, lng: -84.280, radius: 30 },   // Defiance, Napoleon, Bryan, Wauseon (Fremont=Sandusky, Wapakoneta=Lima)
+  { name: 'Youngstown / Mahoning Valley', city: 'youngstown', lat: 41.100, lng: -80.700, radius: 25 }, // Youngstown, Warren, Boardman, Austintown, Niles, Girard, Struthers, Canfield, Salem, Columbiana
 ];
 
 // Great-circle miles between two points (haversine).
