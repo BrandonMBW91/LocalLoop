@@ -44,6 +44,13 @@ export const NAMES = [
   ['barberton', 'Barberton'],
   ['tallmadge', 'Tallmadge'],
   ['wadsworth', 'Wadsworth'],
+  ['portage-lakes', 'Portage Lakes'],
+  // Portage Lakes is unincorporated and spans New Franklin + Coventry Township.
+  // We don't list those separately, so map their place-names to Portage Lakes —
+  // that's how the New Franklin / Kiwanis community feeds route here instead of
+  // being dropped as "out of area" (their addresses say "New Franklin, OH").
+  ['portage-lakes', 'New Franklin'],
+  ['portage-lakes', 'Coventry Township'],
   ['hartville', 'Hartville'],
   ['alliance', 'Alliance'],
 ];
@@ -71,6 +78,11 @@ const NAMES_A_CITY = /,\s*(?:oh|ohio)\b|\b(?:oh|ohio)\s+\d{5}\b/i;
 // e.g. a Visit Toledo event in Catawba Island), so the caller can drop it.
 export function cityFromLocation(location, fallback) {
   const loc = String(location || '');
+  // Portage Lakes is an unincorporated lake community that shares Akron's postal
+  // city + ZIP (addresses often read "...Portage Lakes Drive, Akron, OH 44319"),
+  // so a NAMED "Portage Lakes" venue/place must win over the "Akron, OH" city
+  // slot below. A bare "Portage Lakes <street>" alone is just a road, not a place.
+  if (/\bportage lakes\b(?!\s+(?:dr|drive|blvd|boulevard|rd|road|ave|avenue|pkwy|parkway|ln|lane|ct|court)\b)/i.test(loc)) return 'portage-lakes';
   for (const [id, re] of CITY_POS) if (re.test(loc)) return id;
   for (const [id, re] of ANY) if (re.test(loc)) return id;
   if (NAMES_A_CITY.test(loc)) return null; // out-of-area city → exclude

@@ -40,10 +40,11 @@ for (const id of nameIds) {
   if (!cityIds.has(id)) fail(`"${id}" is in towns.mjs NAMES but not in CITIES — orphan matcher`);
 }
 
-// 3) Duplicate ids in either list.
+// 3) Duplicate CITIES ids are a real bug. Duplicate NAMES ids are NOT — they are
+//    intentional aliases (several place-names mapping to one town, e.g. New
+//    Franklin + Coventry Township -> portage-lakes), so we don't flag those.
 const dups = (arr) => [...new Set(arr.filter((v, i) => arr.indexOf(v) !== i))];
 for (const d of dups(CITIES.map((c) => c.id))) fail(`duplicate CITIES id: "${d}"`);
-for (const d of dups(nameIds)) fail(`duplicate NAMES id: "${d}"`);
 
 // 4) Ordering invariant: if display name A is a trailing whole-word of display
 //    name B (B is longer), then B must appear BEFORE A in NAMES, or A shadows B.

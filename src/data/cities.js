@@ -44,6 +44,7 @@ export const CITIES = [
   { id: 'tallmadge', name: 'Tallmadge', state: 'OH', region: NE, tagline: 'The Circle City' },
   { id: 'barberton', name: 'Barberton', state: 'OH', region: NE, tagline: 'The Magic City' },
   { id: 'wadsworth', name: 'Wadsworth', state: 'OH', region: NE, tagline: 'The Grizzly City' },
+  { id: 'portage-lakes', name: 'Portage Lakes', state: 'OH', region: NE, tagline: 'Lake country south of Akron' },
   { id: 'canton', name: 'Canton', state: 'OH', region: NE, tagline: 'Home of the Pro Football Hall of Fame' },
   { id: 'massillon', name: 'Massillon', state: 'OH', region: NE, tagline: 'Tiger Town' },
   { id: 'north-canton', name: 'North Canton', state: 'OH', region: NE, tagline: 'The Hoover City' },
