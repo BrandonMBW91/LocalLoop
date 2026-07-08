@@ -11,17 +11,12 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES, REGION_ORDER } from '../src/data/cities.js';
 import { rateForUsers } from '../src/data/pricing.js';
+import { REGION_LINK, CHECKOUT_BY_TIER } from '../src/data/checkout.js';
 
 loadDotEnv();
 const here = dirname(fileURLToPath(import.meta.url));
 const OUT = join(here, '..', 'site', 'advertise.html');
 
-// Stripe payment links — KEEP IN SYNC with app/promote.js.
-const REGION_LINK = 'https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01'; // $79/mo flat
-const LINKS = {
-  Founding: { town: 'https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00', feat30: 'https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02' },
-  Local: { town: 'https://buy.stripe.com/9B65kE1yT24i6CqbMP4Vy03', feat30: 'https://buy.stripe.com/7sY28s91l8sG1i6bMP4Vy04' },
-};
 const MAIL = 'mailto:localloop@localloop.io?subject=Advertising%20on%20Local%20Loop';
 
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -43,8 +38,8 @@ const DATA = {};
 for (const c of CITIES) {
   const users = mau[c.id] || 0;
   const r = rateForUsers(users);
-  const l = LINKS[r.name] || null;
-  DATA[c.id] = { name: c.name, users, tier: r.name, sponsor: r.sponsor, featured30: r.featured30, townLink: l ? l.town : null, feat30Link: l ? l.feat30 : null };
+  const l = CHECKOUT_BY_TIER[r.name] || null;
+  DATA[c.id] = { name: c.name, users, tier: r.name, sponsor: r.sponsor, featured30: r.featured30, townLink: l ? l.town : null, feat30Link: l ? l.featured30 : null };
 }
 const DEFAULT = DATA.findlay ? 'findlay' : CITIES[0].id;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

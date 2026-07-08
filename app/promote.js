@@ -5,18 +5,14 @@ import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { fetchCityUsers } from '../src/lib/db';
 import { rateForUsers } from '../src/data/pricing';
+import { REGION_LINK, CHECKOUT_BY_TIER } from '../src/data/checkout';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 // Hosted advertise page + live Stripe Payment Links. Purchases stay on the web
-// (advertising services are exempt from IAP; no Apple cut).
+// (advertising services are exempt from IAP; no Apple cut). REGION_LINK +
+// CHECKOUT_BY_TIER live in src/data/checkout.js — shared with the web advertise
+// generator so the links can't drift.
 const ADVERTISE_URL = 'https://localloop.io/advertise.html';
-// Stripe payment links, keyed by tier. All-Region ($79/mo) is flat across tiers.
-// Tiers listed here are tap-to-buy; any higher tier falls back to the email flow.
-const REGION_LINK = 'https://buy.stripe.com/cNi8wQ5P94cqf8WaIL4Vy01'; // All-Region $79/mo
-const CHECKOUT_BY_TIER = {
-  Founding: { town: 'https://buy.stripe.com/aFa9AU0uPaAO2ma18b4Vy00', featured30: 'https://buy.stripe.com/00w4gA6TddN0bWK9EH4Vy02' }, // $19 / $25
-  Local: { town: 'https://buy.stripe.com/9B65kE1yT24i6CqbMP4Vy03', featured30: 'https://buy.stripe.com/7sY28s91l8sG1i6bMP4Vy04' }, // $29 / $35
-};
 
 function Benefit({ icon, title, body }) {
   return (

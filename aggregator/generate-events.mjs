@@ -27,7 +27,7 @@ const TZ = 'America/New_York'; // CI runs in UTC — all day math must be Easter
 
 // Mirrors src/theme/theme.js colors.category — keep in sync with the app.
 const CATEGORY = {
-  Music: '#6A3FB0', Family: '#1C6A9E', Food: '#A85410', Sports: '#197A41',
+  Music: '#6A3FB0', Family: '#1C6A9E', Food: '#9E4E0F', Sports: '#197A41',
   Arts: '#A62E6B', Community: '#1F6566', Market: '#786017', Education: '#34509E',
 };
 const GREEN = '#15315B'; // PATRIOTIC navy (Jul 2026 seasonal). REVERT: '#1F6F54'
