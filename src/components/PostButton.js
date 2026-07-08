@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.22)',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.6)',

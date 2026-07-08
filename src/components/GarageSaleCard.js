@@ -143,14 +143,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.garageSaleLight,
   },
-  body: { flex: 1, gap: 4 },
+  body: { flex: 1, gap: spacing.xs },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  tagRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  tagRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs },
   tag: {
     backgroundColor: colors.garageSaleLight,
     borderRadius: radius.sm,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
 });

@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   cardFeatured: { borderColor: colors.accent, backgroundColor: colors.accentLight + '66' },
   pressed: { opacity: 0.6 },
-  body: { flex: 1, gap: 4 },
+  body: { flex: 1, gap: spacing.xs },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

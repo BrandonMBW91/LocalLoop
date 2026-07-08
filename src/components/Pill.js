@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
-import { radius } from '../theme/theme';
+import { radius, spacing } from '../theme/theme';
 
 // The small rounded badge used on every list card: a category / cuisine tag, a
 // "HAPPENING NOW" / "TODAY" status, or the star "FEATURED" flag. `color` is the
@@ -24,8 +24,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radius.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
-  icon: { marginRight: 3 },
+  icon: { marginRight: spacing.xxs },
 });

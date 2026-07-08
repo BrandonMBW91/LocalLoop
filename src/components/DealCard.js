@@ -42,7 +42,7 @@ export default function DealCard({ deal }) {
             {deal.title}
           </ThemedText>
           {deal.description ? (
-            <ThemedText size="small" color={colors.textMuted} numberOfLines={2} style={{ marginTop: 2 }}>
+            <ThemedText size="small" color={colors.textMuted} numberOfLines={2} style={{ marginTop: spacing.xxs }}>
               {deal.description}
             </ThemedText>
           ) : null}
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   thumb: { borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
   thumbIcon: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentLight },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: spacing.xxs },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -23,11 +23,11 @@ export default function EditorPickBanner({ pick }) {
           THIS WEEK'S PICK
         </ThemedText>
       </View>
-      <ThemedText size="subtitle" weight="bold" style={{ marginTop: 4 }}>
+      <ThemedText size="subtitle" weight="bold" style={{ marginTop: spacing.xs }}>
         {pick.title}
       </ThemedText>
       {pick.note ? (
-        <ThemedText size="small" color={colors.textMuted} style={{ marginTop: 4, lineHeight: 21 }}>
+        <ThemedText size="small" color={colors.textMuted} style={{ marginTop: spacing.xs, lineHeight: 21 }}>
           {pick.note}
         </ThemedText>
       ) : null}
@@ -53,5 +53,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
 });

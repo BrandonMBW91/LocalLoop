@@ -51,7 +51,14 @@ export const colors = {
   },
 };
 
+// Layout spacing scale — use these tokens for gaps, padding, and margins so the
+// whole app shares one rhythm and can be retuned in one place. `xxs` is the tight
+// half-step (pill/badge padding, micro-gaps). A few component-internal values that
+// fall between rungs (e.g. a 6px icon-to-label gap, a control's 10-12px vertical
+// padding) are intentionally left as literals rather than inventing off-scale
+// tokens — tokenize the scale, not every pixel.
 export const spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
   md: 16,

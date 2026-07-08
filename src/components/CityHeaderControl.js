@@ -33,7 +33,7 @@ export default function CityHeaderControl({
           {city.name}, {city.state}
         </ThemedText>
         {showTagline ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 1 }}>
             <Ionicons name="location" size={13} color={colors.textInverse} style={{ opacity: 0.9 }} />
             <ThemedText size="small" color={colors.textInverse} style={{ opacity: 0.9 }}>
               {city.tagline}
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   changeCity: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,

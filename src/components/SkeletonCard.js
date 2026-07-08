@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: block,
   },
-  body: { flex: 1, gap: 8, paddingTop: 2 },
+  body: { flex: 1, gap: spacing.sm, paddingTop: spacing.xxs },
   line: {
     height: 13,
     borderRadius: 6,

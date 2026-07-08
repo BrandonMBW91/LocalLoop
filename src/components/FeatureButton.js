@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accentLight,
     backgroundColor: colors.surface,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   btn: {
     paddingHorizontal: spacing.md,

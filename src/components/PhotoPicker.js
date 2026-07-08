@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
-    paddingTop: 8, // room so the remove button isn't clipped
+    paddingTop: spacing.sm, // room so the remove button isn't clipped
     paddingRight: 8,
   },
   thumb: {

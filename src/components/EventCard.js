@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surfaceAlt,
   },
-  body: { flex: 1, gap: 4 },
+  body: { flex: 1, gap: spacing.xs },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     alignSelf: 'flex-start',
-    padding: 4,
+    padding: spacing.xs,
   },
 });
 
