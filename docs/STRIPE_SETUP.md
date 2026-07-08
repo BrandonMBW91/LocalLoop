@@ -2,59 +2,100 @@
 
 End-to-end: a business pays on the web → Stripe bills them automatically (and
 re-bills monthly) → the webhook creates and turns on their ad → if they cancel
-or a payment fails, the ad turns off automatically. No manual step.
+or a payment fails, the ad turns off automatically (and turns back on when a
+retried invoice pays). No manual step.
 
 **Why web, not in-app:** selling ad space is a B2B service, so Stripe-on-web
-avoids Apple's 30% cut. The app's "Advertise" button just links to your web page.
+avoids Apple's 30% cut. The app's "Advertise" button just links to the web page.
 
 ---
 
-## ✅ Already done (Test mode)
-The product catalog and the 3 **Payment Links** are created in your Stripe Test
-account (via `scripts/stripe-catalog.mjs`) with the exact metadata + custom-field
-keys the webhook needs, and the test links are already in `site/advertise.html`:
-- **Town Sponsor** — $19/mo · collects business name, headline, town
-- **Featured Listing** — $25 one-time (30-day ad) · business name, headline, town
-- **All-Region Sponsor** — $79/mo · business name, headline, link
+## How it's wired (LIVE)
 
-## What's left to turn it on
+Pricing is **per-town and tier-based** (`src/data/pricing.js`): each town's
+monthly-active-user count maps to a tier, and each buyable tier has its own
+pair of Stripe Payment Links. Five links exist in Live mode:
 
-### 1. Database
-Supabase SQL Editor → run `supabase/stripe.sql` (adds the Stripe link columns).
+| Link | Price | metadata.product |
+|---|---|---|
+| Founding — Town Sponsor | $19/mo | `town_sponsor` |
+| Founding — Featured Listing (30 days) | $25 | `featured_30` |
+| Local — Town Sponsor | $29/mo | `town_sponsor` |
+| Local — Featured Listing (30 days) | $35 | `featured_30` |
+| All-Region Sponsor | $79/mo flat | `all_region` |
 
-### 2. Deploy the webhook
+Established and Premier tiers intentionally have **no** links — they fall back
+to an email quote (see the note atop `src/data/pricing.js`).
+
+The pieces, and the single source of truth for each:
+
+- **`src/data/checkout.js`** — the live link URLs (`REGION_LINK`,
+  `CHECKOUT_BY_TIER`). Imported by BOTH the app (`app/promote.js`) and the web
+  generator, so the two can never drift.
+- **`aggregator/generate-advertise.mjs`** — generates `site/advertise.html`
+  with live per-town MAU pricing and the matching tier link. **advertise.html
+  is a generated file — never edit it by hand.** CI regenerates it daily; run
+  `node generate-advertise.mjs` from `aggregator/` to refresh on demand.
+- **`supabase/functions/stripe-webhook`** — fulfillment. Creates the sponsor
+  row(s) on `checkout.session.completed`, deactivates on cancel/failed payment,
+  reactivates on a paid invoice. Its town list is live (`active_cities` RPC),
+  so it never goes stale as towns are added.
+- **`scripts/stripe-refresh-towns.mjs`** — syncs the "Your town" dropdown on
+  the live links with `src/data/cities.js` (see maintenance below).
+
+## The contract every payment link must carry
+
+The webhook routes on these — a link missing them fulfills down the wrong path:
+
+- `metadata.product` = `town_sponsor` | `all_region` | `featured_30`
+- Custom fields: `businessname`, `headline`, plus
+  - `town` dropdown on town-scoped links (values = city id with hyphens
+    removed, e.g. `bowling-green` → `bowlinggreen`; the webhook maps them back
+    mechanically), or
+  - `link` optional text on the All-Region link (it has no town dropdown).
+
+## Routine maintenance
+
+**Added towns?** The webhook and advertise page pick them up on their own; the
+dropdowns baked into the payment links do not. Sync them:
+
+```bash
+cd scripts && npm install
+STRIPE_SECRET_KEY=sk_live_... node stripe-refresh-towns.mjs           # dry run
+STRIPE_SECRET_KEY=sk_live_... node stripe-refresh-towns.mjs --apply   # write
+```
+
+The dry run also verifies each link's `metadata.product`, so it doubles as a
+catalog health check.
+
+**Adding or re-thresholding a buyable tier?** Create its two Payment Links in
+the Stripe dashboard with the contract above, add them to `CHECKOUT_BY_TIER`
+in `src/data/checkout.js`, then regenerate `advertise.html`. That alone makes
+the tier buyable in both the app and the web page.
+
+## Webhook deployment (already live — for reference)
+
 ```bash
 supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
-### 3. Point Stripe at it + set secrets
-- Stripe → **Developers → Webhooks → Add endpoint**
-  - URL: `https://wtaefyspddadcrnovumk.supabase.co/functions/v1/stripe-webhook`
-  - Events: `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`
-  - Copy the **Signing secret** (`whsec_…`)
+- Stripe → **Developers → Webhooks**: endpoint
+  `https://wtaefyspddadcrnovumk.supabase.co/functions/v1/stripe-webhook`,
+  events `checkout.session.completed`, `customer.subscription.deleted`,
+  `invoice.payment_failed`, `invoice.paid` / `invoice.payment_succeeded`.
 - Supabase → Edge Functions → `stripe-webhook` → **Secrets**:
-  - `STRIPE_SECRET_KEY` = your Stripe **Secret key** (Developers → API keys)
-  - `STRIPE_WEBHOOK_SECRET` = the `whsec_…` from above
-
-### 4. Test it
-Open `site/advertise.html`, buy a Town Sponsor with test card
-`4242 4242 4242 4242` (any future date, any CVC). Within seconds a row should
-appear in your `sponsors` table (`active = true`) and show in the app for that town.
-
----
-
-## Going live (when you're ready for real money)
-1. Switch Stripe to **Live mode**, grab your **live** secret key.
-2. Regenerate the live catalog + links:
-   ```bash
-   cd scripts && npm init -y && npm install stripe
-   STRIPE_SECRET_KEY=sk_live_... node stripe-catalog.mjs
-   ```
-3. Paste the 3 printed live URLs into `site/advertise.html` (replace the `test_` ones), re-deploy the site.
-4. Add a **live** webhook endpoint in Stripe (same URL/events) and update the two function secrets with the live values.
+  `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (the endpoint's `whsec_…`), and
+  `RESEND_API_KEY` for the fulfillment/buyer emails.
 
 ## Notes
-- One-time **Featured** purchases create a 30-day ad (auto-expires via `expire_promotions`).
-- **All-Region** creates one ad per town, all tied to the same subscription, so a cancel switches them all off together.
-- Businesses add a **logo / website link** by emailing you; set `image_url`/`link_url` in the in-app Manage Sponsors screen.
-- These were **test** keys you shared — fine for now, but roll them in Stripe before launch and never paste live keys.
+
+- **Featured Listing** is fulfilled by hand on purpose: the webhook emails the
+  owner (with the amount paid), who features the buyer's listing via the
+  in-app moderator Feature button. The buyer gets a confirmation email.
+- **All-Region** creates one ad per active town, all tied to the same
+  subscription, so a cancel switches them all off together.
+- If a buyer's town can't be resolved, no ad is created and the owner gets an
+  ACTION email to place it by hand — a paid purchase never vanishes silently.
+- Businesses add a **logo / website link** by emailing; set
+  `image_url`/`link_url` in the in-app Manage Sponsors screen.
+- Test mode has its own separate catalog; test with card `4242 4242 4242 4242`.

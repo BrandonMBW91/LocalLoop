@@ -4,7 +4,9 @@
 // Deploy (when you're ready):
 //   supabase functions deploy stripe-webhook --no-verify-jwt
 // Then in Stripe → Developers → Webhooks, add the function URL and subscribe to:
-//   checkout.session.completed, customer.subscription.deleted, invoice.payment_failed
+//   checkout.session.completed, customer.subscription.deleted,
+//   invoice.payment_failed, invoice.paid   (invoice.paid drives reactivation
+//   after a failed-then-retried card — without it ads stay off forever)
 // Set these function secrets (Supabase → Edge Functions → Secrets):
 //   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 // (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are provided automatically.)
@@ -19,26 +21,43 @@ const supabase = createClient(
 );
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
-// Town list is LIVE — fetched from the database per event so this function can
-// never go stale as towns are added (the old hardcoded 24-town map fulfilled
-// All-Region ads into 24 of 79 towns). Stripe dropdown codes are the city_id
-// with hyphens removed ('bowlinggreen' -> 'bowling-green'), derived mechanically.
-// Static fallback keeps fulfillment working even if the RPC ever fails.
-const FALLBACK_CITY_IDS = [
+// Fulfillment resolves against the FULL town catalog, not the "towns with
+// events" list — a paying business in a currently-quiet town is still a valid
+// purchase (the sweep caught v1 of this fix using active_cities() alone, which
+// rejected quiet-town buyers as "unknown town"). The catalog below mirrors
+// src/data/cities.js (79 towns, Jul 2026); the union with the live RPC also
+// covers towns added after this deploy, once they have events. After adding a
+// town, redeploy this function (docs/NEW_CITY.md).
+// Stripe dropdown codes are the city_id with hyphens removed (dropdown values
+// must be alphanumeric): 'bowlinggreen' -> 'bowling-green'.
+const CATALOG_CITY_IDS = [
+  // Northwest
   'findlay', 'fostoria', 'tiffin', 'bowling-green', 'sandusky', 'lima', 'van-wert',
-  'bellefontaine', 'toledo', 'perrysburg', 'bluffton', 'ada', 'waterville',
+  'toledo', 'perrysburg', 'sylvania', 'bluffton', 'ada', 'waterville',
   'north-baltimore', 'carey', 'leipsic', 'arlington', 'pandora', 'upper-sandusky',
-  'kenton', 'richwood', 'larue', 'prospect', 'green-camp',
+  'fremont', 'wapakoneta', 'defiance', 'napoleon', 'bryan', 'wauseon',
+  'port-clinton', 'catawba-island', 'put-in-bay', 'kelleys-island',
+  // Central
+  'bellefontaine', 'kenton', 'richwood', 'larue', 'prospect', 'green-camp',
+  'marysville', 'marion', 'delaware', 'troy', 'piqua', 'sidney', 'greenville',
+  'versailles', 'mansfield', 'ontario', 'ashland', 'bucyrus', 'galion', 'willard',
+  // Northeast
+  'akron', 'cuyahoga-falls', 'kent', 'stow', 'hudson', 'tallmadge', 'barberton',
+  'wadsworth', 'portage-lakes', 'canton', 'massillon', 'north-canton', 'hartville',
+  'alliance', 'medina', 'ravenna', 'streetsboro', 'orrville', 'dover',
+  'new-philadelphia', 'youngstown', 'warren', 'boardman', 'austintown', 'niles',
+  'girard', 'struthers', 'canfield', 'salem', 'columbiana',
 ];
-async function liveCityIds(): Promise<string[]> {
+async function knownCityIds(): Promise<string[]> {
+  const ids = new Set(CATALOG_CITY_IDS);
   try {
     const { data, error } = await supabase.rpc('active_cities');
     if (error) throw error;
-    if (Array.isArray(data) && data.length) return data;
+    for (const id of Array.isArray(data) ? data : []) ids.add(id);
   } catch (e) {
-    console.error('active_cities RPC failed, using fallback list:', (e as Error).message);
+    console.error('active_cities RPC failed, catalog only:', (e as Error).message);
   }
-  return FALLBACK_CITY_IDS;
+  return [...ids];
 }
 const codeToCity = (ids: string[]): Record<string, string> =>
   Object.fromEntries(ids.map((id) => [id.replace(/-/g, ''), id]));
@@ -95,7 +114,7 @@ Deno.serve(async (req) => {
       const custId = s.customer || null;
 
       // Resolve the town to a known city_id; never insert an orphan/empty one.
-      const knownIds = await liveCityIds();
+      const knownIds = await knownCityIds();
       const resolvedCity = town ? codeToCity(knownIds)[town.toLowerCase()] ?? null : null;
       const cityIds = product === 'all_region' ? knownIds : (resolvedCity ? [resolvedCity] : []);
       if (cityIds.length === 0) {
@@ -139,6 +158,7 @@ Deno.serve(async (req) => {
         link_url: link || null,
         active: true,
         ends_at: endsAt,
+        product, // 'town_sponsor' | 'all_region' — lets the daily backfill extend all-region subs to towns added later
         stripe_customer_id: custId,
         stripe_subscription_id: subId,
         stripe_session_id: s.id,
@@ -163,15 +183,32 @@ Deno.serve(async (req) => {
         );
       }
     } else if (event.type === 'customer.subscription.deleted') {
-      await supabase.from('sponsors').update({ active: false }).eq('stripe_subscription_id', event.data.object.id);
+      await supabase.from('sponsors')
+        .update({ active: false, paused_reason: 'canceled' })
+        .eq('stripe_subscription_id', event.data.object.id);
     } else if (event.type === 'invoice.payment_failed') {
-      const subId = event.data.object.subscription;
-      if (subId) await supabase.from('sponsors').update({ active: false }).eq('stripe_subscription_id', subId);
+      // Post-2025 Stripe API versions move invoice.subscription under
+      // parent.subscription_details — read both so the handler works on any
+      // dashboard-configured payload version.
+      const obj = event.data.object;
+      const subId = obj.subscription ?? obj.parent?.subscription_details?.subscription ?? null;
+      if (subId) {
+        await supabase.from('sponsors')
+          .update({ active: false, paused_reason: 'payment_failed' })
+          .eq('stripe_subscription_id', subId);
+      }
     } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') {
-      // A retry that succeeds (or any paid invoice) turns the ad back on —
-      // pairs with the payment_failed deactivation above.
-      const subId = event.data.object.subscription;
-      if (subId) await supabase.from('sponsors').update({ active: true }).eq('stripe_subscription_id', subId);
+      // A retry that succeeds turns the ad back on — but ONLY rows paused for
+      // nonpayment. An ad the owner deliberately switched off (paused_reason
+      // null) or a canceled sub must never silently un-pause on a paid invoice.
+      const obj = event.data.object;
+      const subId = obj.subscription ?? obj.parent?.subscription_details?.subscription ?? null;
+      if (subId) {
+        await supabase.from('sponsors')
+          .update({ active: true, paused_reason: null })
+          .eq('stripe_subscription_id', subId)
+          .eq('paused_reason', 'payment_failed');
+      }
     }
   } catch (e) {
     console.error('stripe-webhook handler error:', (e as Error).message);

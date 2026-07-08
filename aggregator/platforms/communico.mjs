@@ -13,21 +13,10 @@
 // router still works because branch names carry the town ("Ontario Branch").
 // Rows with changed=1 are cancelled/rescheduled — the site itself hides them.
 
+import { etToDate } from '../et.mjs';
+
 const UA = { 'User-Agent': 'Mozilla/5.0 (LocalLoop aggregator)' };
 const trim = (s) => String(s || '').trim();
-
-// Local-Eastern wall clock "YYYY-MM-DD HH:MM:SS" → UTC Date (DST-correct; server-side
-// Intl is reliable — the Intl ban is Hermes/app-only).
-function etToDate(s) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(s || '');
-  if (!m) return null;
-  const [, Y, Mo, D, h, mi, se] = m.map(Number);
-  const asUTC = Date.UTC(Y, Mo - 1, D, h, mi, se || 0);
-  const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(new Date(asUTC));
-  const gp = (t) => Number((p.find((x) => x.type === t) || {}).value);
-  const wall = Date.UTC(gp('year'), gp('month') - 1, gp('day'), gp('hour') % 24, gp('minute'), gp('second'));
-  return new Date(asUTC - (wall - asUTC));
-}
 
 export async function pull(source, { floor, cutoff }) {
   const host = source.url.replace(/\/+$/, '');

@@ -23,6 +23,7 @@ const STEPS = [
   ['De-duplicate', 'dedupe.mjs --apply'],
   ['Geocode', 'geocode.mjs'],
   ['City boundaries (true town lines)', 'assign-boundaries.mjs'],
+  ['All-Region ad backfill', 'backfill-region-ads.mjs'],
   ['Content guard (ghost/thin report)', 'check-content.mjs'],
   ['Feed health (dead-source report)', 'feed-health.mjs'],
   ['Website pages', 'generate-events.mjs'],

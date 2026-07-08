@@ -24,7 +24,10 @@ export default function CityPickerScreen() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return visible;
-    return visible.filter(
+    // Search the FULL catalog, not just visible towns: someone in a
+    // supported-but-quiet town who types its name must be able to pick it —
+    // "No town by that name yet" would be flatly wrong for them.
+    return CITIES.filter(
       (c) => c.name.toLowerCase().includes(q) || (c.tagline || '').toLowerCase().includes(q)
     );
   }, [query, visible]);

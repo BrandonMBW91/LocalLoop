@@ -17,6 +17,7 @@ import { classifyEvents, emojiFor } from './classify.mjs';
 import { deriveVenue } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
 import { PLATFORMS } from './platforms/index.mjs';
+import { etToDate, etNoon } from './et.mjs';
 import { cityFromLocation } from './towns.mjs';
 import { normalizeText, cleanLocation, cleanDescription } from '../src/lib/text.js';
 
@@ -85,11 +86,11 @@ function priceFor(title, description) {
   return 'Free';
 }
 
-// All-day events: anchor to local noon so the calendar day never shifts across
-// timezones when converted to an ISO timestamp.
-function atLocalNoon(d) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0);
-}
+// All-day events: anchor to noon EASTERN (fixed zone) so the calendar day never
+// shifts AND the timestamp is identical whether the run happens on UTC CI or a
+// local ET machine — server-local noon minted different source_uids per runner,
+// re-inserting every all-day event when the runner changed.
+const atLocalNoon = etNoon;
 
 function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -136,6 +137,19 @@ function tokensEqual(a, b) {
 const etDay = (iso) => new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
 }).format(new Date(iso));
+
+// A copy of an event that assign-boundaries MOVED to its true town (postal-city
+// fix): the DB row sits in boardman while the feed re-parses it as youngstown, so
+// same-city dedup can't see it. Cross-city match is deliberately STRICT — exact
+// title tokens, near-identical start, and BOTH venues present and matching — so
+// "Family Storytime" in two different towns' libraries never merges.
+function isRelocatedDupe(a, b) {
+  if (a.city_id === b.city_id) return false;
+  if (!tokensEqual(titleTokens(a.title), titleTokens(b.title))) return false;
+  if (Math.abs(new Date(a.start_at) - new Date(b.start_at)) > 5 * 60000) return false;
+  const va = venueTokens(a.venue), vb = venueTokens(b.venue);
+  return va.size > 0 && vb.size > 0 && jaccard(va, vb) >= 0.5;
+}
 
 function isNearDupe(a, b) {
   if (a.city_id !== b.city_id) return false;
@@ -251,11 +265,13 @@ async function pullSource(source) {
     for (const it of Array.isArray(items) ? items : []) {
       if (!it || !it.title || !it.start) continue;
       // Revize timestamps are LOCAL Eastern with no zone ("2026-07-04T22:00:00").
-      // Anchor them explicitly so CI (UTC) doesn't shift events 4 hours early.
-      const et = (s) => (/T\d{2}:\d{2}/.test(s) && !/[Zz]|[+-]\d{2}:?\d{2}$/.test(s) ? s + '-04:00' : s);
-      const start = new Date(et(String(it.start)));
-      if (Number.isNaN(start.getTime())) continue;
-      const end = it.end ? new Date(et(String(it.end))) : null;
+      // DST-aware conversion — a hardcoded "-04:00" stored every EST-season
+      // (Nov-Mar) event an hour early.
+      const et = (s) =>
+        /T\d{2}:\d{2}/.test(s) && !/[Zz]|[+-]\d{2}:?\d{2}$/.test(s) ? etToDate(s) : new Date(s);
+      const start = et(String(it.start));
+      if (!start || Number.isNaN(start.getTime())) continue;
+      const end = it.end ? et(String(it.end)) : null;
       const t = start.getTime();
       const endT = end ? end.getTime() : t;
       if (endT < floor || t > cutoff) continue;
@@ -380,16 +396,32 @@ async function main() {
     }
 
     // Only classify/insert events we don't already have, so the daily run does
-    // the minimum work (and spends the minimum on labeling).
+    // the minimum work (and spends the minimum on labeling). Chunked — a single
+    // .in() with 1000+ uids overflows the request URL, and an unchecked error
+    // here made `have` empty, re-treating EVERY row as new.
     const uids = rows.map((r) => r.source_uid);
-    const { data: existing } = await supabase.from('events').select('source_uid').in('source_uid', uids);
-    const have = new Set((existing || []).map((r) => r.source_uid));
+    const have = new Set();
+    let lookupFailed = false;
+    for (let i = 0; i < uids.length; i += 500) {
+      const { data: existing, error: exErr } = await supabase
+        .from('events').select('source_uid').in('source_uid', uids.slice(i, i + 500));
+      if (exErr) {
+        console.error(`  ! uid lookup failed (${exErr.message}) — skipping source this run`);
+        lookupFailed = true;
+        break;
+      }
+      (existing || []).forEach((r) => have.add(r.source_uid));
+    }
+    if (lookupFailed) continue;
     let newRows = rows.filter((r) => !have.has(r.source_uid));
 
     // Near-dupe guard: drop variants of events we already carry (or that appear
     // twice within this batch) — see isNearDupe for the exact rule.
     if (newRows.length) {
-      const cities = [...new Set(newRows.map((r) => r.city_id))];
+      // No city filter: assign-boundaries may have MOVED our earlier copy to its
+      // true town, which a city-scoped fetch could never see (the row would then
+      // re-insert under the postal city every day). isRelocatedDupe handles the
+      // cross-city comparison strictly.
       const starts = newRows.map((r) => new Date(r.start_at).getTime());
       const lo = new Date(Math.min(...starts) - 3600000).toISOString();
       const hi = new Date(Math.max(...starts) + 3600000).toISOString();
@@ -398,7 +430,6 @@ async function main() {
         const { data: page } = await supabase
           .from('events')
           .select('city_id,title,start_at,venue')
-          .in('city_id', cities)
           .gte('start_at', lo)
           .lte('start_at', hi)
           .range(from, from + 999);
@@ -408,7 +439,7 @@ async function main() {
       const kept = [];
       let skipped = 0;
       for (const r of newRows) {
-        if (dbRows.some((e) => isNearDupe(r, e)) || kept.some((k) => isNearDupe(r, k))) skipped++;
+        if (dbRows.some((e) => isNearDupe(r, e) || isRelocatedDupe(r, e)) || kept.some((k) => isNearDupe(r, k))) skipped++;
         else kept.push(r);
       }
       if (skipped) console.log(`  skipped ${skipped} near-duplicate(s)`);

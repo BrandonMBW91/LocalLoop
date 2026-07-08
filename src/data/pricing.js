@@ -6,9 +6,9 @@
 // only those two are tap-to-buy in the app + website. Established/Premier fall
 // back to an email quote on purpose (a big-town ad is worth a conversation and we
 // never want to auto-undercharge). If you ADD or RE-THRESHOLD a tier here, create
-// its Stripe payment link and add it to BOTH app/promote.js (CHECKOUT_BY_TIER)
-// and aggregator/generate-advertise.mjs (LINKS) — otherwise it silently email-
-// falls-back and no one can buy it in-app.
+// its Stripe payment links and add them to CHECKOUT_BY_TIER in src/data/checkout.js
+// (shared by the app and the web advertise generator) — otherwise it silently
+// email-falls-back and no one can buy it in-app.
 export const PRICING_TIERS = [
   { name: 'Founding',    minUsers: 0,    sponsor: 19, featured7: 9,  featured30: 25 },
   { name: 'Local',       minUsers: 50,   sponsor: 29, featured7: 12, featured30: 35 },

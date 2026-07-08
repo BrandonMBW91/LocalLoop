@@ -621,15 +621,21 @@ export async function fetchCityUsers(cityId) {
     if (error) throw error;
     return data || 0;
   } catch (e) {
-    return 0;
+    // null = UNKNOWN, distinct from a real 0 — callers must never price a tier
+    // off a failed fetch (rateForUsers(0) = Founding would undercharge).
+    return null;
   }
 }
+
+// Columns the anon role may read (see supabase/sponsors_hardening.sql — Stripe
+// ids and metrics are column-restricted, so `select *` would be denied).
+const SPONSOR_PUBLIC_COLS = 'id, city_id, title, body, image_url, link_url, weight, active, starts_at, ends_at';
 
 // Live ads for a city (RLS already restricts to active + in-window for non-admins).
 export async function fetchSponsors(cityId) {
   const { data, error } = await supabase
     .from('sponsors')
-    .select('*')
+    .select(SPONSOR_PUBLIC_COLS)
     .eq('city_id', cityId)
     .eq('active', true)
     .order('weight', { ascending: false });
@@ -645,7 +651,7 @@ export async function fetchSponsors(cityId) {
 export async function fetchAllSponsors() {
   const { data, error } = await supabase
     .from('sponsors')
-    .select('*')
+    .select(`${SPONSOR_PUBLIC_COLS}, created_at, impressions, clicks, product, paused_reason`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map(rowToSponsor);
@@ -672,8 +678,20 @@ export async function insertSponsor(s) {
 }
 
 export async function setSponsorActive(id, active) {
-  const { error } = await supabase.from('sponsors').update({ active }).eq('id', id);
+  // Turning ON clears the pause reason (manual owner intent overrides an old
+  // payment_failed flag) AND any already-passed end date — without that, the
+  // toggle showed "on" while RLS hid the ad and expire_promotions flipped it
+  // straight back off.
+  const patch = active ? { active: true, paused_reason: null } : { active: false };
+  const { error } = await supabase.from('sponsors').update(patch).eq('id', id);
   if (error) throw error;
+  if (active) {
+    await supabase
+      .from('sponsors')
+      .update({ ends_at: null })
+      .eq('id', id)
+      .lt('ends_at', new Date().toISOString());
+  }
 }
 
 export async function deleteSponsor(id) {

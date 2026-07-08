@@ -23,11 +23,24 @@ const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_R
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
 // Per-town monthly active users = distinct devices seen in last 30 days.
+// HARD-FAIL on any query error: a swallowed error left mau empty, which priced
+// EVERY town at Founding ($19) and published live $19 buy links for Local-tier
+// towns — an auto-undercharge. Failing keeps yesterday's (correct) page live.
+// .order() makes .range() pagination stable past 1,000 rows.
 const mau = {};
 {
   const seen = new Set();
   for (let from = 0; ; from += 1000) {
-    const { data } = await sb.from('device_activity').select('device_id,city_id,last_seen').gte('last_seen', monthAgo).range(from, from + 999);
+    const { data, error } = await sb
+      .from('device_activity')
+      .select('device_id,city_id,last_seen')
+      .gte('last_seen', monthAgo)
+      .order('device_id', { ascending: true })
+      .range(from, from + 999);
+    if (error) {
+      console.error('MAU query failed — refusing to publish a mispriced page:', error.message);
+      process.exit(1);
+    }
     (data || []).forEach((d) => { const k = `${d.city_id}|${d.device_id}`; if (!seen.has(k)) { seen.add(k); mau[d.city_id] = (mau[d.city_id] || 0) + 1; } });
     if (!data || data.length < 1000) break;
   }

@@ -94,7 +94,24 @@ for (const [loc, expected] of GOLDEN) {
   if (got !== expected) fail(`matcher: "${loc}" -> ${JSON.stringify(got)} but expected ${JSON.stringify(expected)}`);
 }
 
-// 8) Boundary polygons (soft warning — towns without one just skip the
+// 8) Stripe webhook town catalog (soft warning): the edge function bakes its own
+//    CATALOG_CITY_IDS. If it drifts from CITIES, a purchase from an unlisted
+//    quiet town falls to the manual owner-email path. Fix: update the list in
+//    supabase/functions/stripe-webhook/index.ts and redeploy the function.
+try {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../supabase/functions/stripe-webhook/index.ts', import.meta.url), 'utf8');
+  const m = src.match(/CATALOG_CITY_IDS\s*=\s*\[([\s\S]*?)\]/);
+  if (m) {
+    const webhookIds = new Set([...m[1].matchAll(/'([a-z0-9-]+)'/g)].map((x) => x[1]));
+    const missing = CITIES.filter((c) => !webhookIds.has(c.id)).map((c) => c.id);
+    if (missing.length) {
+      console.warn(`  … stripe-webhook CATALOG_CITY_IDS is missing ${missing.length} town(s) (${missing.join(', ')}) — update + redeploy the function or their purchases need manual fulfillment`);
+    }
+  }
+} catch { /* webhook source not present — skip */ }
+
+// 9) Boundary polygons (soft warning — towns without one just skip the
 //    assign-boundaries correction). Fix with: node build-polygons.mjs
 const { missing: noPoly } = polygonCoverage(CITIES.map((c) => c.id));
 if (noPoly.length) {

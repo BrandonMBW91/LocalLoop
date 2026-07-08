@@ -56,19 +56,25 @@ function RateRow({ label, sub, price, last, url }) {
 export default function PromoteScreen() {
   const { city, cityId, backendEnabled } = useApp();
   const email = 'localloop@localloop.io';
-  const [users, setUsers] = useState(0);
+  // null = user count UNKNOWN (loading, or the RPC failed). Never price off an
+  // unknown count — rateForUsers(0) = Founding $19 would let a Local-tier ($29)
+  // town check out at the wrong price during any network blip.
+  const [users, setUsers] = useState(null);
   const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
+    setUsers(null); // switching towns resets to unknown
     if (backendEnabled) {
-      fetchCityUsers(cityId).then(setUsers).catch(() => {});
-      fetchCityUsers(null).then(setTotalUsers).catch(() => {}); // all towns
+      fetchCityUsers(cityId).then(setUsers).catch(() => {}); // resolves null on failure
+      fetchCityUsers(null).then((n) => setTotalUsers(n || 0)).catch(() => {}); // display only
     }
   }, [cityId, backendEnabled]);
 
-  const rate = rateForUsers(users);
-  // Tap-to-buy only for tiers we have live payment links for; others go to email.
-  const links = CHECKOUT_BY_TIER[rate.name] || null;
+  const known = users != null;
+  const rate = rateForUsers(users || 0);
+  // Tap-to-buy only when the tier is KNOWN and has live links; an unknown count
+  // shows the email flow instead of possibly-wrong Founding buy links.
+  const links = known ? CHECKOUT_BY_TIER[rate.name] || null : null;
   const buyable = !!links;
 
   return (
@@ -121,17 +127,18 @@ export default function PromoteScreen() {
       <View style={styles.tierBanner}>
         <Ionicons name="trending-up" size={18} color={colors.primary} />
         <ThemedText size="small" color={colors.text} weight="semibold">
-          {rate.name} tier
+          {known ? `${rate.name} tier` : 'Checking your town…'}
         </ThemedText>
         <ThemedText size="small" color={colors.textMuted}>
-          · {formatCount(users)} active {users === 1 ? 'neighbor' : 'neighbors'} in {city.name}
-          {totalUsers > users ? ` · ${formatCount(totalUsers)} across all towns` : ''} this month
+          {known
+            ? `· ${formatCount(users)} active ${users === 1 ? 'neighbor' : 'neighbors'} in ${city.name}${totalUsers > users ? ` · ${formatCount(totalUsers)} across all towns` : ''} this month`
+            : `· current rate loads in a moment`}
         </ThemedText>
       </View>
       <View style={styles.rateCard}>
-        <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={`$${rate.featured7}`} />
-        <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${links ? ' · tap to buy' : ''}`} price={`$${rate.featured30}`} url={links ? links.featured30 : undefined} />
-        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${links ? ' · tap to buy' : ''}`} price={`$${rate.sponsor}/mo`} url={links ? links.town : undefined} />
+        <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={known ? `$${rate.featured7}` : '$…'} />
+        <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${links ? ' · tap to buy' : ' · email us'}`} price={known ? `$${rate.featured30}` : '$…'} url={links ? links.featured30 : undefined} />
+        <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${links ? ' · tap to buy' : ' · email us'}`} price={known ? `$${rate.sponsor}/mo` : '$…'} url={links ? links.town : undefined} />
         <RateRow label="All towns" sub="Every town we cover · monthly · tap to buy" price="$79/mo" url={REGION_LINK} />
         <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>

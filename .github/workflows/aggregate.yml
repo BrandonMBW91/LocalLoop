@@ -63,6 +63,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node assign-boundaries.mjs
+      - name: All-Region ad backfill (new towns join paid region subs)
+        working-directory: aggregator
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node backfill-region-ads.mjs
       - name: Feed health (dead-source report)
         working-directory: aggregator
         continue-on-error: true
