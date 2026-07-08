@@ -5,7 +5,8 @@
 //      so "Findlay Street, Carey, OH" resolves to Carey, not Findlay.
 //   2) Otherwise, ignore a town name that's part of a STREET name
 //      ("Findlay Street", "Findlay Ave", etc.).
-const NAMES = [
+// Exported so check-cities.mjs can verify every picker city has a matcher here.
+export const NAMES = [
   ['upper-sandusky', 'Upper Sandusky'],
   ['north-baltimore', 'North Baltimore'],
   ['bowling-green', 'Bowling Green'],

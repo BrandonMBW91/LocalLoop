@@ -1,8 +1,10 @@
 // The whole aggregation pipeline, in the correct order, with one command:
 //   node run-all.mjs
 // Feeds first, then the ticketed APIs (they de-dupe against what's already there),
-// then LibraryMarket, then a final de-dup sweep, then the website pages. Each step
-// is isolated — one failing never aborts the rest.
+// then LibraryMarket, then a final de-dup sweep, then geocode, then the website
+// pages. Each step is isolated — one failing never aborts the rest.
+// NOTE: keep this list in lock-step with the step order in
+// .github/workflows/aggregate.yml — that's the daily cron; this is the manual run.
 import { execSync } from 'node:child_process';
 
 const STEPS = [
@@ -11,6 +13,7 @@ const STEPS = [
   ['SeatGeek', 'seatgeek.mjs'],
   ['LibraryMarket', 'librarymarket.mjs'],
   ['De-duplicate', 'dedupe.mjs --apply'],
+  ['Geocode', 'geocode.mjs'],
   ['Website pages', 'generate-events.mjs'],
   ['Advertise page', 'generate-advertise.mjs'],
 ];
