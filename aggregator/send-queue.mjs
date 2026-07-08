@@ -24,6 +24,11 @@
 //   • Send window: only sends Mon-Sat 08:00-20:00 ET by default (--force or
 //     SEND_ANYTIME=1 to override; OUTREACH_SEND_DAYS/START/END to tune). Sweeps
 //     still run outside the window; only the outbound send is gated.
+//   • Follow-ups (opt-in): set OUTREACH_FOLLOWUP_DAYS=N to send a second-touch
+//     nudge N days after the first email to anyone who hasn't replied/opted out.
+//     Follow-ups share the daily quota (sent before new first-touches) so total
+//     volume stays inside the warm-up, and never go to repliers (replied.txt) or
+//     opt-outs. 0 (default) = off. Uses drafts in outreach/followups/.
 //   • Circuit breaker: >15% bounce rate (min 10 sent) pauses everything with ALERT.
 //   • Writes outreach/last-run.json each run for observability.
 
@@ -90,6 +95,27 @@ const queueTos = new Set(queue.map((d) => d.to));
 
 const bounced = new Set(readLines(BOUNCED).map((l) => l.split(/\s+/)[0].toLowerCase()));
 const suppressed = new Set(readLines(SUPPRESS).map((l) => l.split(/\s+/)[0].toLowerCase()));
+
+// Second-touch follow-ups (opt-in). OUTREACH_FOLLOWUP_DAYS = N sends a follow-up
+// N calendar days after the first touch to anyone who hasn't replied/opted out/
+// bounced. 0 (default) disables it entirely. Follow-ups share the daily quota
+// (sent BEFORE new first-touches) so total volume stays inside the warm-up.
+const FOLLOWUP_DAYS = Math.max(0, Number(process.env.OUTREACH_FOLLOWUP_DAYS || g('OUTREACH_FOLLOWUP_DAYS') || 0));
+const FOLLOWUP_LOG = join(OUTREACH, 'followup-log.txt');
+const REPLIED = join(OUTREACH, 'replied.txt');
+const replied = new Set(readLines(REPLIED).map((l) => l.split(/\s+/)[0].toLowerCase()));
+// Follow-up drafts (parallel to drafts/, keyed by recipient), written by assemble-drafts.cjs.
+const followupByEmail = {};
+try {
+  const fdir = join(OUTREACH, 'followups');
+  for (const f of readdirSync(fdir).filter((x) => /^\d+.*\.txt$/.test(x))) {
+    const lines = readFileSync(join(fdir, f), 'utf8').split(/\r?\n/);
+    const to = ((lines[0].match(/^TO:\s*(.+)$/) || [])[1] || '').toLowerCase();
+    const subject = (lines[1].match(/^SUBJECT:\s*(.+)$/) || [])[1] || '';
+    const body = lines.slice(3).join('\n').trim() + '\n';
+    if (to && subject && body.trim().length > 20) followupByEmail[to] = { subject, body };
+  }
+} catch { /* no followups dir yet */ }
 
 // addresses to skip only for THIS run (send errors, dead domains) — remain
 // pending for a future run rather than being permanently blocklisted.
@@ -185,6 +211,7 @@ const OPTOUT_RE = /\b(unsubscribe|no thanks|no thank you|remove me|take me off|p
 async function sweepReplies(knownRecipients) {
   const imap = freshImap();
   const newlySuppressed = [];
+  const newReplied = [];
   const replies = [];
   try {
     await imap.connect();
@@ -210,12 +237,14 @@ async function sweepReplies(knownRecipients) {
           if (!suppressed.has(c.from)) { suppressed.add(c.from); newlySuppressed.push(c.from); }
         } else {
           replies.push({ from: c.from, subject: c.subject });
+          if (!replied.has(c.from)) { replied.add(c.from); newReplied.push(c.from); }
         }
       }
     } finally { lock.release(); }
     await imap.logout();
   } catch (e) { console.error('reply sweep error (continuing):', e.message); }
   if (newlySuppressed.length && !DRY) newlySuppressed.forEach((t) => appendFileSync(SUPPRESS, `${t}  optout  ${new Date().toISOString()}\n`));
+  if (newReplied.length && !DRY) newReplied.forEach((t) => appendFileSync(REPLIED, `${t}  ${new Date().toISOString()}\n`));
   if (newlySuppressed.length) { await removeDraftsFor(new Set(newlySuppressed)); console.log('opt-out -> suppressed, draft removed:', newlySuppressed.join(', ')); }
   return { newlySuppressed, replies };
 }
@@ -254,6 +283,16 @@ const goodAllTime = logEntries.filter((e) => !bounced.has(e.to)).length;
 const goodToday = logEntries.filter((e) => e.ts === today && !bounced.has(e.to)).length;
 const loggedTos = new Set(logEntries.map((e) => e.to).filter(Boolean));
 
+// First-touch day per email (sent-log.txt holds first touches only; follow-ups
+// have their own log). Used to decide when a follow-up is due.
+const firstTouchDay = {};
+for (const e of logEntries) { if (e.to && e.ts && (!firstTouchDay[e.to] || e.ts < firstTouchDay[e.to])) firstTouchDay[e.to] = e.ts; }
+// Follow-ups already sent (own log) + how many went out today (they share quota).
+const fuEntries = readLines(FOLLOWUP_LOG).map((l) => ({ ts: localDay(l.split(/\s+/)[0]), to: (l.split(/\s+/)[1] || '').toLowerCase() }));
+const followedUp = new Set(fuEntries.map((e) => e.to).filter(Boolean));
+const followupsToday = fuEntries.filter((e) => e.ts === today).length;
+const dueCut = new Date(Date.now() - FOLLOWUP_DAYS * 86400000).toLocaleDateString('en-CA');
+
 // Opt-out / reply sweep across everyone we've actually emailed.
 const { newlySuppressed, replies } = await sweepReplies(new Set([...sentTos, ...loggedTos]));
 
@@ -274,8 +313,19 @@ try { weights = JSON.parse(readFileSync(join(OUTREACH, 'town-weights.json'), 'ut
 catch { console.log('WARN: town-weights.json missing — run aggregator/town-priority.mjs; using Findlay/Toledo-first fallback'); }
 const weightOf = (town) => (weights && weights[town] != null ? weights[town] : (town === 'Findlay' ? 2 : town === 'Toledo' ? 1.5 : 0));
 
-const eligible = () => queue.filter((d) => !sentTos.has(d.to) && !loggedTos.has(d.to) && !bounced.has(d.to) && !suppressed.has(d.to) && !skipRun.has(d.to));
-const pendingList = () => orderPending(eligible(), { townOf, weightOf });
+// First-touch: never-emailed, not bounced/opted-out/errored-this-run.
+const eligibleFirst = () => queue.filter((d) => !sentTos.has(d.to) && !loggedTos.has(d.to) && !bounced.has(d.to) && !suppressed.has(d.to) && !skipRun.has(d.to));
+// Follow-up (opt-in): got a first touch >= FOLLOWUP_DAYS ago, no reply, no opt-out,
+// no bounce, not already followed up.
+const eligibleFollowups = () => (FOLLOWUP_DAYS <= 0 ? [] : Object.keys(followupByEmail)
+  .filter((to) => loggedTos.has(to) && firstTouchDay[to] && firstTouchDay[to] <= dueCut
+    && !followedUp.has(to) && !replied.has(to) && !bounced.has(to) && !suppressed.has(to) && !skipRun.has(to))
+  .map((to) => ({ to, subject: followupByEmail[to].subject, body: followupByEmail[to].body, kind: 'followup' })));
+const orderFollowups = () => orderPending(eligibleFollowups(), { townOf, weightOf });
+const orderFirst = () => orderPending(eligibleFirst().map((d) => ({ ...d, kind: 'first' })), { townOf, weightOf });
+// Follow-ups first (warm leads convert better), then new first-touches — all
+// inside the same daily quota so total volume never exceeds the warm-up ramp.
+const pendingList = () => [...orderFollowups(), ...orderFirst()];
 
 // run-report accumulators
 const sentThisRun = [];
@@ -286,7 +336,8 @@ function writeReport(status) {
   try {
     writeFileSync(join(OUTREACH, 'last-run.json'), JSON.stringify({
       generated_at: new Date().toISOString(), status, et: `${etDay} ${etHour}:00`, inWindow,
-      quota, goodToday, goodAllTime, bouncedTotal: bounced.size, suppressedTotal: suppressed.size,
+      quota, goodToday, goodAllTime, followupDays: FOLLOWUP_DAYS, followupsToday, followupsDue: orderFollowups().length,
+      bouncedTotal: bounced.size, suppressedTotal: suppressed.size, repliedTotal: replied.size,
       pending: pendingList().length, sentThisRun, skippedNoMx: [...skippedNoMx], sendErrors,
       newlySuppressed, replies,
     }, null, 2) + '\n');
@@ -306,14 +357,15 @@ const MAX_DAILY = Math.max(1, Number(process.env.OUTREACH_MAX_DAILY || g('OUTREA
 const rampBase = goodAllTime < 15 ? 5 : goodAllTime < 40 ? 8 : MAX_DAILY;
 const ramp = Math.min(rampBase, MAX_DAILY);
 const quota = Math.min(ramp, Number(args.limit) || ramp);
-let need = Math.max(0, quota - goodToday);
+let need = Math.max(0, quota - goodToday - followupsToday);
 
 if (replies.length) {
   console.log(`\nREPLY — review (${replies.length}):`);
   for (const r of replies) console.log(`  ${r.from}  "${String(r.subject).slice(0, 60)}"`);
   console.log('');
 }
-console.log(`queue ${queue.length} · good all-time ${goodAllTime} · good today ${goodToday}/${quota} · bounced ${bounced.size} · suppressed ${suppressed.size} · pending ${pendingList().length} · sending now ${Math.min(need, pendingList().length)}${DRY ? ' DRY' : ''}`);
+const fuDue = orderFollowups().length;
+console.log(`queue ${queue.length} · good all-time ${goodAllTime} · today ${goodToday + followupsToday}/${quota} (${followupsToday} follow-up) · bounced ${bounced.size} · suppressed ${suppressed.size} · replied ${replied.size}` + (FOLLOWUP_DAYS ? ` · follow-ups due ${fuDue}` : ' · follow-ups OFF') + ` · pending ${pendingList().length} · sending now ${Math.min(need, pendingList().length)}${DRY ? ' DRY' : ''}`);
 
 if (need === 0) { console.log('daily quota already met with good sends — nothing to do.'); writeReport('quota-met'); process.exit(0); }
 if (DRY) { pendingList().slice(0, need).forEach((d) => console.log('  would send:', d.subject, '->', d.to)); process.exit(0); }
@@ -359,9 +411,9 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
     const d = batch[i];
     const info = await sendOne(d);
     if (!info) { sendErrors.push(d.to); skipRun.add(d.to); continue; }
-    appendFileSync(LOG, `${new Date().toISOString()}  ${d.to}  ${d.subject}  ${info.messageId}\n`);
-    sentTos.add(d.to); sentThisRun.push(d.to);
-    console.log('sent:', d.subject, '->', d.to);
+    appendFileSync(d.kind === 'followup' ? FOLLOWUP_LOG : LOG, `${new Date().toISOString()}  ${d.to}  ${d.subject}  ${info.messageId}\n`);
+    sentTos.add(d.to); skipRun.add(d.to); sentThisRun.push((d.kind === 'followup' ? 'followup ' : '') + d.to);
+    console.log((d.kind === 'followup' ? 'sent follow-up:' : 'sent:'), d.subject, '->', d.to);
     if (i < batch.length - 1) await sleep(45000 + Math.floor(Math.random() * 75000));
   }
   await sleep(GRACE_MS);
@@ -371,5 +423,6 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
 }
 
 const finalGood = readLines(LOG).filter((l) => localDay(l.split(/\s+/)[0]) === today && !bounced.has((l.split(/\s+/)[1] || '').toLowerCase())).length;
+const fuSent = sentThisRun.filter((s) => s.startsWith('followup ')).length;
 writeReport('sent');
-console.log(`done. good sends today: ${finalGood}/${quota}.` + (skippedNoMx.size ? ` (skipped ${skippedNoMx.size} dead-domain)` : '') + (sendErrors.length ? ` (${sendErrors.length} send error[s])` : ''));
+console.log(`done. today: ${finalGood} first-touch + ${fuSent} follow-up = ${finalGood + fuSent}/${quota}.` + (skippedNoMx.size ? ` (skipped ${skippedNoMx.size} dead-domain)` : '') + (sendErrors.length ? ` (${sendErrors.length} send error[s])` : ''));
