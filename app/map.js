@@ -55,7 +55,7 @@ pts.forEach(function(p){
   dot.style.cssText='width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);background:'+p.color;
   el.appendChild(dot);
   var html='<div style="font:16px -apple-system,sans-serif;max-width:220px;padding:2px 0"><b>'+esc(p.title)+'</b><br>'
-    +'<a href="#" onclick="window.ReactNativeWebView.postMessage(\\''+p.id+'\\');return false;" style="display:inline-block;margin-top:6px;color:#1F6F54;font-weight:700;font-size:16px">View details &rsaquo;</a></div>';
+    +'<a href="#" onclick="window.ReactNativeWebView.postMessage(\\''+p.id+'\\');return false;" style="display:inline-block;margin-top:6px;color:#15315B;font-weight:700;font-size:16px">View details &rsaquo;</a></div>';
   new mapboxgl.Marker(el).setLngLat([p.lng,p.lat]).setPopup(new mapboxgl.Popup({offset:18}).setHTML(html)).addTo(map);
 });
 </script></body></html>`;

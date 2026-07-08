@@ -2,23 +2,27 @@
 // generous spacing, large default type, big tap targets.
 
 export const colors = {
-  // Brand: warm, friendly, civic.
-  primary: '#1F6F54', // deep green (Findlay parks / Flag City feel)
-  primaryDark: '#15503D',
-  primaryLight: '#E7F2EE',
-  accent: '#A0500F', // warm orange for CTAs. Darkened so it clears WCAG AA both as
-  // white-on-accent (buttons) and as accent text on accentLight (FEATURED pill, deals banner).
-  accentLight: '#FBEBDD',
+  // Brand: PATRIOTIC — refined red / white / blue (Jul 2026 seasonal).
+  // Navy primary, classic flag red accent, warm cream surfaces. Contrast checked
+  // for WCAG AA. To flip back to the original green civic palette, restore the
+  // values in the `REVERT:` comments (one commit).
+  primary: '#15315B', // deep navy  (REVERT: '#1F6F54')
+  primaryDark: '#0E2444', //          (REVERT: '#15503D')
+  primaryLight: '#E8EDF5', // light navy tint  (REVERT: '#E7F2EE')
+  accent: '#B22234', // classic flag red for CTAs. Clears WCAG AA as white-on-accent
+  // (buttons, ~6.6:1) and as accent text on accentLight (FEATURED pill, ~5.6:1).
+  // (REVERT: '#A0500F')
+  accentLight: '#FBE7E9', // light red tint  (REVERT: '#FBEBDD')
 
-  background: '#FBFAF7',
+  background: '#FBF8F1', // warm cream  (REVERT: '#FBFAF7')
   surface: '#FFFFFF',
-  surfaceAlt: '#F2F0EB',
+  surfaceAlt: '#F3EFE6', //             (REVERT: '#F2F0EB')
 
   text: '#1A1A1A',
   textMuted: '#5B5B5B',
   textInverse: '#FFFFFF',
 
-  border: '#E2DED7',
+  border: '#E4DED4', //                 (REVERT: '#E2DED7')
   shadow: '#000000',
 
   success: '#256B29', // darkened so it clears WCAG AA on the light "when" chips
