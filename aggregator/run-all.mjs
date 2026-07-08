@@ -14,13 +14,17 @@ import { execSync } from 'node:child_process';
 // once every picker town has content (see the legacy ghosts it lists).
 const STEPS = [
   ['Validate city config', 'check-cities.mjs', { hard: true }],
-  ['Feeds (iCal / JSON-LD)', 'aggregate.mjs'],
+  // aggregate.mjs now drives EVERY per-source platform (iCal, JSON-LD, revize,
+  // LibraryMarket, BiblioCommons, Communico, Simpleview) from event_sources rows —
+  // the old standalone LibraryMarket step is retired.
+  ['Feeds (all platforms)', 'aggregate.mjs'],
   ['Ticketmaster', 'ticketmaster.mjs'],
   ['SeatGeek', 'seatgeek.mjs'],
-  ['LibraryMarket', 'librarymarket.mjs'],
   ['De-duplicate', 'dedupe.mjs --apply'],
   ['Geocode', 'geocode.mjs'],
+  ['City boundaries (true town lines)', 'assign-boundaries.mjs'],
   ['Content guard (ghost/thin report)', 'check-content.mjs'],
+  ['Feed health (dead-source report)', 'feed-health.mjs'],
   ['Website pages', 'generate-events.mjs'],
   ['Advertise page', 'generate-advertise.mjs'],
 ];

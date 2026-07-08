@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES } from '../src/data/cities.js';
+import { ANCHORS } from './geo.mjs';
 
 loadDotEnv();
 const DRY = process.argv.includes('--dry-run');
@@ -21,8 +22,25 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !MAPBOX_TOKEN) {
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Geocode within Ohio, anchored to the town so a bare venue name ("Sandusky
-// Library") doesn't match the same name in another state.
+// Accepted region = the union of every metro anchor's circle (plus a small
+// margin), derived at runtime from geo.mjs so adding an anchor automatically
+// expands where geocodes are accepted — no more hand-tuned magic bounding box
+// silently rejecting a new region's events.
+const MARGIN_MI = 10;
+const BBOX = ANCHORS.reduce(
+  (b, a) => {
+    const dLat = (a.radius + MARGIN_MI) / 69; // ~69 mi per degree latitude
+    const dLng = (a.radius + MARGIN_MI) / (69 * Math.cos((a.lat * Math.PI) / 180));
+    return {
+      s: Math.min(b.s, a.lat - dLat), n: Math.max(b.n, a.lat + dLat),
+      w: Math.min(b.w, a.lng - dLng), e: Math.max(b.e, a.lng + dLng),
+    };
+  },
+  { s: Infinity, n: -Infinity, w: Infinity, e: -Infinity }
+);
+
+// Geocode within our footprint, anchored to the town so a bare venue name
+// ("Sandusky Library") doesn't match the same name in another state.
 async function geocode(query) {
   const url =
     `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json` +
@@ -33,8 +51,8 @@ async function geocode(query) {
   const f = data.features?.[0];
   if (!f?.center) return null;
   const [lng, lat] = f.center;
-  // Reject anything that lands outside the NW-Ohio region.
-  if (lat < 39.5 || lat > 42.3 || lng < -85.5 || lng > -82) return null;
+  // Reject anything outside the anchor-derived footprint (visible, not silent).
+  if (lat < BBOX.s || lat > BBOX.n || lng < BBOX.w || lng > BBOX.e) return null;
   return { lng, lat };
 }
 

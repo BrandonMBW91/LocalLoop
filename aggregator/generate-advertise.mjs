@@ -33,6 +33,15 @@ const mau = {};
   }
 }
 
+// Live source count for the pitch — counted from event_sources at generation
+// time (+2 for Ticketmaster & SeatGeek) and rounded DOWN to the nearest 10, so
+// the "N+ local sources" claim is always true and self-updates as feeds grow.
+let SOURCES_PLUS = 140;
+try {
+  const { count } = await sb.from('event_sources').select('*', { count: 'exact', head: true }).eq('enabled', true);
+  if (count) SOURCES_PLUS = Math.floor((count + 2) / 10) * 10;
+} catch { /* keep the conservative default */ }
+
 // Per-town pricing payload for the client.
 const DATA = {};
 for (const c of CITIES) {
@@ -64,7 +73,7 @@ const html = `<!DOCTYPE html><html lang="en"><head>
 
 <section class="hero">
   <h1>Reach your neighbors</h1>
-  <p>Put your business in front of locals who are looking for something to do. Your rate is set by how many people use Local Loop in your town, so it starts low and only grows as your town does. Sign up now and lock today's rate in for a full year.</p>
+  <p>Put your business in front of locals who are looking for something to do. Our engine checks ${SOURCES_PLUS}+ local sources every morning, from libraries and city halls to festivals and ticket sites, so your ad lives next to the freshest events calendar in your town. Your rate is set by how many people use Local Loop in your town: it starts low, only grows as your town does, and signing up now locks today's rate for a full year.</p>
   <div class="picker"><label for="townPick">Your town:</label><select id="townPick" aria-label="Choose your town">${options}</select><span id="rateNote"></span></div>
 </section>
 

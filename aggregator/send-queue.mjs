@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import nodemailer from 'nodemailer';
 import { ImapFlow } from 'imapflow';
+import { orderPending } from './town-order.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const env = readFileSync(join(ROOT, '.env'), 'utf8');
@@ -153,30 +154,27 @@ let need = Math.max(0, quota - goodToday);
 // suspenders: a partial IMAP fetch can't cause a re-email).
 const loggedTos = new Set(logEntries.map((e) => e.to).filter(Boolean));
 
-// email -> town, so the queue can be ordered as a solid mix that leads with the
-// two markets that actually have an audience to sell (Findlay + Toledo).
+// email -> town, so the queue can be interleaved ACROSS towns by priority
+// (a blend of population + current users; see aggregator/town-priority.mjs) —
+// one lead per town per pass, so every batch spans many markets (new cities get
+// coverage) while still leading with the towns that matter most.
 const townByEmail = {};
 try {
   for (const b of JSON.parse(readFileSync(join(OUTREACH, 'businesses.json'), 'utf8'))) {
     townByEmail[(b.email || '').toLowerCase()] = b.town || 'Findlay';
   }
 } catch { /* if unreadable, fall back to plain file order */ }
-const townOf = (to) => townByEmail[to] || 'Other';
-// Round-robin Findlay, Toledo, then the rest, so each batch is roughly 3 Findlay,
-// 3 Toledo, 2 other: audience markets first, without going monotone.
-function mixed(list) {
-  const f = list.filter((d) => townOf(d.to) === 'Findlay');
-  const t = list.filter((d) => townOf(d.to) === 'Toledo');
-  const o = list.filter((d) => !['Findlay', 'Toledo'].includes(townOf(d.to)));
-  const out = [];
-  while (f.length || t.length || o.length) {
-    if (f.length) out.push(f.shift());
-    if (t.length) out.push(t.shift());
-    if (o.length) out.push(o.shift());
-  }
-  return out;
-}
-const pendingList = () => mixed(queue.filter((d) => !sentTos.has(d.to) && !loggedTos.has(d.to) && !bounced.has(d.to)));
+const townOf = (to) => townByEmail[to] || 'Findlay';
+
+// Per-town priority weights, written by aggregator/town-priority.mjs. If missing,
+// fall back to a Findlay/Toledo-first blend so sending still works.
+let weights = null;
+try { weights = JSON.parse(readFileSync(join(OUTREACH, 'town-weights.json'), 'utf8')).weights; }
+catch { console.log('WARN: town-weights.json missing — run aggregator/town-priority.mjs; using Findlay/Toledo-first fallback'); }
+const weightOf = (town) => (weights && weights[town] != null ? weights[town] : (town === 'Findlay' ? 2 : town === 'Toledo' ? 1.5 : 0));
+
+const eligible = () => queue.filter((d) => !sentTos.has(d.to) && !loggedTos.has(d.to) && !bounced.has(d.to));
+const pendingList = () => orderPending(eligible(), { townOf, weightOf });
 console.log(`queue ${queue.length} · good all-time ${goodAllTime} · good today ${goodToday}/${quota} · bounced total ${bounced.size} · pending ${pendingList().length} · sending now ${Math.min(need, pendingList().length)}${DRY ? ' DRY' : ''}`);
 
 if (need === 0) { console.log('daily quota already met with good sends — nothing to do.'); process.exit(0); }

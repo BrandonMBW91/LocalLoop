@@ -25,20 +25,32 @@ and the `NAMES` matcher (`aggregator/towns.mjs`) in a collision-safe position, r
 
 ## 2. Wire at least one feed (or it's a ghost town)
 
-A town with no feed and few ticketed events ships empty. Add a real source:
+A town with no feed and few ticketed events ships empty. EVERY platform is now just
+an `event_sources` row — `(city_id, name, type, url, default_category, enabled)` —
+no code changes for any of them:
 
-- **Normal calendar** (iCal / JSON-LD / Revize) → a row in the `event_sources` table:
-  `(city_id, name, type, url, default_category, enabled)`. Confirm the URL returns
-  `BEGIN:VCALENDAR` (iCal) or JSON-LD Events first.
-- **LibraryMarket library** (`*.librarycalendar.com` / LC Events) → add
-  `{ host, city_id, name }` to `LIBS` in `aggregator/librarymarket.mjs`.
-- **Eventbrite baseline** (always available): a `jsonld` row with
-  `https://www.eventbrite.com/d/oh--<id>/all-events/`.
+| `type` | What it is | `url` |
+|---|---|---|
+| `ical` | any iCal feed | the .ics URL |
+| `jsonld` | schema.org Events in page HTML (Eventbrite etc.) | the page URL |
+| `revize` | Revize municipal calendars | the calendar JSON URL |
+| `librarymarket` | `*.librarycalendar.com` county library systems | the host |
+| `bibliocommons` | big-system libraries on `*.bibliocommons.com` | the site (e.g. `https://plymc.bibliocommons.com`) |
+| `communico` | libraries on `*.libnet.info` (+ custom domains like `services.akronlibrary.org`) | the events host |
+| `simpleview` | CVB / destination-marketing sites (e.g. Shores & Islands) | the site |
+
+County-wide sources self-route: branch addresses in each event send it to the right
+town, so ONE row can feed a whole cluster (PLYMC covers Youngstown/Boardman/
+Austintown/Canfield/Struthers). **Eventbrite baseline** (always available): a
+`jsonld` row with `https://www.eventbrite.com/d/oh--<id>/all-events/`.
 
 Common iCal URL patterns: WhoFi `https://{slug}.whofi.com/calendar/ical`; LibCal
 `https://{sub}.libcal.com/ical_subscribe.php?cid={N}`; The Events Calendar (WordPress)
 `?ical=1`; Squarespace `?format=ical`; CivicPlus
 `/common/modules/iCalendar/iCalendar.aspx?catID={N}&feed=calendar`.
+
+Test any source without touching the DB:
+`node aggregate.mjs --dry-run --url=<url> --type=<type> --city=<id>`
 
 ## 3. Aggregate + verify no ghost town
 
@@ -66,6 +78,16 @@ git add -A && git commit -m "Add <town>" && git push origin main
 gh workflow run aggregate.yml    # regenerates + deploys localloop.io (or wait for the daily cron)
 ```
 
+## True city lines (boundary polygons)
+
+Events are first routed by address text, then — once geocoded — corrected against
+official Census TIGER boundaries (`assign-boundaries.mjs` in the daily pipeline).
+This fixes postal-city lies ("Boardman events say Youngstown, OH 44512") with two
+safety gates: coordinates must be backed by a real street address/ZIP, and moves are
+only allowed between neighboring towns (<25 mi). After ADDING a town, refresh the
+polygon file once: `node build-polygons.mjs` (fetches the new town's boundary; CDPs
+and townships need an entry in its OVERRIDES table if the Places lookup misses).
+
 ## The gates (wired into run-all.mjs and CI)
 
 - **`check-cities.mjs`** — config + matcher regression gate: golden out-of-state
@@ -73,3 +95,6 @@ gh workflow run aggregate.yml    # regenerates + deploys localloop.io (or wait f
   `NAMES` shorter-after-longer ordering rule. Runs first; hard-fails the pipeline.
 - **`check-content.mjs [--strict --allow=<ids>]`** — per-town ghost/thin report. In CI
   it hard-blocks a deploy on an *unexpected* ghost; known-legacy empties go in `--allow`.
+- **`feed-health.mjs [--strict]`** — per-SOURCE health (aggregate.mjs stamps
+  last_pulled_at / last_ok_at / last_event_count / last_error on every pull); flags
+  dead, stale, and zero-event sources before a town quietly empties out.

@@ -16,6 +16,7 @@ import { loadDotEnv } from './env.mjs';
 import { classifyEvents, emojiFor } from './classify.mjs';
 import { deriveVenue } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
+import { PLATFORMS } from './platforms/index.mjs';
 import { cityFromLocation } from './towns.mjs';
 import { normalizeText, cleanLocation, cleanDescription } from '../src/lib/text.js';
 
@@ -200,6 +201,28 @@ async function pullSource(source) {
   const floor = now - 12 * 60 * 60 * 1000; // keep things that started today
   const cutoff = now + HORIZON_DAYS * 24 * 60 * 60 * 1000;
 
+  // Platform connectors (BiblioCommons, Communico, Simpleview, LibraryMarket, …):
+  // each returns RAW events ({summary, description, location, url, image, start,
+  // end, allDay}) which flow through the SAME makeRow gauntlet as iCal — junk/
+  // weather/meeting filters, town routing, hashing — so every source gets
+  // identical quality control. Adding a city on any platform = one event_sources
+  // row (city_id + host URL); no code changes.
+  const platform = PLATFORMS[source.type];
+  if (platform) {
+    const rows = [];
+    for (const ev of await platform.pull(source, { floor, cutoff })) {
+      const start = ev.allDay ? atLocalNoon(ev.start) : ev.start;
+      const t = start.getTime();
+      const end = ev.end || null;
+      const endT = end ? end.getTime() : t;
+      if (Number.isNaN(t) || endT < floor || t > cutoff) continue;
+      const row = makeRow(ev, source, start, end);
+      if (row) rows.push(row);
+    }
+    const seenP = new Set();
+    return rows.filter((r) => (seenP.has(r.source_uid) ? false : seenP.add(r.source_uid)));
+  }
+
   const text = await fetchICS(source.url);
   const rows = [];
 
@@ -321,6 +344,13 @@ async function main() {
     console.log('(no ANTHROPIC_API_KEY — new events keep their source default category)');
   }
 
+  // Per-source health stamps (see supabase/feed_health.sql) — a feed that dies
+  // shows up in feed-health.mjs instead of a town silently emptying out.
+  const stamp = async (source, patch) => {
+    if (DRY_RUN || !supabase || !source.id) return;
+    try { await supabase.from('event_sources').update({ last_pulled_at: new Date().toISOString(), ...patch }).eq('id', source.id); } catch {}
+  };
+
   let totalNew = 0;
   for (const source of sources) {
     process.stdout.write(`\n→ ${source.name} (${source.city_id})\n`);
@@ -329,9 +359,11 @@ async function main() {
       rows = await pullSource(source);
     } catch (e) {
       console.error(`  ! fetch/parse failed: ${e.message}`);
+      await stamp(source, { last_error: String(e.message).slice(0, 300) });
       continue;
     }
     console.log(`  parsed ${rows.length} upcoming events`);
+    await stamp(source, { last_ok_at: new Date().toISOString(), last_event_count: rows.length, last_error: null });
 
     if (DRY_RUN) {
       rows.slice(0, 8).forEach((r) =>

@@ -17,6 +17,7 @@
 import { CITIES, REGION_ORDER } from '../src/data/cities.js';
 import { NAMES, cityFromLocation } from './towns.mjs';
 import { ANCHORS } from './geo.mjs';
+import { polygonCoverage } from './citypoly.mjs';
 
 let problems = 0;
 const fail = (m) => { console.error(`  ✗ ${m}`); problems++; };
@@ -91,6 +92,13 @@ for (const [loc, expected] of GOLDEN) {
   if (expected !== null && !cityIds.has(expected)) continue;
   const got = cityFromLocation(loc, 'findlay');
   if (got !== expected) fail(`matcher: "${loc}" -> ${JSON.stringify(got)} but expected ${JSON.stringify(expected)}`);
+}
+
+// 8) Boundary polygons (soft warning — towns without one just skip the
+//    assign-boundaries correction). Fix with: node build-polygons.mjs
+const { missing: noPoly } = polygonCoverage(CITIES.map((c) => c.id));
+if (noPoly.length) {
+  console.warn(`  … ${noPoly.length} town(s) without a boundary polygon (run build-polygons.mjs): ${noPoly.join(', ')}`);
 }
 
 const total = CITIES.length;

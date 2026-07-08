@@ -42,13 +42,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
         run: node seatgeek.mjs
-      - name: Pull LibraryMarket library events
-        working-directory: aggregator
-        continue-on-error: true
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node librarymarket.mjs
       - name: De-duplicate across sources
         working-directory: aggregator
         continue-on-error: true
@@ -63,6 +56,20 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
         run: node geocode.mjs
+      - name: Assign true city boundaries (Census polygons)
+        working-directory: aggregator
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node assign-boundaries.mjs
+      - name: Feed health (dead-source report)
+        working-directory: aggregator
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node feed-health.mjs
       - name: Regenerate SEO event pages
         working-directory: aggregator
         env:
