@@ -563,14 +563,36 @@ export async function fetchCityReach(cityId) {
 
 // Record that this device is active in a town (anonymous; powers user-based ad
 // pricing). Fire-and-forget.
-export async function recordDeviceActivity(deviceId, cityId) {
+export async function recordDeviceActivity(deviceId, cityId, platform) {
   try {
     // Via a SECURITY DEFINER function so the table stays fully private (no anon
     // read/write policies). A direct upsert needs read access for ON CONFLICT,
     // which would expose the user list. See supabase/device_activity.sql.
-    await supabase.rpc('record_device_activity', { p_device: deviceId, p_city: cityId });
+    // p_platform ('ios' | 'android') powers the iOS-vs-Android metrics breakout.
+    await supabase.rpc('record_device_activity', { p_device: deviceId, p_city: cityId, p_platform: platform });
   } catch (e) {
     // non-fatal
+  }
+}
+
+// Distinct devices per platform (ios / android / unknown) over the last 30 days,
+// for the admin metrics screen. p_city null = all towns. Reads via a SECURITY
+// DEFINER RPC so device_activity stays private. See supabase/device_platform.sql.
+export async function fetchPlatformSplit(cityId) {
+  try {
+    const { data, error } =
+      cityId == null
+        ? await supabase.rpc('platform_split')
+        : await supabase.rpc('platform_split', { p_city: cityId });
+    if (error) throw error;
+    const out = { ios: 0, android: 0, unknown: 0 };
+    for (const r of data || []) {
+      const key = r.platform === 'ios' || r.platform === 'android' ? r.platform : 'unknown';
+      out[key] += r.users || 0;
+    }
+    return out;
+  } catch (e) {
+    return { ios: 0, android: 0, unknown: 0 };
   }
 }
 

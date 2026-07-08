@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchMetrics, fetchCityUsers } from '../src/lib/db';
+import { fetchMetrics, fetchCityUsers, fetchPlatformSplit } from '../src/lib/db';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 const KIND_LABEL = { event: 'Events', garage_sale: 'Garage sales', food_truck: 'Food trucks' };
@@ -29,15 +29,21 @@ export default function MetricsScreen() {
   const [scope, setScope] = useState('all'); // 'all' towns (default) or the current city
   const [data, setData] = useState(null);
   const [users, setUsers] = useState(0);
+  const [platform, setPlatform] = useState({ ios: 0, android: 0, unknown: 0 });
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const target = scope === 'all' ? null : cityId; // null => every town
-      const [m, u] = await Promise.all([fetchMetrics(target), fetchCityUsers(target)]);
+      const [m, u, p] = await Promise.all([
+        fetchMetrics(target),
+        fetchCityUsers(target),
+        fetchPlatformSplit(target),
+      ]);
       setData(m);
       setUsers(u);
+      setPlatform(p);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -112,6 +118,37 @@ export default function MetricsScreen() {
         <StatCard icon="star" value={m.featuredCount ?? 0} label="Featured now" color={colors.accent} />
         <StatCard icon="megaphone" value={m.activeAds ?? 0} label="Active ads" color={colors.garageSale} />
       </View>
+
+      {/* Active users by platform */}
+      <ThemedText size="subtitle" weight="bold" style={styles.sectionTitle}>
+        Users by platform (30d)
+      </ThemedText>
+      <View style={styles.card}>
+        {(() => {
+          const total = platform.ios + platform.android + platform.unknown;
+          const rows = [
+            { key: 'ios', label: 'iPhone / iPad', icon: 'logo-apple', color: colors.text },
+            { key: 'android', label: 'Android', icon: 'logo-android', color: colors.success },
+          ];
+          if (platform.unknown) rows.push({ key: 'unknown', label: 'Not yet identified', icon: 'help-circle-outline', color: colors.textMuted });
+          return rows.map((p, i) => {
+            const pct = total ? Math.round((platform[p.key] / total) * 100) : 0;
+            return (
+              <View key={p.key} style={[styles.breakRow, i > 0 && styles.rowBorder]}>
+                <Ionicons name={p.icon} size={20} color={p.color} style={{ marginRight: spacing.sm }} />
+                <ThemedText size="body" style={{ flex: 1 }}>{p.label}</ThemedText>
+                <ThemedText size="small" color={colors.textMuted} style={{ marginRight: spacing.md }}>{pct}%</ThemedText>
+                <ThemedText size="body" weight="bold">{platform[p.key]}</ThemedText>
+              </View>
+            );
+          });
+        })()}
+      </View>
+      {platform.unknown ? (
+        <ThemedText size="small" color={colors.textMuted} style={{ marginTop: spacing.xs }}>
+          Platform is recorded as each device opens the app, so "Not yet identified" shrinks over the next day or two.
+        </ThemedText>
+      ) : null}
 
       {/* Views by type */}
       <ThemedText size="subtitle" weight="bold" style={styles.sectionTitle}>

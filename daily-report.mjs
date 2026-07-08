@@ -84,6 +84,14 @@ const act24 = actEvs.length;
 const byCity = {};
 for (const d of await rows(`device_activity?select=city_id&last_seen=gte.${dayAgo}`)) byCity[d.city_id] = (byCity[d.city_id] || 0) + 1;
 
+// Platform split (iOS vs Android). Recorded per device as it opens the app, so
+// devices that haven't opened since this shipped show as "unknown" and shrink away.
+const platName = (p) => (p === 'ios' ? 'iOS' : p === 'android' ? 'Android' : 'unknown');
+const byPlatform = {};
+for (const d of await rows('device_activity?select=platform')) { const k = platName(d.platform); byPlatform[k] = (byPlatform[k] || 0) + 1; }
+const byPlatform24 = {};
+for (const d of await rows(`device_activity?select=platform&last_seen=gte.${dayAgo}`)) { const k = platName(d.platform); byPlatform24[k] = (byPlatform24[k] || 0) + 1; }
+
 // Real user posts: created_by is set = a signed-in local. Our own curated posts
 // come in via the service role with no created_by, so this filters them out.
 const uPostWhen = (t) => { const d = Math.floor((Date.now() - new Date(t)) / 86400000); return d <= 0 ? 'today' : d === 1 ? '1d ago' : d + 'd ago'; };
@@ -151,6 +159,8 @@ console.log(`\n================  LOCAL LOOP — DAILY REPORT  ================`)
 console.log(`  ${stamp}\n`);
 console.log(`  INSTALLS`);
 console.log(`    Total installs:         ${devTotal}   (devices that have opened the app)`);
+  console.log(`    By platform (all):      ${fmtMap(byPlatform)}`);
+  console.log(`    By platform (24h):      ${fmtMap(byPlatform24)}   (opened today)`);
 console.log(`  REACH — app opens`);
 console.log(`    Opened (last 24h):      ${dev24}`);
 console.log(`    By town (24h):          ${fmtMap(byCity)}`);
@@ -210,6 +220,7 @@ function buildReportHtml() {
     + `<tr><td style="background:#15315B;padding:20px 18px;"><div style="color:#c9d4e8;font-size:12px;letter-spacing:1.5px;font-weight:700;">LOCAL LOOP &middot; DAILY REPORT</div><div style="color:#ffffff;font-size:20px;font-weight:800;margin-top:3px;">${esc(stamp)}</div></td></tr>`
     + sec('INSTALLS', `<div>${big(devTotal)} <span style="font-size:15px;">total installs</span></div><div style="font-size:13px;color:#8a8a8a;margin-top:3px;">devices that have opened the app</div>`)
     + sec('REACH &middot; app opens', `<div>${big(dev24)} today</div><div style="font-size:14px;color:#555;margin-top:4px;">By town: ${esc(fmtMap(byCity))}</div>`)
+    + sec('BY PLATFORM &middot; iOS vs Android', `<div style="font-size:14px;color:#555;line-height:1.8;">All installs: <b>${esc(fmtMap(byPlatform))}</b><br>Opened today: ${esc(fmtMap(byPlatform24))}</div>`)
     + sec('ENGAGEMENT &middot; taps', `<div>${big(act24)} today ${muted('· ' + actTotal + ' all-time')}</div><div style="font-size:14px;color:#555;margin-top:4px;">${activeDevs.size} active devices</div><div style="font-size:14px;color:#555;margin-top:2px;">${esc(fmtMap(byType))}</div>${Object.keys(searches).length ? `<div style="font-size:14px;color:#555;margin-top:2px;">Top searches: ${esc(fmtMap(searches))}</div>` : ''}`)
     + boostSec
     + sec('SUBMISSIONS', `<div style="font-size:14px;color:#333;line-height:1.7;">Events: <b>${evUser24}</b> today <span style="color:#8a8a8a;">(${evUserTotal} all-time)</span><br>Garage sales: <b>${gs24}</b> today <span style="color:#8a8a8a;">(${gsTotal})</span><br>Food trucks: <b>${ft24}</b> today <span style="color:#8a8a8a;">(${ftTotal})</span></div>`)

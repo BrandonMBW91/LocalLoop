@@ -264,7 +264,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     // Skip entirely for the admin/owner so their device never enters the metrics.
     if (isSupabaseEnabled && !isAdmin && deviceId && cityId) {
-      recordDeviceActivity(deviceId, cityId);
+      recordDeviceActivity(deviceId, cityId, Platform.OS);
       // Log one app_open per launch so daily opens are tracked historically in
       // app_events (device_activity is upsert-only and keeps no per-day history).
       if (!openLoggedRef.current) {
