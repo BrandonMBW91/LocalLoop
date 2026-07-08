@@ -138,3 +138,40 @@ export function daysFromNow(value, now = new Date()) {
   const b = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((a - b) / (1000 * 60 * 60 * 24));
 }
+
+// --- America/New_York helpers (Hermes-safe: NO Intl / timeZone) ----------------
+// Android's Hermes engine has unreliable Intl/ICU (it returned the wrong weekday
+// from toLocaleDateString), so we compute Eastern time from the US DST rules
+// rather than Intl.DateTimeFormat({ timeZone }). Local Loop is an Ohio app, so ET
+// is the right anchor for "today" and all-day detection on both platforms.
+
+// Eastern UTC offset in hours for an instant: -4 (EDT) between the 2nd Sunday of
+// March 02:00 and the 1st Sunday of November 02:00, else -5 (EST).
+export function nyOffsetHours(date) {
+  const y = date.getUTCFullYear();
+  const nthSunday = (month, nth) => {
+    const firstDow = new Date(Date.UTC(y, month, 1)).getUTCDay();
+    return 1 + ((7 - firstDow) % 7) + (nth - 1) * 7;
+  };
+  const dstStart = Date.UTC(y, 2, nthSunday(2, 2), 7); // 2nd Sun Mar, 2:00 EST = 07:00 UTC
+  const dstEnd = Date.UTC(y, 10, nthSunday(10, 1), 6); // 1st Sun Nov, 2:00 EDT = 06:00 UTC
+  const t = date.getTime();
+  return t >= dstStart && t < dstEnd ? -4 : -5;
+}
+
+// Hour of day (0-23) in Eastern time for an instant.
+export function nyHour(date) {
+  return (date.getUTCHours() + nyOffsetHours(date) + 24) % 24;
+}
+
+// "YYYY-MM-DD" for an instant in Eastern time (defaults to now).
+export function nyDateKey(date = new Date()) {
+  const shifted = new Date(date.getTime() + nyOffsetHours(date) * 3600 * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${shifted.getUTCFullYear()}-${p(shifted.getUTCMonth() + 1)}-${p(shifted.getUTCDate())}`;
+}
+
+// Thousands-grouped integer ("1,234") without Intl.NumberFormat (Hermes-safe).
+export function formatCount(n) {
+  return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}

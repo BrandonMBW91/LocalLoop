@@ -1,13 +1,13 @@
 import { supabase } from './supabase';
 import { cleanText, cleanLocation, cleanDescription } from './text';
 import { effectiveEndMs } from './eventTime';
+import { nyDateKey } from '../utils/dates';
 
 // Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
-// chronologically), used to expire past garage sales and food trucks.
+// chronologically), used to expire past garage sales and food trucks. Uses the
+// Hermes-safe nyDateKey (no Intl/timeZone) so Android and iOS agree on "today".
 function todayKeyET() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(new Date());
+  return nyDateKey();
 }
 
 // A listing is "featured" only while its paid promotion is still current.

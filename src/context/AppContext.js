@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { textScaleOptions } from '../theme/theme';
 import {
   getPushToken,
+  setupAndroidChannel,
   hasPermission,
   scheduleEventReminder,
   cancelEventReminder,
@@ -262,6 +263,7 @@ export function AppProvider({ children }) {
   // Record this device as active in the current town (anonymous) — powers
   // user-based ad pricing.
   useEffect(() => {
+    setupAndroidChannel(); // Android needs a channel to display any notification (no-op on iOS)
     // Skip entirely for the admin/owner so their device never enters the metrics.
     if (isSupabaseEnabled && !isAdmin && deviceId && cityId) {
       recordDeviceActivity(deviceId, cityId, Platform.OS);

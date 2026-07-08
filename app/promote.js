@@ -5,6 +5,7 @@ import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { fetchCityUsers } from '../src/lib/db';
 import { rateForUsers } from '../src/data/pricing';
+import { formatCount } from '../src/utils/dates';
 import { REGION_LINK, CHECKOUT_BY_TIER } from '../src/data/checkout';
 import { colors, spacing, radius } from '../src/theme/theme';
 
@@ -123,8 +124,8 @@ export default function PromoteScreen() {
           {rate.name} tier
         </ThemedText>
         <ThemedText size="small" color={colors.textMuted}>
-          · {users.toLocaleString()} active {users === 1 ? 'neighbor' : 'neighbors'} in {city.name}
-          {totalUsers > users ? ` · ${totalUsers.toLocaleString()} across all towns` : ''} this month
+          · {formatCount(users)} active {users === 1 ? 'neighbor' : 'neighbors'} in {city.name}
+          {totalUsers > users ? ` · ${formatCount(totalUsers)} across all towns` : ''} this month
         </ThemedText>
       </View>
       <View style={styles.rateCard}>

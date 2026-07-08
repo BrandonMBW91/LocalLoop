@@ -82,18 +82,27 @@ export async function cancelEventReminder(eventId) {
   } catch {}
 }
 
+// Create the Android notification channel up front. On Android (API 26+) EVERY
+// notification — local reminders AND remote push — needs a channel to actually
+// appear; without it they're silently dropped. No-op on iOS. Call once at app
+// startup, independent of the permission/token flow. Idempotent.
+export async function setupAndroidChannel() {
+  if (Platform.OS !== 'android') return;
+  try {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+  } catch {}
+}
+
 // Get a remote Expo push token (for the weekend digest). Returns null in Expo Go
 // or the simulator — that's expected; remote push needs a real dev/standalone build.
 export async function getPushToken(projectId) {
   try {
     if (!Device.isDevice) return null;
     if (!(await ensurePermission())) return null;
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.DEFAULT,
-      });
-    }
+    await setupAndroidChannel();
     const resp = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
     return resp?.data || null;
   } catch {

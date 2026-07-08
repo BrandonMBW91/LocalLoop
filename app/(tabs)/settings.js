@@ -7,6 +7,7 @@ import ThemedText from '../../src/components/ThemedText';
 import { useApp } from '../../src/context/AppContext';
 import { APP_VERSION, BUILD } from '../../src/version';
 import { openReview } from '../../src/lib/review';
+import { formatDateMedium, formatTime } from '../../src/utils/dates';
 import { textScaleOptions, colors, spacing, radius } from '../../src/theme/theme';
 
 // Which over-the-air update is actually running — auto-changes on every update
@@ -14,7 +15,7 @@ import { textScaleOptions, colors, spacing, radius } from '../../src/theme/theme
 function updateLabel() {
   try {
     if (Updates.isEmbeddedLaunch || !Updates.updateId) return 'base build (no update yet)';
-    const when = Updates.createdAt ? Updates.createdAt.toLocaleString() : '';
+    const when = Updates.createdAt ? `${formatDateMedium(Updates.createdAt)} · ${formatTime(Updates.createdAt)}` : '';
     return `${when ? when + ' · ' : ''}…${Updates.updateId.slice(-6)}`;
   } catch {
     return '';

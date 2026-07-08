@@ -3,7 +3,7 @@
 // noon concert lingered until midnight. This estimates a sensible end from the
 // event's type so it drops off around when it would actually finish.
 
-const TZ = 'America/New_York';
+import { nyHour } from '../utils/dates';
 
 // Estimated end, in ms, for an event that has no real end time.
 export function estimatedEndMs(startISO, title = '', category = '') {
@@ -11,8 +11,9 @@ export function estimatedEndMs(startISO, title = '', category = '') {
   if (Number.isNaN(start)) return start;
 
   // A midnight start almost always means "all day / time unknown" from the feed —
-  // keep it visible through the day instead of ending it at 2am.
-  const hourET = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: '2-digit', hour12: false }).format(new Date(start))) % 24;
+  // keep it visible through the day instead of ending it at 2am. nyHour is
+  // Hermes-safe (no Intl), so this behaves identically on iOS and Android.
+  const hourET = nyHour(new Date(start));
   if (hourET === 0) return start + 24 * 3600 * 1000;
 
   const t = (title || '').toLowerCase();
