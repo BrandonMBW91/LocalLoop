@@ -19,17 +19,29 @@ const supabase = createClient(
 );
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
-// Stripe dropdown codes (alphanumeric) -> our city_id (which can have hyphens).
-const CODE_TO_CITY: Record<string, string> = {
-  findlay: 'findlay', fostoria: 'fostoria', tiffin: 'tiffin', bowlinggreen: 'bowling-green',
-  sandusky: 'sandusky', lima: 'lima', vanwert: 'van-wert', bellefontaine: 'bellefontaine',
-  toledo: 'toledo', perrysburg: 'perrysburg', bluffton: 'bluffton', ada: 'ada',
-  waterville: 'waterville', northbaltimore: 'north-baltimore', carey: 'carey',
-  leipsic: 'leipsic', arlington: 'arlington', pandora: 'pandora',
-  uppersandusky: 'upper-sandusky', kenton: 'kenton', richwood: 'richwood',
-  larue: 'larue', prospect: 'prospect', greencamp: 'green-camp',
-};
-const ALL_CITY_IDS = [...new Set(Object.values(CODE_TO_CITY))];
+// Town list is LIVE — fetched from the database per event so this function can
+// never go stale as towns are added (the old hardcoded 24-town map fulfilled
+// All-Region ads into 24 of 79 towns). Stripe dropdown codes are the city_id
+// with hyphens removed ('bowlinggreen' -> 'bowling-green'), derived mechanically.
+// Static fallback keeps fulfillment working even if the RPC ever fails.
+const FALLBACK_CITY_IDS = [
+  'findlay', 'fostoria', 'tiffin', 'bowling-green', 'sandusky', 'lima', 'van-wert',
+  'bellefontaine', 'toledo', 'perrysburg', 'bluffton', 'ada', 'waterville',
+  'north-baltimore', 'carey', 'leipsic', 'arlington', 'pandora', 'upper-sandusky',
+  'kenton', 'richwood', 'larue', 'prospect', 'green-camp',
+];
+async function liveCityIds(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.rpc('active_cities');
+    if (error) throw error;
+    if (Array.isArray(data) && data.length) return data;
+  } catch (e) {
+    console.error('active_cities RPC failed, using fallback list:', (e as Error).message);
+  }
+  return FALLBACK_CITY_IDS;
+}
+const codeToCity = (ids: string[]): Record<string, string> =>
+  Object.fromEntries(ids.map((id) => [id.replace(/-/g, ''), id]));
 
 function field(session: any, key: string): string {
   const f = (session.custom_fields || []).find((c: any) => c.key === key);
@@ -83,8 +95,9 @@ Deno.serve(async (req) => {
       const custId = s.customer || null;
 
       // Resolve the town to a known city_id; never insert an orphan/empty one.
-      const resolvedCity = town ? CODE_TO_CITY[town] : null;
-      const cityIds = product === 'all_region' ? ALL_CITY_IDS : (resolvedCity ? [resolvedCity] : []);
+      const knownIds = await liveCityIds();
+      const resolvedCity = town ? codeToCity(knownIds)[town.toLowerCase()] ?? null : null;
+      const cityIds = product === 'all_region' ? knownIds : (resolvedCity ? [resolvedCity] : []);
       if (cityIds.length === 0) {
         // The buyer WAS charged but we couldn't resolve a town, so no ad exists.
         // Never let that vanish silently. Alert the owner to place it by hand.
@@ -100,9 +113,10 @@ Deno.serve(async (req) => {
       // Featured Listing is NOT a sponsor ad: it boosts one specific listing,
       // which only the owner can identify. Fulfill by emailing the owner.
       if (product === 'featured_30') {
+        const paid = typeof s.amount_total === 'number' ? `$${(s.amount_total / 100).toFixed(0)}` : 'tier rate';
         await sendEmail(
           `ACTION: Featured Listing purchased by ${business} (${resolvedCity})`,
-          `A Featured Listing (30 days, $25) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${resolvedCity}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
+          `A Featured Listing (30 days, ${paid}) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${resolvedCity}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
         );
         const buyerEmail = s.customer_details?.email;
         if (buyerEmail) {
