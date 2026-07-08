@@ -54,6 +54,37 @@ export const NAMES = [
   ['portage-lakes', 'Coventry Township'],
   ['hartville', 'Hartville'],
   ['alliance', 'Alliance'],
+  // --- 2026 expansion ---
+  // NW corner (Defiance anchor)
+  ['fremont', 'Fremont'],
+  ['wapakoneta', 'Wapakoneta'],
+  ['defiance', 'Defiance'],
+  ['napoleon', 'Napoleon'],
+  ['bryan', 'Bryan'],
+  ['wauseon', 'Wauseon'],
+  // Central + Miami Valley (Piqua/Troy + Greenville + Marion/Delaware anchors)
+  ['marysville', 'Marysville'],
+  ['marion', 'Marion'],
+  ['delaware', 'Delaware'],
+  ['troy', 'Troy'],
+  ['piqua', 'Piqua'],
+  ['sidney', 'Sidney'],
+  ['greenville', 'Greenville'],
+  ['versailles', 'Versailles'],
+  // North-central (Mansfield anchor)
+  ['mansfield', 'Mansfield'],
+  ['ontario', 'Ontario'],
+  ['ashland', 'Ashland'],
+  ['bucyrus', 'Bucyrus'],
+  ['galion', 'Galion'],
+  ['willard', 'Willard'],
+  // NE densify (inside Akron / Canton anchors)
+  ['medina', 'Medina'],
+  ['ravenna', 'Ravenna'],
+  ['streetsboro', 'Streetsboro'],
+  ['orrville', 'Orrville'],
+  ['dover', 'Dover'],
+  ['new-philadelphia', 'New Philadelphia'],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

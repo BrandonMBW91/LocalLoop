@@ -16,6 +16,14 @@ export const ANCHORS = [
   // --- Northeast Ohio ---
   { name: 'Akron metro', city: 'akron', lat: 41.081, lng: -81.519, radius: 26 },       // Akron, Cuyahoga Falls, Stow, Hudson, Tallmadge, Barberton, Kent, Wadsworth
   { name: 'Canton metro', city: 'canton', lat: 40.799, lng: -81.378, radius: 26 },      // Canton, Massillon, North Canton, Hartville, Alliance
+  // Medina, Ravenna, Streetsboro (Akron) + Orrville, Dover, New Philadelphia (Canton)
+  // are inside the two metros above — no new anchor needed.
+  // --- 2026 expansion (new anchors) ---
+  { name: 'Mansfield / Richland', city: 'mansfield', lat: 40.759, lng: -82.515, radius: 28 }, // Mansfield, Ontario, Ashland, Bucyrus, Galion, Shelby, Willard
+  { name: 'Marion / Delaware', city: 'marion', lat: 40.440, lng: -83.100, radius: 22 },       // Marion, Delaware
+  { name: 'Miami Valley / Piqua-Troy', city: 'troy', lat: 40.100, lng: -84.220, radius: 22 }, // Sidney, Piqua, Troy, Versailles
+  { name: 'Greenville / Darke', city: 'greenville', lat: 40.100, lng: -84.630, radius: 20 },
+  { name: 'Defiance / NW corner', city: 'defiance', lat: 41.400, lng: -84.280, radius: 30 },   // Defiance, Napoleon, Bryan, Wauseon (Fremont=Sandusky, Wapakoneta=Lima)
 ];
 
 // Geohash encoder — Ticketmaster's geoPoint filter wants a geohash, not raw lat/long.

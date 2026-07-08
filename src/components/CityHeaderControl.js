@@ -25,71 +25,89 @@ export default function CityHeaderControl({
 
   return (
     <View style={[styles.header, { backgroundColor: bg, paddingTop: insets.top + spacing.sm }]}>
-      <View style={{ flex: 1 }}>
-        <ThemedText size="tiny" color={colors.textInverse} style={{ opacity: 0.85 }}>
-          {label}
-        </ThemedText>
-        <ThemedText size="large" weight="bold" color={colors.textInverse}>
-          {city.name}, {city.state}
-        </ThemedText>
-        {showTagline ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 1 }}>
-            <Ionicons name="location" size={13} color={colors.textInverse} style={{ opacity: 0.9 }} />
-            <ThemedText size="small" color={colors.textInverse} style={{ opacity: 0.9 }}>
-              {city.tagline}
-            </ThemedText>
-          </View>
+      {/* Actions live on their own top row so they never squeeze the city title.
+          Previously they shared the title's row and, on the Sales/Food tabs (wide
+          Post pill + Change pill), left the title column so narrow that Android
+          character-broke long names ("Tole / do,"). */}
+      <View style={styles.actionsRow}>
+        {showViews ? (
+          <>
+            <Pressable
+              onPress={() => { logEvent('open_calendar'); router.push('/calendar'); }}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Calendar view"
+            >
+              <Ionicons name="calendar" size={iconSize} color={colors.primary} />
+            </Pressable>
+            <Pressable
+              onPress={() => { logEvent('open_map'); router.push('/map'); }}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Map view"
+            >
+              <Ionicons name="map" size={iconSize} color={colors.primary} />
+            </Pressable>
+          </>
         ) : null}
+
+        {trailing}
+
+        <Pressable
+          onPress={() => router.push('/city')}
+          style={styles.changeCity}
+          accessibilityRole="button"
+          accessibilityLabel="Change city"
+        >
+          <Ionicons name="swap-horizontal" size={iconSize} color={colors.primary} />
+          <ThemedText size="small" weight="semibold" color={colors.primary}>
+            Change
+          </ThemedText>
+        </Pressable>
       </View>
 
-      {showViews ? (
-        <>
-          <Pressable
-            onPress={() => { logEvent('open_calendar'); router.push('/calendar'); }}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Calendar view"
-          >
-            <Ionicons name="calendar" size={iconSize} color={colors.primary} />
-          </Pressable>
-          <Pressable
-            onPress={() => { logEvent('open_map'); router.push('/map'); }}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Map view"
-          >
-            <Ionicons name="map" size={iconSize} color={colors.primary} />
-          </Pressable>
-        </>
-      ) : null}
-
-      {trailing}
-
-      <Pressable
-        onPress={() => router.push('/city')}
-        style={styles.changeCity}
-        accessibilityRole="button"
-        accessibilityLabel="Change city"
+      {/* Title block gets the full width. numberOfLines={1} + adjustsFontSizeToFit
+          keeps even the longest names ("Bellefontaine, OH") on one clean line at
+          any text-size setting instead of ever wrapping mid-word. */}
+      <ThemedText size="tiny" color={colors.textInverse} numberOfLines={1} style={{ opacity: 0.85 }}>
+        {label}
+      </ThemedText>
+      <ThemedText
+        size="large"
+        weight="bold"
+        color={colors.textInverse}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        style={{ marginTop: 2 }}
       >
-        <Ionicons name="swap-horizontal" size={iconSize} color={colors.primary} />
-        <ThemedText size="small" weight="semibold" color={colors.primary}>
-          Change
-        </ThemedText>
-      </Pressable>
+        {city.name}, {city.state}
+      </ThemedText>
+      {showTagline ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 }}>
+          <Ionicons name="location" size={13} color={colors.textInverse} style={{ opacity: 0.9 }} />
+          <ThemedText size="small" color={colors.textInverse} style={{ opacity: 0.9 }} numberOfLines={1}>
+            {city.tagline}
+          </ThemedText>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    gap: spacing.sm,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   changeCity: {
     flexDirection: 'row',

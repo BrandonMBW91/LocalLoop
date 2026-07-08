@@ -15,6 +15,11 @@ const HORIZON_DAYS = 90;
 
 const LIBS = [
   { host: 'https://events.northcantonlibrary.org', city_id: 'north-canton', name: 'North Canton Public Library' },
+  // 2026 expansion — county library systems on LibraryMarket. The town router
+  // (cityFromLocation) keeps only the branches in a served town and drops the rest.
+  { host: 'https://medinacounty.librarycalendar.com', city_id: 'medina', name: 'Medina County District Library' },
+  { host: 'https://ashland.librarycalendar.com', city_id: 'ashland', name: 'Ashland Public Library' },
+  { host: 'https://auglaize.librarycalendar.com', city_id: 'wapakoneta', name: 'Auglaize County Public Library' },
 ];
 
 const clean = (s) => String(s || '').replace(/<[^>]*>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);

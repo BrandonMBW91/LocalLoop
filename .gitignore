@@ -54,5 +54,10 @@ outreach/
 .asc/
 *.p8
 
+# Google Play service-account key (secret) — never commit
+.gcp/
+*service-account*.json
+play-service-account*.json
+
 # Local Loop FB routine runtime state
 .fb-featured.json

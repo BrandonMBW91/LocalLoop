@@ -3,7 +3,7 @@
 // noon concert lingered until midnight. This estimates a sensible end from the
 // event's type so it drops off around when it would actually finish.
 
-import { nyHour } from '../utils/dates';
+import { nyHour } from '../utils/dates.js';
 
 // Estimated end, in ms, for an event that has no real end time.
 export function estimatedEndMs(startISO, title = '', category = '') {
