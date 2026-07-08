@@ -299,7 +299,12 @@ if (goodAllTime + bounced.size >= 10 && bounced.size / Math.max(goodAllTime + bo
   process.exit(2);
 }
 
-const ramp = goodAllTime < 15 ? 5 : goodAllTime < 40 ? 8 : 10;
+// Warm-up ramp: 5/day until 15 good sends, 8 until 40, then the mature ceiling.
+// The ceiling is OUTREACH_MAX_DAILY (default 10) so it can be raised (15/20/25…)
+// as reputation + DMARC allow, without a code change. Default 10 = prior behavior.
+const MAX_DAILY = Math.max(1, Number(process.env.OUTREACH_MAX_DAILY || g('OUTREACH_MAX_DAILY') || 10));
+const rampBase = goodAllTime < 15 ? 5 : goodAllTime < 40 ? 8 : MAX_DAILY;
+const ramp = Math.min(rampBase, MAX_DAILY);
 const quota = Math.min(ramp, Number(args.limit) || ramp);
 let need = Math.max(0, quota - goodToday);
 
