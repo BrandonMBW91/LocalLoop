@@ -33,6 +33,10 @@ export const CITIES = [
   { id: 'napoleon', name: 'Napoleon', state: 'OH', region: NW, tagline: 'Henry County seat on the Maumee' },
   { id: 'bryan', name: 'Bryan', state: 'OH', region: NW, tagline: 'The Fountain City' },
   { id: 'wauseon', name: 'Wauseon', state: 'OH', region: NW, tagline: 'Home of the Fulton County Fair' },
+  { id: 'port-clinton', name: "Port Clinton", state: 'OH', region: NW, tagline: "Walleye Capital of the World" },
+  { id: 'catawba-island', name: "Catawba Island", state: 'OH', region: NW, tagline: "Gateway to the islands" },
+  { id: 'put-in-bay', name: "Put-in-Bay", state: 'OH', region: NW, tagline: "Island life on Lake Erie" },
+  { id: 'kelleys-island', name: "Kelleys Island", state: 'OH', region: NW, tagline: "Lake Erie's largest American island" },
   // --- Central / West-Central Ohio ---
   { id: 'bellefontaine', name: 'Bellefontaine', state: 'OH', region: CENTRAL, tagline: "Ohio's Highest Point" },
   { id: 'kenton', name: 'Kenton', state: 'OH', region: CENTRAL, tagline: 'Cast-Iron Toy Capital' },

@@ -15,7 +15,8 @@
 // Exit code 1 on any hard problem so it can gate a commit/CI if you want.
 // It does NOT touch the database; it's a pure static check with no secrets.
 import { CITIES, REGION_ORDER } from '../src/data/cities.js';
-import { NAMES } from './towns.mjs';
+import { NAMES, cityFromLocation } from './towns.mjs';
+import { ANCHORS } from './geo.mjs';
 
 let problems = 0;
 const fail = (m) => { console.error(`  ✗ ${m}`); problems++; };
@@ -57,6 +58,39 @@ for (let i = 0; i < NAMES.length; i++) {
       fail(`NAMES ordering: "${short}" is listed before "${long}" — the shorter name will steal "${long}" events. Move "${long}" above "${short}".`);
     }
   }
+}
+
+// 5) Every CITIES id must be a clean kebab-case slug (lowercase, digits, hyphens).
+//    Catches a consistent typo made in BOTH files that cross-refs can't see.
+for (const c of CITIES) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(c.id)) fail(`CITIES id "${c.id}" is not clean kebab-case (lowercase/digits/hyphens)`);
+}
+
+// 6) Every geo.mjs anchor's fallback `city` must be a real town, else the anchor
+//    routes its metro's ticketed events into a non-existent id (they vanish).
+for (const a of ANCHORS) {
+  if (!cityIds.has(a.city)) fail(`geo.mjs anchor "${a.name}" has city "${a.city}" which is not in CITIES`);
+}
+
+// 7) Golden-case matcher tests — the regression gate for the routing bug class.
+//    Out-of-state cities that share an Ohio town's name MUST drop to null; real
+//    Ohio addresses MUST resolve to the right town. Add a row when you add a
+//    collision-prone town (Marion/Troy/Dover/Delaware/Ontario/Bryan...).
+const GOLDEN = [
+  ['Marion, IN 46952', null], ['Troy, MI 48084', null], ['Dover, DE 19901', null],
+  ['Dover, NH 03820', null], ['Delaware, DE 19901', null], ['Toronto, Ontario, Canada', null],
+  ['Bryan, TX 77803', null], ['Sandusky County, OH', null],
+  ['Marion, OH 43302', 'marion'], ['Troy, OH 45373', 'troy'], ['Delaware, OH 43015', 'delaware'],
+  ['Dover, OH 44622', 'dover'], ['Ontario, OH 44906', 'ontario'], ['Bryan, OH 43506', 'bryan'],
+  ['North Canton, OH 44720', 'north-canton'], ['Upper Sandusky, OH 43351', 'upper-sandusky'],
+  ['Sidney, OH 45365', 'sidney'], ['Findlay, OH 45840', 'findlay'],
+];
+for (const [loc, expected] of GOLDEN) {
+  // Only assert an in-area expectation if that town still exists (removing a town
+  // shouldn't spuriously fail the gate); out-of-area (null) cases always apply.
+  if (expected !== null && !cityIds.has(expected)) continue;
+  const got = cityFromLocation(loc, 'findlay');
+  if (got !== expected) fail(`matcher: "${loc}" -> ${JSON.stringify(got)} but expected ${JSON.stringify(expected)}`);
 }
 
 const total = CITIES.length;

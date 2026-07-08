@@ -34,6 +34,7 @@ import {
   fetchEditorPick,
   savePushToken,
   recordDeviceActivity,
+  fetchActiveCities,
   deleteAccountRpc,
 } from '../lib/db';
 import { trackEvent } from '../lib/analytics';
@@ -88,6 +89,7 @@ export function AppProvider({ children }) {
   const [sponsors, setSponsors] = useState([]); // live ads for the current city
   const [deals, setDeals] = useState([]); // live local deals for the current city
   const [editorPick, setEditorPick] = useState(null); // admin "This Week's Pick"
+  const [activeCityIds, setActiveCityIds] = useState(null); // town ids with events (null = unknown → show all)
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -137,6 +139,16 @@ export function AppProvider({ children }) {
       mounted = false;
       sub.subscription.unsubscribe();
     };
+  }, []);
+
+  // ---- Which towns currently have upcoming events (drives the picker so empty
+  // "ghost" towns are hidden; a town reappears once the daily aggregator finds it
+  // an event). null until loaded → the picker shows every town as a safe fallback.
+  useEffect(() => {
+    if (!isSupabaseEnabled) return;
+    fetchActiveCities().then((ids) => {
+      if (ids) setActiveCityIds(new Set(ids));
+    });
   }, []);
 
   // ---- Load events + garage sales for the current city ----
@@ -461,6 +473,7 @@ export function AppProvider({ children }) {
     sponsors,
     deals,
     editorPick,
+    activeCityIds,
     loadingData,
     loadError,
     refresh: loadData,

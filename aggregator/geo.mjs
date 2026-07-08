@@ -19,12 +19,36 @@ export const ANCHORS = [
   // Medina, Ravenna, Streetsboro (Akron) + Orrville, Dover, New Philadelphia (Canton)
   // are inside the two metros above — no new anchor needed.
   // --- 2026 expansion (new anchors) ---
-  { name: 'Mansfield / Richland', city: 'mansfield', lat: 40.759, lng: -82.515, radius: 28 }, // Mansfield, Ontario, Ashland, Bucyrus, Galion, Shelby, Willard
+  { name: 'Mansfield / Richland', city: 'mansfield', lat: 40.759, lng: -82.515, radius: 28 }, // Mansfield, Ontario, Ashland, Bucyrus, Galion, Willard
   { name: 'Marion / Delaware', city: 'marion', lat: 40.440, lng: -83.100, radius: 22 },       // Marion, Delaware
   { name: 'Miami Valley / Piqua-Troy', city: 'troy', lat: 40.100, lng: -84.220, radius: 22 }, // Sidney, Piqua, Troy, Versailles
   { name: 'Greenville / Darke', city: 'greenville', lat: 40.100, lng: -84.630, radius: 20 },
   { name: 'Defiance / NW corner', city: 'defiance', lat: 41.400, lng: -84.280, radius: 30 },   // Defiance, Napoleon, Bryan, Wauseon (Fremont=Sandusky, Wapakoneta=Lima)
 ];
+
+// Great-circle miles between two points (haversine).
+export function milesBetween(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Which existing anchor (if any) already covers a point — i.e. a new town there
+// gets Ticketmaster/SeatGeek events for FREE. Returns { anchor, miles } for the
+// nearest covering anchor, or null when the point is outside every anchor (a new
+// anchor is needed). Used by scaffold-city.mjs so adding a town no longer needs
+// hand-done lat/lng math.
+export function anchorFor(lat, lng) {
+  let best = null;
+  for (const a of ANCHORS) {
+    const miles = milesBetween(lat, lng, a.lat, a.lng);
+    if (miles <= a.radius && (!best || miles < best.miles)) best = { anchor: a, miles };
+  }
+  return best;
+}
 
 // Geohash encoder — Ticketmaster's geoPoint filter wants a geohash, not raw lat/long.
 const B32 = '0123456789bcdefghjkmnpqrstuvwxyz';

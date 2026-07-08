@@ -85,6 +85,10 @@ export const NAMES = [
   ['orrville', 'Orrville'],
   ['dover', 'Dover'],
   ['new-philadelphia', 'New Philadelphia'],
+  ['port-clinton', "Port Clinton"],
+  ['catawba-island', "Catawba Island"],
+  ['put-in-bay', "Put-in-Bay"],
+  ['kelleys-island', "Kelleys Island"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';
@@ -96,18 +100,35 @@ const NOT_TOWN = '(?:county|heights|river|bay)';
 // "Upper Sandusky" is a different town entirely — never match the bare name there.
 const NOT_BEFORE = '(?<!\\bupper\\s)';
 
-// Pass 1: town immediately before OH / Ohio / a 5-digit ZIP (the city slot).
-const CITY_POS = NAMES.map(([id, name]) => [id, new RegExp(`${NOT_BEFORE}\\b${name}\\b,?\\s*(?:oh\\b|ohio\\b|\\d{5}\\b)`, 'i')]);
+// Pass 1: town immediately before OH / Ohio / an OHIO ZIP (43xxx-45xxx). The ZIP
+// branch is Ohio-only so "Marion 46952" (Marion, Indiana's ZIP) can't match.
+const CITY_POS = NAMES.map(([id, name]) => [id, new RegExp(`${NOT_BEFORE}\\b${name}\\b,?\\s*(?:oh\\b|ohio\\b|4[3-5]\\d{3}\\b)`, 'i')]);
 // Pass 2: any town mention that isn't the start of a street name — including
 // two-town road names ("Waterville Monclova Rd") — or a county/feature name.
 const ANY = NAMES.map(([id, name]) => [id, new RegExp(`${NOT_BEFORE}\\b${name}\\b(?!\\s+${STREET}\\b|\\s+\\w+\\s+${STREET}\\b|\\s+${NOT_TOWN}\\b)`, 'i')]);
 // The address clearly names an Ohio city ("…, OH 43452" / "…, Ohio, …").
 const NAMES_A_CITY = /,\s*(?:oh|ohio)\b|\b(?:oh|ohio)\s+\d{5}\b/i;
 
+// Out-of-area guard. Many Ohio towns share their name with a city in another
+// state (Marion IN, Troy MI, Dover DE/NH, Delaware DE, Ontario CANADA, Bryan TX)
+// — the bare-name Pass 2 would otherwise force those out-of-state events into the
+// Ohio town. If the address carries a NON-Ohio state code / spelled-out state /
+// country and NO Ohio marker at all, it's out of area → return null up front.
+const NON_OH_STATE = new Set(['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
+const OH_MARKER = /,\s*oh\b|\bohio\b|\b4[3-5]\d{3}\b/i;
+function outOfArea(loc) {
+  if (OH_MARKER.test(loc)) return false; // any Ohio marker wins
+  for (const m of loc.matchAll(/,\s*([A-Za-z]{2})\b/g)) {
+    if (NON_OH_STATE.has(m[1].toUpperCase())) return true;
+  }
+  // Spelled-out states/country that don't collide with any Ohio town name.
+  return /\b(?:canada|michigan|indiana|kentucky|pennsylvania|illinois|wisconsin|minnesota|new york)\b/i.test(loc);
+}
+
 // Returns the town id for an event's location. Falls back to `fallback` (the
 // feed's town) only when the address has no recognizable city. Returns null when
 // the address names an Ohio city that ISN'T one of our towns (out of area —
-// e.g. a Visit Toledo event in Catawba Island), so the caller can drop it.
+// e.g. a Visit Toledo event in Cleveland), so the caller can drop it.
 export function cityFromLocation(location, fallback) {
   const loc = String(location || '');
   // Portage Lakes is an unincorporated lake community that shares Akron's postal
@@ -115,6 +136,7 @@ export function cityFromLocation(location, fallback) {
   // so a NAMED "Portage Lakes" venue/place must win over the "Akron, OH" city
   // slot below. A bare "Portage Lakes <street>" alone is just a road, not a place.
   if (/\bportage lakes\b(?!\s+(?:dr|drive|blvd|boulevard|rd|road|ave|avenue|pkwy|parkway|ln|lane|ct|court)\b)/i.test(loc)) return 'portage-lakes';
+  if (outOfArea(loc)) return null; // out-of-state city sharing an Ohio town's name → drop
   for (const [id, re] of CITY_POS) if (re.test(loc)) return id;
   for (const [id, re] of ANY) if (re.test(loc)) return id;
   if (NAMES_A_CITY.test(loc)) return null; // out-of-area city → exclude

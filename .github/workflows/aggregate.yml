@@ -17,6 +17,9 @@ jobs:
       - name: Install deps
         working-directory: aggregator
         run: npm ci
+      - name: Validate city config (hard gate)
+        working-directory: aggregator
+        run: node check-cities.mjs
       - name: Run aggregator
         working-directory: aggregator
         env:
@@ -72,6 +75,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node generate-advertise.mjs
+      - name: Content guard — flag any ghost/thin town (does not block deploy)
+        working-directory: aggregator
+        # Non-blocking: the app picker + SEO pages already hide empty towns, and the
+        # daily run fills them in. This step just surfaces a red X in the log if a
+        # NEW town aggregated to 0 events (likely a mis-wired feed worth a look).
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node check-content.mjs --strict --allow=larue,prospect,green-camp
       - name: Deploy site to Netlify (localloop.io)
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

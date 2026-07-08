@@ -1,7 +1,7 @@
-import { supabase } from './supabase';
-import { cleanText, cleanLocation, cleanDescription } from './text';
-import { effectiveEndMs } from './eventTime';
-import { nyDateKey } from '../utils/dates';
+import { supabase } from './supabase.js';
+import { cleanText, cleanLocation, cleanDescription } from './text.js';
+import { effectiveEndMs } from './eventTime.js';
+import { nyDateKey } from '../utils/dates.js';
 
 // Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
 // chronologically), used to expire past garage sales and food trucks. Uses the
@@ -572,6 +572,20 @@ export async function recordDeviceActivity(deviceId, cityId, platform) {
     await supabase.rpc('record_device_activity', { p_device: deviceId, p_city: cityId, p_platform: platform });
   } catch (e) {
     // non-fatal
+  }
+}
+
+// Town ids the aggregator currently has upcoming events for. The picker shows only
+// these (+ the user's current selection) so an empty "ghost" town is never shown,
+// and a town reappears the moment the daily aggregator finds it an event. Returns
+// null on any error so the picker can fall back to showing every town.
+export async function fetchActiveCities() {
+  try {
+    const { data, error } = await supabase.rpc('active_cities');
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return null;
   }
 }
 

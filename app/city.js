@@ -10,16 +10,24 @@ import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 export default function CityPickerScreen() {
   const router = useRouter();
   const { onboarding } = useLocalSearchParams();
-  const { cityId, setCity, scale } = useApp();
+  const { cityId, setCity, scale, activeCityIds } = useApp();
   const [query, setQuery] = useState('');
+
+  // Show only towns the aggregator currently has events for (plus the user's own
+  // selection, so it's never hidden). Until the active set loads — or if the fetch
+  // fails / there's no backend — show every town as a safe fallback.
+  const visible = useMemo(() => {
+    if (!activeCityIds) return CITIES;
+    return CITIES.filter((c) => activeCityIds.has(c.id) || c.id === cityId);
+  }, [activeCityIds, cityId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return CITIES;
-    return CITIES.filter(
+    if (!q) return visible;
+    return visible.filter(
       (c) => c.name.toLowerCase().includes(q) || (c.tagline || '').toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, visible]);
 
   // Group the (filtered) towns by region, alphabetized within each section,
   // keeping REGION_ORDER and dropping any empty section (e.g. while searching).
