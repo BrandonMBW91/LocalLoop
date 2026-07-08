@@ -271,6 +271,13 @@ async function pullSource(source) {
     return rows.filter((r) => (seenR.has(r.source_uid) ? false : seenR.add(r.source_uid)));
   }
 
+  // Bot walls (SiteGround sgcaptcha, Cloudflare) answer 200/202 with an HTML
+  // challenge page. Parsing that as iCal silently yields 0 events and stamps the
+  // source "ok, 0 events" — a lie. Throw instead so feed-health reports the truth.
+  // (Only for the iCal path — jsonld sources legitimately fetch HTML pages.)
+  if (!/BEGIN:VCALENDAR/i.test(text)) {
+    throw new Error('response is not iCal (bot challenge or moved feed?)');
+  }
   const data = await ical.async.parseICS(text);
 
   for (const key of Object.keys(data)) {
