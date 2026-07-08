@@ -5,6 +5,7 @@ import ThemedText from './ThemedText';
 import Pill from './Pill';
 import { useApp } from '../context/AppContext';
 import { recordDealView } from '../lib/db';
+import { formatDateMedium } from '../utils/dates';
 import { colors, spacing, radius } from '../theme/theme';
 
 export default function DealCard({ deal }) {
@@ -54,7 +55,7 @@ export default function DealCard({ deal }) {
           <View style={styles.metaRow}>
             <Ionicons name="time-outline" size={15} color={colors.textMuted} />
             <ThemedText size="small" color={colors.textMuted}>
-              Valid until {ends.toLocaleDateString()}
+              Valid until {formatDateMedium(ends)}
             </ThemedText>
           </View>
         ) : (

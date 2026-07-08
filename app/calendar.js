@@ -5,7 +5,7 @@ import ThemedText from '../src/components/ThemedText';
 import EventCard from '../src/components/EventCard';
 import EmptyState from '../src/components/EmptyState';
 import { useApp } from '../src/context/AppContext';
-import { parse } from '../src/utils/dates';
+import { parse, formatDayHeading } from '../src/utils/dates';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -118,7 +118,7 @@ export default function CalendarScreen() {
       {/* Selected day's events */}
       <View style={styles.list}>
         <ThemedText size="subtitle" weight="bold" style={{ marginBottom: spacing.sm }}>
-          {selDate ? selDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : ''}
+          {selDate ? formatDayHeading(selDate) : ''}
         </ThemedText>
         {dayEvents.length === 0 ? (
           <EmptyState icon="calendar-outline" title="Nothing on this day" body="Pick another day with a dot, or browse the full list." />

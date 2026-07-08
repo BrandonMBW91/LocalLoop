@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
 import { useApp } from '../context/AppContext';
 import { setFeatured, setPostStatus } from '../lib/db';
+import { formatDateMedium } from '../utils/dates';
 import { colors, spacing, radius } from '../theme/theme';
 
 const KIND_NOUN = { event: 'event', garage_sale: 'garage sale', food_truck: 'food truck' };
@@ -57,7 +58,7 @@ export default function FeatureButton({ kind, id, featured, featuredUntil }) {
 
   const until = featuredUntil ? new Date(featuredUntil) : null;
   const untilLabel = until
-    ? until.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    ? formatDateMedium(until)
     : null;
 
   return (

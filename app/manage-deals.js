@@ -9,6 +9,7 @@ import { useApp } from '../src/context/AppContext';
 import { CITIES } from '../src/data/cities';
 import { fetchAllDeals, insertDeal, setDealActive, deleteDeal } from '../src/lib/db';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
+import { formatDateMedium } from '../src/utils/dates';
 
 const RUN_OPTIONS = [
   { label: '2 weeks', weeks: 2 },
@@ -209,7 +210,7 @@ export default function ManageDealsScreen() {
                 </View>
                 <ThemedText size="tiny" color={colors.textMuted}>
                   {deal.businessName} · {cityName(deal.cityId)}
-                  {ends ? ` · ends ${ends.toLocaleDateString()}` : ' · no end date'}
+                  {ends ? ` · ends ${formatDateMedium(ends)}` : ' · no end date'}
                   {deal.active ? '' : ' · paused'}
                   {deal.featured ? ' · ★ featured' : ''}
                 </ThemedText>

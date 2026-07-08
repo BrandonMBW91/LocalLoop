@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../src/components/ThemedText';
+import { formatDateMedium } from '../src/utils/dates';
 import { useApp } from '../src/context/AppContext';
 import { CITIES } from '../src/data/cities';
 import {
@@ -249,7 +250,7 @@ export default function AdsScreen() {
                 </View>
                 <ThemedText size="tiny" color={colors.textMuted}>
                   {cityName(ad.cityId)}
-                  {ends ? ` · ${expired ? 'ended' : 'ends'} ${ends.toLocaleDateString()}` : ' · no end date'}
+                  {ends ? ` · ${expired ? 'ended' : 'ends'} ${formatDateMedium(ends)}` : ' · no end date'}
                   {ad.active ? '' : ' · paused'}
                 </ThemedText>
                 <View style={styles.statsRow}>

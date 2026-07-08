@@ -40,6 +40,23 @@ export function formatLongDate(value) {
   return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
+// "Wednesday, July 8" — weekday + month + day, no year (calendar day heading).
+// Built from getDay()/getMonth() so it's correct on Android's Hermes engine,
+// whose Intl / toLocaleDateString support is unreliable and can return the wrong
+// weekday. Use these helpers instead of toLocaleDateString anywhere in the app.
+export function formatDayHeading(value) {
+  const d = parse(value);
+  if (isNaN(d)) return '';
+  return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+// "Jul 8, 2026" — month + day + year, no weekday. Hermes-safe (no Intl).
+export function formatDateMedium(value) {
+  const d = parse(value);
+  if (isNaN(d)) return '';
+  return `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
 // Friendly relative label for grouping/badges: Today, Tomorrow, or short date.
 export function relativeDay(value, now = new Date()) {
   const d = parse(value);
