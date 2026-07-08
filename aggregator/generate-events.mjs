@@ -112,6 +112,9 @@ nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;f
 .meta{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;margin:2px 0;}
 .meta svg{flex:0 0 auto;opacity:.75;}
 .region-h{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:26px 2px 8px;}
+.region-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--green);color:#fff;border-radius:16px;padding:15px 20px;margin:32px 0 12px;}
+.region-banner .rb-name{font-size:22px;font-weight:800;letter-spacing:-.01em;}
+.region-banner .rb-sub{font-size:13.5px;opacity:.9;font-weight:600;}
 .town{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);margin:8px 0;}
 .town b{display:block;font-size:17px;}
 .town .tg{color:var(--muted);font-size:13.5px;}
@@ -271,19 +274,21 @@ ${FOOT}`;
 
   // Hub page — towns grouped by region and alphabetized, like the app's picker.
   const regionSections = REGION_ORDER.map((region) => {
-    const rows = APP_CITIES
+    const towns = APP_CITIES
       .filter((c) => (c.region || REGION_ORDER[0]) === region)
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const rEvents = towns.reduce((s, c) => s + (counts[c.id] || 0), 0);
+    const rows = towns
       .map((c) => `<a class="town" href="/events/${c.id}.html"><span><b>${esc(c.name)}, OH</b><span class="tg">${esc(c.tagline || '')}</span></span><span class="n">${counts[c.id] || 0} events</span></a>`)
       .join('\n');
-    return `<div class="region-h">${esc(region)}</div>\n${rows}`;
+    return `<div class="region-banner"><span class="rb-name">${esc(region)}</span><span class="rb-sub">${towns.length} towns · ${rEvents.toLocaleString()} events</span></div>\n${rows}`;
   }).join('\n');
 
-  const hubTitle = 'Local Events in Northwest & Central Ohio: Findlay, Lima, Tiffin and more | Local Loop';
-  const hubDesc = `Browse ${grandTotal} upcoming events across ${APP_CITIES.length} Northwest and Central Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
+  const hubTitle = 'Local Events Across Ohio: Findlay, Toledo, Akron, Canton and more | Local Loop';
+  const hubDesc = `Browse ${grandTotal} upcoming events across ${APP_CITIES.length} Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
   const hub = `${HEAD(hubTitle, hubDesc, '/events/')}
 <section class="town-hero"><div class="kicker">Local events across</div>
-<h1>Northwest &amp; Central Ohio</h1>
+<h1>Northwest, Central &amp; Northeast Ohio</h1>
 <div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events in ${APP_CITIES.length} towns</span></div>
 <a class="get" href="${APP_STORE_URL}">Get the free app</a></section>
 ${regionSections}

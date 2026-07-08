@@ -69,9 +69,14 @@ export default function CityPickerScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }}>
         {sections.map((section) => (
           <View key={section.region}>
-            <ThemedText size="small" weight="bold" color={colors.textMuted} style={styles.sectionHeader}>
-              {section.region.toUpperCase()}
-            </ThemedText>
+            <View style={styles.regionBanner}>
+              <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
+                {section.region}
+              </ThemedText>
+              <ThemedText size="small" color={colors.textInverse} style={{ opacity: 0.9 }}>
+                {section.items.length} town{section.items.length === 1 ? '' : 's'}
+              </ThemedText>
+            </View>
             {section.items.map((c, i) => {
               const selected = c.id === cityId;
               return (
@@ -132,11 +137,17 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   searchInput: { flex: 1, color: colors.text, paddingVertical: 12 },
-  sectionHeader: {
+  regionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
-    letterSpacing: 0.5,
+    paddingVertical: spacing.md,
   },
   row: {
     flexDirection: 'row',
