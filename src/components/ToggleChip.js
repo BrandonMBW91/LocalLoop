@@ -16,7 +16,17 @@ export default function ToggleChip({ icon, label, on, onPress, accent, tintLight
       accessibilityState={{ selected: on }}
     >
       <Ionicons name={icon} size={18} color={on ? colors.textInverse : accent} />
-      <ThemedText size="small" weight="bold" color={on ? colors.textInverse : accent}>
+      {/* numberOfLines + flexShrink:0 — at small Android font scales, a sibling
+          chip re-rendering (a filter tap flips one to bold) could re-measure
+          this label against a stale width and wrap "Week" onto a hidden second
+          line ("This Week" rendered as "This"). One line, never squeezed. */}
+      <ThemedText
+        size="small"
+        weight="bold"
+        color={on ? colors.textInverse : accent}
+        numberOfLines={1}
+        style={styles.label}
+      >
         {label}
       </ThemedText>
     </Pressable>
@@ -34,5 +44,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     marginRight: spacing.sm,
     minHeight: 44,
+    flexShrink: 0,
   },
+  label: { flexShrink: 0 },
 });

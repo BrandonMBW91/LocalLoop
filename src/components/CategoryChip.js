@@ -13,10 +13,14 @@ export default function CategoryChip({ label, selected, onPress }) {
       accessibilityState={{ selected }}
       accessibilityLabel={`Filter by ${label}`}
     >
+      {/* Same Android small-font hardening as ToggleChip: multi-word labels
+          ("All Items", "Baby & Kids") must never wrap or shrink mid-relayout. */}
       <ThemedText
         size="small"
         weight={selected ? 'bold' : 'medium'}
         color={selected ? colors.textInverse : colors.text}
+        numberOfLines={1}
+        style={styles.label}
       >
         {label}
       </ThemedText>
@@ -35,7 +39,9 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
     minHeight: 44,
     justifyContent: 'center',
+    flexShrink: 0,
   },
+  label: { flexShrink: 0 },
   chipSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
