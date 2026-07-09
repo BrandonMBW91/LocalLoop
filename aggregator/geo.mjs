@@ -25,6 +25,7 @@ export const ANCHORS = [
   { name: 'Greenville / Darke', city: 'greenville', lat: 40.100, lng: -84.630, radius: 20 },
   { name: 'Defiance / NW corner', city: 'defiance', lat: 41.400, lng: -84.280, radius: 30 },   // Defiance, Napoleon, Bryan, Wauseon (Fremont=Sandusky, Wapakoneta=Lima)
   { name: 'Youngstown / Mahoning Valley', city: 'youngstown', lat: 41.100, lng: -80.700, radius: 25 }, // Youngstown, Warren, Boardman, Austintown, Niles, Girard, Struthers, Canfield, Salem, Columbiana
+  { name: 'Wooster / Wayne', city: 'wooster', lat: 40.805, lng: -81.935, radius: 18 }, // Wooster; Wayne CVB feed routes county-wide
 ];
 
 // Great-circle miles between two points (haversine).

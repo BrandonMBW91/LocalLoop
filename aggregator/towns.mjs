@@ -99,6 +99,12 @@ export const NAMES = [
   ['canfield', "Canfield"],
   ['salem', "Salem"],
   ['columbiana', "Columbiana"],
+  ['wooster', "Wooster"],
+  ['norwalk', "Norwalk"],
+  ['lakeview', "Lakeview"],
+  ['russells-point', "Russells Point"],
+  ['st-marys', "St. Marys"],
+  ['celina', "Celina"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

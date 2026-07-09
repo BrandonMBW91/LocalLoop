@@ -39,6 +39,9 @@ export const CITIES = [
   { id: 'catawba-island', name: "Catawba Island", state: 'OH', region: NW, pop: 3369, tagline: "Gateway to the islands" },
   { id: 'put-in-bay', name: "Put-in-Bay", state: 'OH', region: NW, pop: 138, tagline: "Island life on Lake Erie" },
   { id: 'kelleys-island', name: "Kelleys Island", state: 'OH', region: NW, pop: 312, tagline: "Lake Erie's largest American island" },
+  { id: 'norwalk', name: "Norwalk", state: 'OH', region: NW, tagline: "Huron County hub" },
+  { id: 'st-marys', name: "St. Marys", state: 'OH', region: NW, tagline: "Grand Lake east shore" },
+  { id: 'celina', name: "Celina", state: 'OH', region: NW, tagline: "Grand Lake county seat" },
   // --- Central / West-Central Ohio ---
   { id: 'bellefontaine', name: 'Bellefontaine', state: 'OH', region: CENTRAL, pop: 13370, tagline: "Ohio's Highest Point" },
   { id: 'kenton', name: 'Kenton', state: 'OH', region: CENTRAL, pop: 8177, tagline: 'Cast-Iron Toy Capital' },
@@ -60,6 +63,8 @@ export const CITIES = [
   { id: 'bucyrus', name: 'Bucyrus', state: 'OH', region: CENTRAL, pop: 11761, tagline: 'Bratwurst Capital of America' },
   { id: 'galion', name: 'Galion', state: 'OH', region: CENTRAL, pop: 10512, tagline: 'Home of the historic Big Four Depot' },
   { id: 'willard', name: 'Willard', state: 'OH', region: CENTRAL, pop: 6194, tagline: 'The Blossom City' },
+  { id: 'lakeview', name: "Lakeview", state: 'OH', region: CENTRAL, tagline: "Indian Lake west shore" },
+  { id: 'russells-point', name: "Russells Point", state: 'OH', region: CENTRAL, tagline: "Indian Lake south shore" },
   // --- Northeast Ohio (Akron & Canton metros) ---
   // All carry live content from the local-feed aggregator (libraries, city
   // calendars, universities, parks, downtowns) plus Ticketmaster.
@@ -93,4 +98,5 @@ export const CITIES = [
   { id: 'canfield', name: "Canfield", state: 'OH', region: NE, pop: 7364, tagline: "Home of the Canfield Fair" },
   { id: 'salem', name: "Salem", state: 'OH', region: NE, pop: 11915, tagline: "Historic Quaker town" },
   { id: 'columbiana', name: "Columbiana", state: 'OH', region: NE, pop: 6384, tagline: "Historic small-town square" },
+  { id: 'wooster', name: "Wooster", state: 'OH', region: NE, tagline: "Heart of Wayne County" },
 ];
