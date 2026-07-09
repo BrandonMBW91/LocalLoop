@@ -84,8 +84,14 @@ async function resendSend(to: string, subject: string, text: string) {
   }
 }
 
-// Notify the owner (fulfillment / exceptions).
-const sendEmail = (subject: string, text: string) => resendSend(OWNER, subject, text);
+// Notify the owner (fulfillment / exceptions). Goes to the monitored mailbox AND
+// Michael's personal inbox, since he asked to be emailed on every feature/ad and
+// doesn't routinely read localloop@.
+const ALERT = 'michabw91@gmail.com';
+const sendEmail = async (subject: string, text: string) => {
+  await resendSend(OWNER, subject, text);
+  await resendSend(ALERT, subject, text);
+};
 
 Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature');
@@ -168,6 +174,17 @@ Deno.serve(async (req) => {
         .from('sponsors')
         .upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true });
       if (upsertErr) throw upsertErr;
+
+      // Tell the OWNER an ad was just placed (Michael asked to be notified on
+      // every ad + feature). Best-effort, after the ad is safely created.
+      const adWhere = product === 'all_region' ? `ALL ${cityIds.length} towns` : resolvedCity;
+      await sendEmail(
+        `New Local Loop ad: ${business} (${adWhere})`,
+        `A ${product === 'all_region' ? 'region-wide' : 'town'} ad was just purchased and is now live.\n\n` +
+          `Business: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\n` +
+          `Where: ${adWhere}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\n` +
+          `Manage it in the app: Settings -> MODERATOR -> Manage Sponsors.`,
+      );
 
       // Tell the buyer their ad is live so they don't panic (or dispute the charge)
       // after landing on Stripe's bare receipt page. Best-effort, never blocks.

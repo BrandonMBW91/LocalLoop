@@ -48,8 +48,9 @@ export default function FoodTruckDetailScreen() {
   const truck = cached || fetched;
 
   useEffect(() => {
-    if (backendEnabled && id) recordView('food_truck', id);
-  }, [id, backendEnabled]);
+    // Never count the owner's own views — they'd inflate the numbers shown to advertisers.
+    if (backendEnabled && id && !isAdmin) recordView('food_truck', id);
+  }, [id, backendEnabled, isAdmin]);
 
   if (!truck) {
     return (

@@ -55,12 +55,12 @@ export default function EventDetailScreen() {
   // logged category isn't undefined on the first-render race.
   const viewedRef = useRef(null);
   useEffect(() => {
-    if (backendEnabled && id && event && viewedRef.current !== id) {
+    if (backendEnabled && id && event && viewedRef.current !== id && !isAdmin) {
       viewedRef.current = id;
-      recordView('event', id);
+      recordView('event', id); // owner views excluded — they'd inflate advertiser-facing numbers
       logEvent('view_event', { category: event.category });
     }
-  }, [id, backendEnabled, event, recordView, logEvent]);
+  }, [id, backendEnabled, event, isAdmin, recordView, logEvent]);
 
   if (!event) {
     return (

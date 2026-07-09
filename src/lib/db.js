@@ -759,7 +759,7 @@ export async function fetchMetrics(cityId) {
     return out;
   };
   const pullSponsors = async () => {
-    let q = supabase.from('sponsors').select('id,active');
+    let q = supabase.from('sponsors').select('id,title,city_id,active,link_url');
     if (!all) q = q.eq('city_id', cityId);
     const { data } = await q;
     return data || [];
@@ -792,6 +792,16 @@ export async function fetchMetrics(cityId) {
       ftRows.filter((r) => r.featured).length,
     activeAds: spRows.filter((r) => r.active).length,
     totalAds: spRows.length,
+    // The actual items behind the "Featured now" / "Active ads" tiles, so the
+    // metrics screen can expand them into a tappable list.
+    featuredItems: [
+      ...evRows.filter((r) => r.featured).map((r) => ({ kind: 'event', id: r.id, title: r.title })),
+      ...gsRows.filter((r) => r.featured).map((r) => ({ kind: 'garage_sale', id: r.id, title: r.title })),
+      ...ftRows.filter((r) => r.featured).map((r) => ({ kind: 'food_truck', id: r.id, title: r.name })),
+    ],
+    adItems: spRows
+      .filter((r) => r.active)
+      .map((r) => ({ id: r.id, title: r.title, city_id: r.city_id, link_url: r.link_url })),
     top,
   };
 }

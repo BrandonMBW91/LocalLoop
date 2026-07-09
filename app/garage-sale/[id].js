@@ -47,8 +47,9 @@ export default function GarageSaleDetailScreen() {
   const sale = cached || fetched;
 
   useEffect(() => {
-    if (backendEnabled && id) recordView('garage_sale', id);
-  }, [id, backendEnabled]);
+    // Never count the owner's own views — they'd inflate the numbers shown to advertisers.
+    if (backendEnabled && id && !isAdmin) recordView('garage_sale', id);
+  }, [id, backendEnabled, isAdmin]);
 
   if (!sale) {
     return (

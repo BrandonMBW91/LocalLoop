@@ -5,21 +5,44 @@ import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { fetchMetrics, fetchCityUsers, fetchPlatformSplit } from '../src/lib/db';
+import { CITIES } from '../src/data/cities';
 import { colors, spacing, radius } from '../src/theme/theme';
+
+const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
 
 const KIND_LABEL = { event: 'Events', garage_sale: 'Garage sales', food_truck: 'Food trucks' };
 const KIND_COLOR = { event: colors.primary, garage_sale: colors.garageSale, food_truck: colors.foodTruck };
 const KIND_ROUTE = { event: 'event', garage_sale: 'garage-sale', food_truck: 'food-truck' };
 
-function StatCard({ value, label, color, icon }) {
-  return (
-    <View style={styles.statCard}>
+function StatCard({ value, label, color, icon, onPress, expanded }) {
+  const inner = (
+    <>
       <View style={styles.statTop}>
         <Ionicons name={icon} size={18} color={color || colors.primary} />
         <ThemedText size="large" weight="bold" color={color || colors.text}>{value}</ThemedText>
       </View>
-      <ThemedText size="small" color={colors.textMuted}>{label}</ThemedText>
-    </View>
+      <View style={styles.statLabelRow}>
+        <ThemedText size="small" color={colors.textMuted}>{label}</ThemedText>
+        {onPress ? (
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={14}
+            color={colors.textMuted}
+          />
+        ) : null}
+      </View>
+    </>
+  );
+  if (!onPress) return <View style={styles.statCard}>{inner}</View>;
+  return (
+    <Pressable
+      style={[styles.statCard, expanded && { borderColor: color || colors.primary }]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}. Tap to ${expanded ? 'hide' : 'see'} details.`}
+    >
+      {inner}
+    </Pressable>
   );
 }
 
@@ -31,6 +54,8 @@ export default function MetricsScreen() {
   const [users, setUsers] = useState(0);
   const [platform, setPlatform] = useState({ ios: 0, android: 0, unknown: 0 });
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null); // 'featured' | 'ads' | null
+  const toggle = (key) => setExpanded((cur) => (cur === key ? null : key));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -115,9 +140,63 @@ export default function MetricsScreen() {
         <StatCard icon="people" value={users} label="Active users (30d)" color={colors.success} />
         <StatCard icon="eye" value={m.totalViews ?? 0} label="Total views" color={colors.primary} />
         <StatCard icon="list" value={m.totalListings ?? 0} label="Live listings" color={colors.text} />
-        <StatCard icon="star" value={m.featuredCount ?? 0} label="Featured now" color={colors.accent} />
-        <StatCard icon="megaphone" value={m.activeAds ?? 0} label="Active ads" color={colors.garageSale} />
+        <StatCard
+          icon="star"
+          value={m.featuredCount ?? 0}
+          label="Featured now"
+          color={colors.accent}
+          onPress={(m.featuredCount ?? 0) > 0 ? () => toggle('featured') : undefined}
+          expanded={expanded === 'featured'}
+        />
+        <StatCard
+          icon="megaphone"
+          value={m.activeAds ?? 0}
+          label="Active ads"
+          color={colors.garageSale}
+          onPress={(m.activeAds ?? 0) > 0 ? () => toggle('ads') : undefined}
+          expanded={expanded === 'ads'}
+        />
       </View>
+
+      {/* Expanded detail for Featured / Active ads */}
+      {expanded === 'featured' && (m.featuredItems?.length ?? 0) > 0 ? (
+        <View style={[styles.card, { marginTop: spacing.sm }]}>
+          {m.featuredItems.map((it, i) => (
+            <Pressable
+              key={`f-${it.kind}-${it.id}`}
+              style={[styles.detailRow, i > 0 && styles.rowBorder]}
+              onPress={() => router.push(`/${KIND_ROUTE[it.kind]}/${it.id}`)}
+            >
+              <Ionicons name="star" size={16} color={colors.accent} style={{ marginRight: spacing.sm }} />
+              <ThemedText size="body" style={{ flex: 1 }} numberOfLines={1}>{it.title}</ThemedText>
+              <ThemedText size="small" color={colors.textMuted} style={{ marginRight: 4 }}>
+                {KIND_LABEL[it.kind].replace(/s$/, '')}
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {expanded === 'ads' && (m.adItems?.length ?? 0) > 0 ? (
+        <View style={[styles.card, { marginTop: spacing.sm }]}>
+          {m.adItems.map((it, i) => (
+            <Pressable
+              key={`a-${it.id}`}
+              style={[styles.detailRow, i > 0 && styles.rowBorder]}
+              onPress={() => router.push(`/ads?city=${it.city_id}`)}
+            >
+              <Ionicons name="megaphone" size={16} color={colors.garageSale} style={{ marginRight: spacing.sm }} />
+              <View style={{ flex: 1 }}>
+                <ThemedText size="body" numberOfLines={1}>{it.title || 'Ad'}</ThemedText>
+                <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>
+                  {CITY_NAME[it.city_id] || it.city_id}{it.link_url ? ` · ${it.link_url.replace(/^https?:\/\//, '')}` : ''}
+                </ThemedText>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       {/* Active users by platform */}
       <ThemedText size="subtitle" weight="bold" style={styles.sectionTitle}>
@@ -237,6 +316,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  statLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  detailRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   sectionTitle: { marginTop: spacing.lg, marginBottom: spacing.sm },
   card: {
     backgroundColor: colors.surface,
