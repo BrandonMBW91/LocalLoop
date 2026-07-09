@@ -62,3 +62,4 @@ play-service-account*.json
 # Local Loop FB routine runtime state
 .fb-featured.json
 local-refresh.log
+*.enc
