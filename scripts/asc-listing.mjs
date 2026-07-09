@@ -6,8 +6,10 @@ import { createSign } from 'node:crypto';
 
 const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
 const g = (k) => (env.match(new RegExp('^' + k + '=(.*)$', 'm')) || [])[1]?.trim();
-const KEY_ID = g('ASC_KEY_ID'), ISSUER = g('ASC_ISSUER_ID'), APP_ID = g('ASC_APP_ID');
-const p8 = readFileSync(new URL('../' + g('ASC_KEY_PATH'), import.meta.url), 'utf8');
+// App Store Connect API key (metadata/App Manager role) — distinct from the
+// Sales & Reports key (ASC_KEY_ID) used by the install-stats puller.
+const KEY_ID = g('ASC_API_KEY_ID'), ISSUER = g('ASC_API_ISSUER_ID'), APP_ID = g('ASC_APP_ID');
+const p8 = readFileSync(new URL('../' + g('ASC_API_KEY_PATH'), import.meta.url), 'utf8');
 
 // ASC JWT: ES256, raw (P1363) signature, aud appstoreconnect-v1, <=20min exp.
 function jwt() {
