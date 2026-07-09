@@ -1,13 +1,24 @@
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Deep link straight to the App Store review composer for Local Loop.
-const REVIEW_URL = 'https://apps.apple.com/app/id6780306721?action=write-review';
+// Deep link straight to each platform's review surface for Local Loop — this was
+// hardcoded to Apple, which sent Android users to the Apple App Store.
+const APPLE_URL = 'https://apps.apple.com/app/id6780306721?action=write-review';
+const PLAY_MARKET_URL = 'market://details?id=com.michaelwilliams.localloop';
+const PLAY_WEB_URL = 'https://play.google.com/store/apps/details?id=com.michaelwilliams.localloop';
 const KEY_OPENS = '@fe/reviewOpens';
 const KEY_DONE = '@fe/reviewPrompted';
 
 export function openReview() {
-  Linking.openURL(REVIEW_URL).catch(() => {});
+  if (Platform.OS === 'android') {
+    // market:// opens the Play Store app directly; fall back to the web listing
+    // on devices without it (rare, but never dead-end a tap).
+    Linking.openURL(PLAY_MARKET_URL).catch(() => {
+      Linking.openURL(PLAY_WEB_URL).catch(() => {});
+    });
+  } else {
+    Linking.openURL(APPLE_URL).catch(() => {});
+  }
 }
 
 // Count app opens and, once the user has opened the app a few times (enough to

@@ -302,7 +302,7 @@ export default function SettingsScreen() {
       {/* About */}
       <SectionTitle>ABOUT</SectionTitle>
       <View style={styles.card}>
-        <Pressable style={styles.row} onPress={openReview} accessibilityRole="button" accessibilityLabel="Rate Local Loop on the App Store">
+        <Pressable style={styles.row} onPress={openReview} accessibilityRole="button" accessibilityLabel="Rate Local Loop in your app store">
           <Ionicons name="star-outline" size={24} color={colors.accent} />
           <ThemedText size="body" weight="semibold" style={{ flex: 1, marginLeft: spacing.sm }}>
             Rate Local Loop
