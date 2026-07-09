@@ -292,11 +292,10 @@
     if(!r.querySelector('.go')){
       const name = r.querySelector('.name').textContent;
       const town = r.querySelector('.town') ? r.querySelector('.town').textContent.split('/')[0].trim() : (r.closest('[data-g]').dataset.townDefault||'');
-      // Pages-scoped FB search: lands on Pages results where the truck's own
-      // page is almost always the first hit — one click closer than 'top' search.
+      // FB 'All' search — user prefers the combined results tab.
       const a = document.createElement('a');
       a.className='go search'; a.target='_blank';
-      a.href='https://www.facebook.com/search/pages/?q='+encodeURIComponent(name+' '+town+' Ohio');
+      a.href='https://www.facebook.com/search/top/?q='+encodeURIComponent(name+' '+town+' Ohio');
       a.textContent='Find FB page'; r.appendChild(a);
     }
     cb.addEventListener('change',()=>{
