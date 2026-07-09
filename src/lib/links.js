@@ -4,10 +4,11 @@ export const APP_STORE_URL = 'https://apps.apple.com/app/id6780306721';
 export const SITE = 'https://localloop.io';
 
 // Deep link for a specific listing. Opens the app directly when installed
-// (Universal Links), else falls back to the App Store via a site redirect.
+// (Universal Links), else falls back to the SITE — never a single store's page:
+// a share recipient can be on either platform, and localloop.io pitches both.
 // kind: 'event' | 'garage-sale' | 'food-truck'
 export function shareUrl(kind, id) {
-  return id ? `${SITE}/${kind}/${id}` : APP_STORE_URL;
+  return id ? `${SITE}/${kind}/${id}` : SITE;
 }
 
 // Suffix appended to a share message. Pass the listing's deep link.
@@ -16,4 +17,4 @@ export function shareFooter(url) {
 }
 
 // Static footer (no specific listing) — used where there's no id to link to.
-export const SHARE_FOOTER = shareFooter(APP_STORE_URL);
+export const SHARE_FOOTER = shareFooter(SITE);
