@@ -63,6 +63,20 @@ const OUTREACH = join(ROOT, 'outreach');
 const LOG = join(OUTREACH, 'sent-log.txt');
 const BOUNCED = join(OUTREACH, 'bounced.txt');
 const SUPPRESS = join(OUTREACH, 'suppress.txt');
+
+// CAN-SPAM guard: refuse to send until a real physical postal address is set
+// (15 USC 7704(a)(5) requires one in every commercial email). Blocks the whole
+// run — including the scheduled 8am job — while mailing-address.txt is the
+// placeholder, so no non-compliant mail goes out. Set the address, re-run the
+// assemblers, and this clears itself.
+{
+  const addrFile = join(OUTREACH, 'mailing-address.txt');
+  const addr = existsSync(addrFile) ? readFileSync(addrFile, 'utf8').trim() : '';
+  if (!addr || /^\[SET MAILING ADDRESS/i.test(addr)) {
+    console.log('HELD: outreach/mailing-address.txt is not set — CAN-SPAM requires a physical postal address in every email. No mail sent. Set the address, run node outreach/assemble-drafts.cjs and node outreach/assemble-truck-drafts.mjs --round2 (and again without --round2 for round 1), then re-run.');
+    process.exit(0);
+  }
+}
 const readLines = (p) => (existsSync(p) ? readFileSync(p, 'utf8').split('\n').filter(Boolean) : []);
 const today = new Date().toLocaleDateString('en-CA');
 

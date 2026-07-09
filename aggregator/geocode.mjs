@@ -50,6 +50,13 @@ async function geocode(query) {
   const data = await res.json();
   const f = data.features?.[0];
   if (!f?.center) return null;
+  // Reject low-confidence matches. A vague/unresolvable address makes Mapbox
+  // return a broad centroid (one bogus point shared by 100+ events — the Jul
+  // 2026 audit found 156 pinned to a single PA-border coordinate). relevance
+  // < 0.8 or a region/country-level match is not a real venue location.
+  const badType = ['region', 'country', 'district'].some((t) => (f.place_type || []).includes(t));
+  if (typeof f.relevance === 'number' && f.relevance < 0.8) return null;
+  if (badType) return null;
   const [lng, lat] = f.center;
   // Reject anything outside the anchor-derived footprint (visible, not silent).
   if (lat < BBOX.s || lat > BBOX.n || lng < BBOX.w || lng > BBOX.e) return null;

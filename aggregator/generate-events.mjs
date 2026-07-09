@@ -224,8 +224,9 @@ async function main() {
       .eq('city_id', id).eq('status', 'approved')
       .gte('start_at', backIso).lte('start_at', cutoff)
       .order('start_at', { ascending: true })
-      .limit(300); // full 45-day horizon; stays under PostgREST's 1000 cap
+      .limit(1000); // PostgREST cap; 300 clipped Toledo/Akron (~730 each) to ~9 of the 45 days
     if (error) { console.error(`  ! ${id}: ${error.message}`); continue; }
+    if ((data || []).length === 1000) console.warn(`  … ${id} hit the 1000-event cap — page is truncated, paginate soon`);
     // Render-time dedup guard: collapse same title+venue on the same ET day,
     // so a page is never wrong even if a duplicate slips past ingest dedup.
     const seen = new Set();

@@ -96,7 +96,14 @@ function normalize(node) {
   if (!name || !startRaw) return null;
   const start = parseDate(startRaw);
   if (isNaN(start)) return null;
-  const end = node.endDate ? parseDate(node.endDate) : null;
+  let end = node.endDate ? parseDate(node.endDate) : null;
+  // Midnight rollover: Eventbrite JSON-LD emits an end clock-time without rolling
+  // the date, so a 9pm-1am event parses as end BEFORE start. Push end to the next
+  // day (the Jul 2026 audit found 366 backwards-time rows, all from this source).
+  if (end && !isNaN(end) && end < start) {
+    const rolled = new Date(end.getTime() + 24 * 3600 * 1000);
+    end = rolled - start < 24 * 3600 * 1000 ? rolled : null;
+  }
   const image = imageUrl(node.image);
   return {
     summary: String(name),

@@ -3,7 +3,10 @@ name: Aggregate events
 # Pulls events from your calendar feeds into Supabase, daily.
 on:
   schedule:
-    - cron: '0 9 * * *' # every day at 09:00 UTC (~4–5am ET)
+    # 06:17 UTC = ~2:17am ET. Off the congested top-of-hour so GitHub's 2-3h
+    # cron delay still lands it BEFORE the 7am local Eventbrite refresh (the
+    # old '0 9' drifted to 7-8am ET and raced the local run — Jul 2026 audit).
+    - cron: '17 6 * * *'
   workflow_dispatch: {} # also lets you run it manually from the Actions tab
 
 jobs:
