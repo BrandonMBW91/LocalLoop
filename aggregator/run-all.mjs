@@ -21,6 +21,7 @@ const STEPS = [
   ['Ticketmaster', 'ticketmaster.mjs'],
   ['SeatGeek', 'seatgeek.mjs'],
   ['De-duplicate', 'dedupe.mjs --apply'],
+  ['Retention (drop aggregator events >60d)', 'retention.mjs'],
   ['Geocode', 'geocode.mjs'],
   ['City boundaries (true town lines)', 'assign-boundaries.mjs'],
   ['All-Region ad backfill', 'backfill-region-ads.mjs'],
