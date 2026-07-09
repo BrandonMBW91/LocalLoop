@@ -5,9 +5,11 @@ import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { AppProvider } from '../src/context/AppContext';
 import HeaderBack from '../src/components/HeaderBack';
+import { useOtaUpdates } from '../src/hooks/useOtaUpdates';
 import { colors } from '../src/theme/theme';
 
 export default function RootLayout() {
+  useOtaUpdates();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
