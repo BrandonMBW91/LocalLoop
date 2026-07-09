@@ -38,6 +38,11 @@ if [ "$ACTION" = pull ]; then
   cp -f "$SYNC_DIR"/*.md "$MEM"/ 2>/dev/null || true
   echo "Pulled latest memory into $MEM ($(ls "$MEM"/*.md 2>/dev/null | wc -l | tr -d ' ') files)."
 else
+  # Sync the clone first so a push from either machine lands on top of the
+  # other's commits instead of being rejected as non-fast-forward. Files only
+  # the other machine has (or edited there more recently than our local copy)
+  # ride along untouched unless this machine also has a same-named file.
+  git -C "$SYNC_DIR" pull --ff-only origin main || true
   cp -f "$MEM"/*.md "$SYNC_DIR"/ 2>/dev/null || true
   git -C "$SYNC_DIR" add -A
   if git -C "$SYNC_DIR" diff --cached --quiet; then echo "Memory already up to date, nothing to push."; exit 0; fi
