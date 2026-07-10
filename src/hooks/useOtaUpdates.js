@@ -12,6 +12,8 @@ import * as Updates from 'expo-updates';
 // If the OS kills the app before the next background, the downloaded update
 // applies on cold start anyway — this only ever shortens the wait.
 const CHECK_EVERY_MS = 15 * 60 * 1000; // foreground churn is frequent; be polite
+const EARLY_APPLY_WINDOW_MS = 15 * 1000; // reload-in-place is fine this early
+const LAUNCHED_AT = Date.now();
 
 export function useOtaUpdates() {
   // isUpdatePending covers BOTH our foreground fetches and the launch-time
@@ -20,6 +22,18 @@ export function useOtaUpdates() {
   const pendingRef = useRef(false);
   pendingRef.current = isUpdatePending;
   const lastCheckRef = useRef(0);
+
+  // Fresh-launch fast path: when the launch-time ON_LOAD download finishes
+  // within the first seconds of a cold start, apply it immediately instead of
+  // waiting for a background. A reload flash that early is fine — the user has
+  // barely started — and it means a NEW install's first session runs the
+  // newest bundle instead of the embedded store one.
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return;
+    if (isUpdatePending && Date.now() - LAUNCHED_AT < EARLY_APPLY_WINDOW_MS) {
+      Updates.reloadAsync().catch(() => {});
+    }
+  }, [isUpdatePending]);
 
   useEffect(() => {
     // No-op in dev / Expo Go, where the Updates API rejects.

@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Food Truck Outreach Checklist</title>
+<style>
+  :root{
+    --navy:#15315B; --red:#B22234; --bg:#FBF8F1; --card:#FFFFFF;
+    --ink:#1B2430; --muted:#5C6470; --line:#E4DFD3; --chip:#EEE9DC;
+    --good:#1E7A46; --good-bg:#E7F3EC; --link:#15315B;
+  }
+  :root[data-theme="dark"]{ --navy:#A8C0E8; --red:#E06A76; --bg:#0F1729; --card:#182238;
+    --ink:#E8ECF4; --muted:#94A0B4; --line:#2A3650; --chip:#223050; --good:#5BC98A; --good-bg:#1A2E24; --link:#A8C0E8;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --navy:#A8C0E8; --red:#E06A76; --bg:#0F1729; --card:#182238;
+      --ink:#E8ECF4; --muted:#94A0B4; --line:#2A3650; --chip:#223050; --good:#5BC98A; --good-bg:#1A2E24; --link:#A8C0E8;}
+  }
+  body{background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:0 16px 80px;}
+  .wrap{max-width:760px;margin:0 auto;}
+  header{padding:28px 0 10px;}
+  h1{font-size:23px;margin:0 0 4px;color:var(--navy);letter-spacing:-.01em;}
+  .sub{color:var(--muted);font-size:14px;margin:0;}
+  .bar{position:sticky;top:0;background:var(--bg);z-index:5;display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:2px solid var(--navy);}
+  .count{font-weight:700;color:var(--red);font-variant-numeric:tabular-nums;}
+  .bar label{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer;}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:28px 0 8px;display:flex;align-items:baseline;gap:8px;}
+  h2 .n{color:var(--red);font-variant-numeric:tabular-nums;}
+  .grp{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);}
+  .row:last-child{border-bottom:none;}
+  .row input{width:17px;height:17px;accent-color:var(--red);flex:none;cursor:pointer;}
+  .row.done .name{text-decoration:line-through;opacity:.45;}
+  .row.done .town,.row.done .note{opacity:.45;}
+  .name{font-weight:600;}
+  .town{background:var(--chip);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--muted);white-space:nowrap;}
+  .note{color:var(--muted);font-size:12.5px;}
+  .mail{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--good);background:var(--good-bg);border-radius:5px;padding:1px 7px;}
+  .go{margin-left:auto;flex:none;font-size:12.5px;font-weight:600;color:var(--link);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 10px;white-space:nowrap;}
+  .go:hover{border-color:var(--navy);}
+  .go.search{opacity:.75;}
+  .em{flex:1 1 150px;min-width:110px;max-width:230px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px;}
+  .em::placeholder{color:var(--muted);opacity:.55;}
+  .em.has{border-color:var(--good);background:var(--good-bg);color:var(--good);}
+  .copybtn{font:600 12.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff;background:var(--red);border:none;border-radius:6px;padding:5px 12px;cursor:pointer;}
+  .copybtn:active{opacity:.8;}
+  details{margin-top:26px;}
+  summary{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer;margin-bottom:8px;}
+  .ref .row{padding:6px 12px;font-size:13.5px;}
+  .hide-done .row.done{display:none;}
+  @media (max-width:540px){ .note{display:none;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Food truck outreach checklist</h1>
+  <p class="sub">Check a truck off once you've grabbed its public email from Facebook (About section) or sent it a Messenger pitch. Progress saves on this device. Only take emails that are publicly listed.</p>
+</header>
+<div class="bar"><span class="count" id="prog"></span><button class="copybtn" id="copyem">Copy emails (0)</button><button class="copybtn" id="open10" style="background:var(--navy)">Open next 10</button><label><input type="checkbox" id="hidedone"> Hide checked</label></div>
+
+<h2>Toledo · Wood · Fulton <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Toledo">
+  <div class="row"><input type="checkbox"><span class="name">Hot Dogs 2 Go</span><span class="town">Swanton</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Duce's Dawgs</span><span class="town">Toledo</span><a class="go" href="https://www.facebook.com/Ducesdawgs/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Island Soul</span><span class="town">Toledo</span><a class="go" href="https://www.facebook.com/itsislandsoul" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Susie Lynne's Lemonade</span><span class="town">Perrysburg</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Sweet Nate's Coffee</span><span class="town">Whitehouse</span></div>
+  <div class="row"><input type="checkbox"><span class="name">T-Town Burgers</span><span class="town">Toledo</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Beastro Burger Truck</span><span class="town">Toledo</span><a class="go" href="https://www.facebook.com/BeastroBurgerTruck/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Local Eden</span><span class="town">Toledo</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Stubborn Brother Pizza Truck</span><span class="town">Toledo</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Tucker Truck</span><span class="town">Toledo</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Tosha's Cake Addiction</span><span class="town">Toledo</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Uncle Louie's Food Truck</span><span class="town">Bowling Green</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Wandering Bean Coffee Co</span><span class="town">Toledo</span></div>
+</div>
+
+<h2>Findlay · Hancock <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Findlay">
+  <div class="row"><input type="checkbox"><span class="name">Slippin Sammies</span><span class="town">Findlay</span></div>
+  <div class="row"><input type="checkbox"><span class="name">weens and beans coffee co</span><span class="town">Findlay</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Dante's Rolling Food Joint</span><span class="town">Findlay</span><a class="go" href="https://www.facebook.com/people/The-Rolling-Food-Joint/61557780262978/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Wok Up Street Hibachi</span><span class="town">Findlay</span><span class="note">was Leggo My Eggroll</span><a class="go" href="https://www.facebook.com/p/Leggo-my-eggroll-100093067706423/" target="_blank">FB</a></div>
+</div>
+
+<h2>Sandusky · Islands · Huron Co <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Sandusky">
+  <div class="row"><input type="checkbox"><span class="name">Great Plains Bison Burgers</span><span class="town">Sandusky</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Hahny's Smash Burgers</span><span class="town">Sandusky</span></div>
+  <div class="row"><input type="checkbox"><span class="name">BO's Smokey Sticks</span><span class="town">Huron</span></div>
+  <div class="row"><input type="checkbox"><span class="name">LeeAna's Bananas</span><span class="town">Port Clinton</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Front Porch Perfect Market</span><span class="town">Port Clinton</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Lavender Spoon</span><span class="town">Kelleys Island</span></div>
+  <div class="row"><input type="checkbox"><span class="name">American Chuck Wagon</span><span class="town">Marblehead</span><span class="note">site SSL broken</span><a class="go" href="https://www.facebook.com/p/American-Chuck-Wagon-Food-Truck-100094454076337/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Gaucho &amp; The Gringa</span><span class="town">Sandusky</span><span class="note">site has form only</span><a class="go" href="https://www.facebook.com/thegauchothegringa/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Red Beard BBQ &amp; Catering</span><span class="town">Willard</span><a class="go" href="https://www.facebook.com/p/Red-Beard-BBQ-Catering-61554731907216/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Blue Ribbon Catering</span><span class="town">Huron</span><a class="go" href="https://www.facebook.com/blueribboncaters/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Gone Fish'n</span><span class="town">Willard</span><a class="go" href="https://www.facebook.com/people/Gone-Fishn/100091834692907/" target="_blank">FB</a></div>
+</div>
+
+<h2>Delaware · Union · Marion <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Delaware">
+  <div class="row"><input type="checkbox"><span class="name">Burger N Smile</span><span class="town">Delaware</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Curbside Dish</span><span class="town">Delaware</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Demo's Grille</span><span class="town">Delaware</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Grateful Griddle</span><span class="town">Delaware</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Pizza Hot On The Spot</span><span class="town">Delaware</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Sweet Cheeks BBQ</span><span class="town">Delaware</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Aunt Di's Kitchen</span><span class="town">Delaware</span><a class="go" href="https://www.facebook.com/auntdi2023/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Smash Shack Burger Company</span><span class="town">Delaware</span><span class="note">site has form only</span><a class="go" href="https://www.facebook.com/p/Smash-Shack-Burger-Company-100087329204389/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Dan's Deli #40</span><span class="town">Delaware</span><a class="go" href="https://dansdeli40.com/" target="_blank">Site</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Roadster</span><span class="town">Lewis Center</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Rolling Bistro</span><span class="town">Lewis Center</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Shega Grill</span><span class="town">Lewis Center</span></div>
+  <div class="row"><input type="checkbox"><span class="name">PT Thai Food</span><span class="town">Powell</span></div>
+  <div class="row"><input type="checkbox"><span class="name">If You Cheese</span><span class="town">Sunbury</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Stuffed Squirrel</span><span class="town">Sunbury</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Guelaguetza Street Food</span><span class="town">Marysville</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Hot Dog Guy</span><span class="town">Marysville</span><a class="go" href="https://www.facebook.com/HotDogHQ/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Smokin Bandits</span><span class="town">Marysville</span><span class="note">site phone-only</span><a class="go" href="https://smokinbanditsfoodtruck.com/" target="_blank">Site</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Greek Village On The Go</span><span class="town">Marion</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Mood Boost On Wheels</span><span class="town">Marion</span><span class="note">SFF only</span></div>
+  <div class="row"><input type="checkbox"><span class="name">CJs B'tchin Kitchin</span><span class="town">Marion</span><a class="go" href="https://www.facebook.com/profile.php?id=100072533377200" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Special-T Sandwiches</span><span class="town">Marion / Lakeview</span><a class="go" href="https://www.facebook.com/people/Special-T-Sandwiches/61565907831964/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">the little soda shop</span><span class="town">Waldo</span></div>
+</div>
+
+<h2>Mansfield · Ashland · Crawford <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Mansfield">
+  <div class="row"><input type="checkbox"><span class="name">Dreia's Kitchen</span><span class="town">Mansfield</span></div>
+  <div class="row"><input type="checkbox"><span class="name">RobSagna</span><span class="town">Mansfield</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Dough Pros</span><span class="town">Mansfield / Ashland</span><a class="go" href="https://www.facebook.com/DoughPros22/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Food Tour</span><span class="town">Mansfield</span><a class="go" href="https://www.facebook.com/TFTMansfield/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Tay's Concessions</span><span class="town">Mansfield</span><a class="go" href="https://www.facebook.com/61564550804327/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Black Willow Food Truck</span><span class="town">Mansfield</span><span class="note">TikTok/DoorDash only</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Moore's County Line BBQ</span><span class="town">Shelby</span></div>
+  <div class="row"><input type="checkbox"><span class="name">On The Rise Bar-B-Que</span><span class="town">Ashland</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Creamy Classics</span><span class="town">Ashland</span><a class="go" href="https://www.facebook.com/p/Creamy-Classics-LLC-61559929319361/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Gimme Grub</span><span class="town">Ashland</span><a class="go" href="https://www.facebook.com/people/Gimme-Grub-LLC/61551083993918/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Looney Lemon</span><span class="town">Ashland</span><span class="note">IG @the_looney_lemon</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Chip Off The Olde Guac</span><span class="town">Ashland</span><a class="go" href="https://www.facebook.com/p/Chip-Off-The-Olde-Guac-61555359711109/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Dirty Soda Saloon</span><span class="town">Galion</span><a class="go" href="https://www.facebook.com/p/Dirty-Soda-Saloon-61578977167183/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Monkey Kitchen Concessions</span><span class="town">Galion</span><span class="note">SFF only</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Marci's</span><span class="town">Fredericktown</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Hibachi Hut</span><span class="town">Fredericktown</span></div>
+</div>
+
+<h2>Logan Co · Indian Lake · Hardin · West <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Bellefontaine">
+  <div class="row"><input type="checkbox"><span class="name">Phat Daddy's</span><span class="town">Bellefontaine</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Pit Stop Food Truck</span><span class="town">Bellefontaine</span><a class="go" href="https://www.facebook.com/p/The-Pit-Stop-Food-Truck-61578371364337/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Da 'Ohana Spot</span><span class="town">Bellefontaine</span><a class="go" href="https://www.facebook.com/da.ohana.spot/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Hound Dogs</span><span class="town">Bellefontaine</span><a class="go" href="https://www.facebook.com/p/Hound-Dogs-100082978106722/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Flipped or Dipped</span><span class="town">Bellefontaine</span><a class="go" href="https://www.facebook.com/p/Flipped-or-Dipped-61564806642260/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Hoose's Sizzlin Tortillas</span><span class="town">Lakeview</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Fork in the Road FT</span><span class="town">Lakeview</span><a class="go" href="https://www.facebook.com/p/Fork-in-the-Road-Food-Truck-100063709537069/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Fired &amp; Fried Egg Rolls</span><span class="town">Stokes Twp (Indian Lake)</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Moore Than Just BBQ</span><span class="town">Kenton</span><span class="note">Yelp says may be closed — verify</span><a class="go" href="https://www.facebook.com/MooreThanJustBBQ/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Jacks Rolling Food Shack</span><span class="town">Celina</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Little Piggies</span><span class="town">Fort Jennings</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Wicked 'Wiches &amp; BBQ</span><span class="town">Bryan</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Expressions Catering</span><span class="town">Napoleon</span><a class="go" href="https://www.facebook.com/100053561538070/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Ohana Gathering Place</span><span class="town">Lima</span><a class="go" href="https://www.facebook.com/p/Ohana-Gathering-Place-61579817849317/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Baked Potato Food Truck</span><span class="town">Piqua</span><a class="go" href="https://www.facebook.com/thebakedpotatofoodtruck/" target="_blank">FB</a></div>
+</div>
+
+<h2>Akron · Medina · Stark · Mahoning <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="Akron">
+  <div class="row"><input type="checkbox"><span class="name">Mother Food Trucker</span><span class="town">Akron</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Taco Veloz</span><span class="town">Akron</span><a class="go" href="https://www.facebook.com/TacoVeloz.01/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Authentic Nigerian Kitchen</span><span class="town">Akron</span><a class="go" href="https://www.authenticnigeriankitchen.com/" target="_blank">Site</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Eats Food Truck by Grumbelly's</span><span class="town">Akron</span><a class="go" href="https://www.grumbellys.com" target="_blank">Site</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Birdies Food Truck</span><span class="town">Cuyahoga Falls</span><a class="go" href="https://www.facebook.com/BirdiesFT/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Taste The Vibe</span><span class="town">Cuyahoga Falls</span><a class="go" href="https://www.facebook.com/Tastethevibe833/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Shiba Teriyaki</span><span class="town">Cuyahoga Falls</span><a class="go" href="https://www.facebook.com/p/Shiba-Teriyaki-61553797198575/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Brooks Homestyle BBQ</span><span class="town">Kent</span><a class="go" href="https://www.facebook.com/brookshomestylebbq" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">J&amp;J Grilled Cheese and Dogs</span><span class="town">Barberton</span><a class="go" href="https://www.facebook.com/p/JJ-Grilled-Cheese-and-Dogs-61550729137765/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Elotes Locos</span><span class="town">Wadsworth</span><a class="go" href="https://www.facebook.com/ElotesLocos330/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Alex's Bistro</span><span class="town">Medina</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Cheezy Weezy</span><span class="town">Medina</span><span class="note">site has form only</span><a class="go" href="https://www.facebook.com/cheezyweezymedina/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Moonstone Coffee Works</span><span class="town">Medina</span><span class="note">site has form only</span><a class="go" href="https://www.facebook.com/MoonstoneCoffeeWorks/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Sundae Skool Bus</span><span class="town">Medina</span><a class="go" href="https://www.facebook.com/p/Sundae-Skool-Bus-61561044796560/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Gone Fish'n (Stark)</span><span class="town">Canal Fulton</span><span class="note">same name as Willard truck — confirm which</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Travelin Wiener</span><span class="town">Canton</span><a class="go" href="https://www.facebook.com/p/The-Travelin-Wiener-61565151270855/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">OG Street Eatz</span><span class="town">Canton</span><a class="go" href="https://www.facebook.com/OGStreetEatz/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Taqueria La Bendicion</span><span class="town">Canton</span><a class="go" href="https://www.facebook.com/p/Taqueria-Y-Pupuseria-La-Bendici%C3%B3n-100064525069725/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Destefano's Concessions</span><span class="town">Canton</span><a class="go" href="https://www.facebook.com/destefanosfood/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">El Rincon Canton</span><span class="town">Canton</span><a class="go" href="https://www.facebook.com/p/El-Rincon-Canton-Ohio-100046536945008/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">JD's Gourmet Hot Dogs</span><span class="town">Massillon</span><a class="go" href="https://www.facebook.com/JdsGourmetHotDogs/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Don Polo Mexican Food</span><span class="town">Massillon</span><a class="go" href="https://www.facebook.com/Donpolomexicanfood/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Burrata Italian Kitchen</span><span class="town">Massillon</span><a class="go" href="https://www.facebook.com/p/Burrata-Italian-Kitchen-100091759513043/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">New Berlin Dough Company</span><span class="town">North Canton</span><span class="note">IG @newberlindoughcompany</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Poppys Tacos</span><span class="town">North Canton</span><a class="go" href="https://www.facebook.com/p/Poppys-Tacos-100094881566478/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Blazing Pig</span><span class="town">North Canton</span><a class="go" href="https://www.facebook.com/TheBlazingPigOH/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Smokey's Patty-Wagon</span><span class="town">Youngstown</span><a class="go" href="https://www.facebook.com/Smokeys.PattyWagon/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">The Big Green Thing</span><span class="town">Youngstown</span><a class="go" href="https://www.facebook.com/Thebiggreenthing/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Magic Tree Pub &amp; Eatery truck</span><span class="town">Boardman</span><a class="go" href="https://www.facebook.com/MagicTreePubAndEatery/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Tootie's Lunchbox</span><span class="town">Niles</span><span class="note">site has form only</span><a class="go" href="https://www.tootieslunchbox.com/" target="_blank">Site</a></div>
+  <div class="row"><input type="checkbox"><span class="name">LJ's Food Truck</span><span class="town">Canfield</span><a class="go" href="https://www.facebook.com/LJsFoodTruck/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Saluting You BBQ</span><span class="town">Salem</span><a class="go" href="https://www.facebook.com/p/Saluting-You-BBQ-61575280484040/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Frytanic Food Truck</span><span class="town">Columbiana</span><a class="go" href="https://www.facebook.com/FrytanicFoodtruck/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Munsey's Meats &amp; More</span><span class="town">Orrville</span><a class="go" href="https://www.facebook.com/p/Munseys-Meats-More-100075845688578/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Best Spudz</span><span class="town">Orrville</span><span class="note">do NOT use bestspudz.com email (Iowa truck)</span><a class="go" href="https://www.facebook.com/best.spudz.2025/" target="_blank">FB</a></div>
+  <div class="row"><input type="checkbox"><span class="name">Rollin With Seo</span><span class="town">Orrville</span><span class="note">site has form only</span><a class="go" href="https://rollinwithseo.com/" target="_blank">Site</a></div>
+  <div class="row"><input type="checkbox"><span class="name">444 Hibachi Grill</span><span class="town">Orrville</span><a class="go" href="https://www.facebook.com/p/444-Hibachi-Grill-61556184795980/" target="_blank">FB</a></div>
+</div>
+
+<h2>No home base listed — check FB for where they park <span class="n" data-n></span></h2>
+<div class="grp" data-g data-town-default="">
+  <div class="row"><input type="checkbox"><span class="name">BCA Cuts</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Casero Kitchen</span></div>
+  <div class="row"><input type="checkbox"><span class="name">El Padrino Street Tacos</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Fat Sgt's Smokin Q</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Glaze'Em Funnel Cakes</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Greek On The GO</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Kountry Boyz Kitchen</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Lombardo's Concessions</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Moore's Flipside Grill</span></div>
+  <div class="row"><input type="checkbox"><span class="name">SAM'S Coffee Bar</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Smoking J's</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Barnyard Subs and Pizza</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Big Jerrowski</span></div>
+  <div class="row"><input type="checkbox"><span class="name">The Leaf and Seed</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Timeless Tacos Food Truck</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Tornado Potato</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Wanderdust Coffee</span></div>
+  <div class="row"><input type="checkbox"><span class="name">We Be Ribs</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Wild Oats Gluten Free</span></div>
+  <div class="row"><input type="checkbox"><span class="name">Yura Bowl</span></div>
+</div>
+
+
+</div>
+<script>
+(function(){
+  const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const rows = [...document.querySelectorAll('[data-g] .row')];
+  rows.forEach(r=>{
+    const cb = r.querySelector('input'); if(!cb) return;
+    const key = 'll-truck-' + slug(r.querySelector('.name').textContent);
+    if(localStorage.getItem(key)==='1'){ cb.checked = true; r.classList.add('done'); }
+    // Editable email field: type or paste the address you find. Saves as you type.
+    const em = document.createElement('input');
+    em.type='email'; em.className='em'; em.placeholder='email if found';
+    const emKey = key + '-email';
+    const cand = r.querySelector('.mail');
+    em.value = localStorage.getItem(emKey) || (cand ? cand.textContent.replace(/\s*\?$/,'') : '');
+    em.classList.toggle('has', !!em.value && em.value.includes('@'));
+    em.addEventListener('input',()=>{
+      localStorage.setItem(emKey, em.value.trim());
+      em.classList.toggle('has', !!em.value.trim() && em.value.includes('@'));
+      updateCopy();
+    });
+    const goLink = r.querySelector('.go');
+    r.insertBefore(em, goLink || null);
+    if(!r.querySelector('.go')){
+      const name = r.querySelector('.name').textContent;
+      const town = r.querySelector('.town') ? r.querySelector('.town').textContent.split('/')[0].trim() : (r.closest('[data-g]').dataset.townDefault||'');
+      // FB 'All' search — user prefers the combined results tab.
+      const a = document.createElement('a');
+      a.className='go search'; a.target='_blank';
+      a.href='https://www.facebook.com/search/top/?q='+encodeURIComponent(name+' '+town+' Ohio');
+      a.textContent='Find FB page'; r.appendChild(a);
+    }
+    cb.addEventListener('change',()=>{
+      r.classList.toggle('done', cb.checked);
+      localStorage.setItem(key, cb.checked ? '1' : '0');
+      update();
+    });
+  });
+  const boxes = rows.map(r=>r.querySelector('input')).filter(Boolean);
+  function update(){
+    const done = boxes.filter(b=>b.checked).length;
+    document.getElementById('prog').textContent = done + ' / ' + boxes.length + ' checked';
+    document.querySelectorAll('[data-g]').forEach(g=>{
+      const h = g.previousElementSibling && g.previousElementSibling.querySelector('[data-n]');
+      if(h){ const gb=[...g.querySelectorAll('input')]; h.textContent = '('+gb.filter(b=>b.checked).length+' / '+gb.length+')'; }
+    });
+  }
+  document.getElementById('hidedone').addEventListener('change',e=>{
+    document.body.classList.toggle('hide-done', e.target.checked);
+  });
+  function collected(){
+    return rows.filter(r=>{
+      const em=r.querySelector('.em'); return em && em.value.trim().includes('@');
+    }).map(r=>{
+      const town=r.querySelector('.town');
+      return r.querySelector('.name').textContent+' ('+(town?town.textContent:'?')+') -> '+r.querySelector('.em').value.trim();
+    });
+  }
+  const copyBtn=document.getElementById('copyem');
+  function updateCopy(){ copyBtn.textContent='Copy emails ('+collected().length+')'; }
+  copyBtn.addEventListener('click', async ()=>{
+    const t=collected().join('\n');
+    try {
+      await navigator.clipboard.writeText(t);
+      copyBtn.textContent='Copied! Paste to Claude';
+      setTimeout(updateCopy,2000);
+    } catch(_){
+      // Clipboard blocked by the viewer: show everything pre-selected instead.
+      let ta = document.getElementById('collectbox');
+      if(!ta){
+        ta = document.createElement('textarea');
+        ta.id='collectbox'; ta.readOnly=true; ta.className='em';
+        ta.style.cssText='display:block;width:100%;max-width:100%;height:120px;margin:8px 0;flex-basis:100%;';
+        document.querySelector('.bar').after(ta);
+      }
+      ta.value = t; ta.focus(); ta.select();
+      copyBtn.textContent='Select + Cmd+C below';
+      setTimeout(updateCopy,3500);
+    }
+  });
+  // Bulk-open: the next 10 unchecked trucks' links, one tab each. Browsers
+  // block multi-open until the user allows popups for this site once.
+  const openBtn = document.getElementById('open10');
+  openBtn.addEventListener('click', ()=>{
+    const next = rows.filter(r=>{
+      const cb=r.querySelector('input[type="checkbox"]');
+      return cb && !cb.checked && r.querySelector('a.go');
+    }).slice(0,10);
+    let opened = 0;
+    next.forEach((r,i)=>{ if(window.open(r.querySelector('a.go').href,'llt'+Date.now()+i,'noopener')) opened++; });
+    if(opened < next.length){
+      openBtn.textContent = opened===0 ? 'Blocked — allow pop-ups for this site' : 'Some blocked — allow pop-ups';
+      setTimeout(()=>{openBtn.textContent='Open next 10';}, 4000);
+    }
+  });
+  update(); updateCopy();
+})();
+</script>
+
+</body>
+</html>

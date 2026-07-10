@@ -37,16 +37,26 @@ const CATALOG_CITY_IDS = [
   'north-baltimore', 'carey', 'leipsic', 'arlington', 'pandora', 'upper-sandusky',
   'fremont', 'wapakoneta', 'defiance', 'napoleon', 'bryan', 'wauseon',
   'port-clinton', 'catawba-island', 'put-in-bay', 'kelleys-island',
+  'norwalk', 'st-marys', 'celina',
   // Central
   'bellefontaine', 'kenton', 'richwood', 'larue', 'prospect', 'green-camp',
   'marysville', 'marion', 'delaware', 'troy', 'piqua', 'sidney', 'greenville',
   'versailles', 'mansfield', 'ontario', 'ashland', 'bucyrus', 'galion', 'willard',
+  'lakeview', 'russells-point',
   // Northeast
   'akron', 'cuyahoga-falls', 'kent', 'stow', 'hudson', 'tallmadge', 'barberton',
   'wadsworth', 'portage-lakes', 'canton', 'massillon', 'north-canton', 'hartville',
   'alliance', 'medina', 'ravenna', 'streetsboro', 'orrville', 'dover',
   'new-philadelphia', 'youngstown', 'warren', 'boardman', 'austintown', 'niles',
-  'girard', 'struthers', 'canfield', 'salem', 'columbiana',
+  'girard', 'struthers', 'canfield', 'salem', 'columbiana', 'wooster',
+  // Southeast
+  'zanesville', 'cambridge', 'coshocton', 'marietta', 'belpre', 'athens',
+  'nelsonville', 'logan', 'new-lexington', 'chillicothe', 'waverly', 'portsmouth',
+  'ironton', 'jackson', 'wellston', 'mcarthur', 'gallipolis', 'pomeroy',
+  'st-clairsville', 'steubenville', 'cadiz', 'woodsfield', 'caldwell', 'mcconnelsville',
+  // Southwest
+  'springfield', 'urbana', 'washington-court-house', 'hillsboro', 'greenfield',
+  'wilmington', 'eaton', 'georgetown', 'ripley', 'west-union', 'peebles',
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);

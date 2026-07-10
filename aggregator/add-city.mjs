@@ -40,7 +40,7 @@ if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) die(`id "${id}" must be kebab-case (
 if (!REGION_ORDER.includes(region)) die(`region "${region}" is not in REGION_ORDER: ${REGION_ORDER.join(', ')}`);
 if (CITIES.some((c) => c.id === id)) die(`id "${id}" already exists in CITIES`);
 
-const REGION_CONST = { 'Northwest Ohio': 'NW', 'Central Ohio': 'CENTRAL', 'Northeast Ohio': 'NE' }[region];
+const REGION_CONST = { 'Northwest Ohio': 'NW', 'Central Ohio': 'CENTRAL', 'Northeast Ohio': 'NE', 'Southeast Ohio': 'SE', 'Southwest Ohio': 'SW' }[region];
 if (!REGION_CONST) die(`no cities.js region const mapped for "${region}" — edit cities.js by hand`);
 
 // Collision warning: existing matcher name that is a trailing whole-word of the new
@@ -62,6 +62,13 @@ const namesEntry = `  ['${id}', ${JSON.stringify(name)}],`;
 const cLines = readFileSync(CITIES_FILE, 'utf8').split('\n');
 let cAt = -1;
 for (let i = 0; i < cLines.length; i++) if (new RegExp(`region:\\s*${REGION_CONST}\\b`).test(cLines[i])) cAt = i;
+if (cAt === -1) {
+  // First town of a brand-new region: anchor on the CITIES array's closing `];`
+  // (a `// --- <region> ---` section comment is cosmetic; the picker groups by
+  // the region field, not by file order).
+  const open = cLines.findIndex((l) => l.startsWith('export const CITIES'));
+  for (let i = open + 1; i < cLines.length; i++) if (/^\];/.test(cLines[i])) { cAt = i - 1; break; }
+}
 if (cAt === -1) die(`could not find an existing ${REGION_CONST} row in cities.js to anchor the insert`);
 
 // towns.mjs: put the new matcher BEFORE the earliest existing name that is a shorter

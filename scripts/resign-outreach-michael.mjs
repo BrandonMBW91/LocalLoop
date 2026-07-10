@@ -1,28 +1,43 @@
-// Re-sign every outreach draft + follow-up from "Brandon" to "Michael", so the
-// sender name matches the "Michael Williams" mailing address in the CAN-SPAM
-// signature block. Idempotent (running twice is a no-op).
-//   node scripts/resign-outreach-michael.mjs [--dry-run]
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+// One-time re-sign of all outreach copy from "Brandon" to "Michael" (user
+// directive Jul 9 2026 — public-facing name is Michael / Michael Williams).
+// RUN ON THE DESKTOP (the machine that owns outreach/) from the repo root:
+//   node scripts/resign-outreach-michael.mjs           # apply
+//   node scripts/resign-outreach-michael.mjs --dry-run # count only
+// Idempotent: rewrites the standalone "Brandon" signature line and the
+// "I'm Brandon," intro in queued drafts, follow-ups, and the two draft
+// assemblers. Already-sent emails are unaffected (this only edits files the
+// sender reads going forward).
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = dirname(HERE);
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = join(REPO, 'outreach');
 const DRY = process.argv.includes('--dry-run');
 
-let changed = 0;
-for (const sub of ['drafts', 'followups']) {
-  const dir = join(ROOT, 'outreach', sub);
-  let files;
-  try { files = readdirSync(dir); } catch { continue; }
-  for (const f of files) {
-    if (!f.endsWith('.txt') || f === 'INDEX.txt') continue;
-    const p = join(dir, f);
-    const orig = readFileSync(p, 'utf8');
-    const next = orig
-      .replace(/^I'm Brandon,/gm, "I'm Michael,")   // intro line
-      .replace(/^Brandon$/gm, 'Michael');            // signature line
-    if (next !== orig) { changed++; if (!DRY) writeFileSync(p, next); }
+const resign = (text) => text
+  .replaceAll("I'm Brandon,", "I'm Michael,")
+  .replace(/^Brandon$/gm, 'Michael');
+
+let files = 0, hits = 0;
+const fix = (path) => {
+  const before = readFileSync(path, 'utf8');
+  const after = resign(before);
+  if (after !== before) {
+    hits++;
+    if (!DRY) writeFileSync(path, after);
   }
+  files++;
+};
+
+for (const dir of ['drafts', 'followups']) {
+  const d = join(OUT, dir);
+  if (!existsSync(d)) continue;
+  for (const f of readdirSync(d)) if (f.endsWith('.txt')) fix(join(d, f));
 }
-console.log(`${changed} draft(s) ${DRY ? 'would be ' : ''}re-signed Brandon -> Michael.`);
+for (const f of ['assemble-drafts.cjs', 'assemble-truck-drafts.mjs']) {
+  if (existsSync(join(OUT, f))) fix(join(OUT, f));
+}
+
+console.log(`${hits} file(s) ${DRY ? 'would be ' : ''}re-signed Michael (of ${files} scanned).`);
+if (!DRY && hits) console.log('Spot-check one draft, then the sender uses the new signature from its next run.');

@@ -5,13 +5,13 @@
 # Claude's memory. AES-256 / PBKDF2 — safe to upload to Google Drive or copy to
 # USB; useless without the password.
 #
-# Run on the OLD (Windows) machine, from the repo root:
+# Run from the repo root:
 #   bash scripts/transfer-bundle.sh
 # (optional first arg = output path; default ~/Desktop/localloop-transfer.enc)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-MEMORY="C:/Users/micha/.claude/projects/C--Users-micha-New/memory"
+MEMORY="$HOME/.claude/projects/-Users-brandonw-localloop-memory-restore/memory"
 OUT="${1:-$HOME/Desktop/localloop-transfer.enc}"
 
 if [ -z "${BUNDLE_PASS:-}" ]; then
