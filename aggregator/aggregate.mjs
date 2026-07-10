@@ -453,6 +453,7 @@ async function main() {
           .select('city_id,title,start_at,venue')
           .gte('start_at', lo)
           .lte('start_at', hi)
+          .order('start_at', { ascending: true }).order('id', { ascending: true }) // stable paging; without it a >1000-row window can skip a near-dup
           .range(from, from + 999);
         dbRows.push(...(page || []));
         if (!page || page.length < 1000) break;

@@ -15,6 +15,11 @@ import { CITIES } from '../src/data/cities.js';
 loadDotEnv();
 const STRICT = process.argv.includes('--strict');
 const THIN = Number(process.env.THIN || 5);
+// Known-legacy empties the cron whitelists (--allow=a,b,c) so the strict guard only
+// trips on an UNexpected new ghost town, not the towns we already know are empty.
+const ALLOW = new Set(
+  (process.argv.find((a) => a.startsWith('--allow=')) || '').slice('--allow='.length).split(',').map((s) => s.trim()).filter(Boolean),
+);
 
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -30,6 +35,7 @@ for (let from = 0; ; from += 1000) {
   const { data, error } = await sb
     .from('events')
     .select('city_id')
+    .eq('status', 'approved') // match the app + the rest of the pipeline (pending/rejected don't show)
     .gte('start_at', nowIso)
     .range(from, from + 999);
   if (error) { console.error(error.message); process.exit(1); }
@@ -59,7 +65,13 @@ if (ghosts.length) console.log(`\n⚠ GHOST TOWNS (0 events, still in picker): $
 else console.log('\n✔ no ghost towns — every picker town has upcoming events.');
 if (thin.length) console.log(`… thin (<${THIN}): ${thin.map((r) => `${r.name}:${r.n}`).join(', ')}`);
 
-if (STRICT && ghosts.length) {
-  console.error(`\nstrict: ${ghosts.length} ghost town(s) in the picker → failing.`);
+// The strict gate ignores the known-legacy allow-list, so it only fails on a NEW ghost.
+const strictGhosts = ghosts.filter((r) => !ALLOW.has(r.id));
+if (ALLOW.size && ghosts.length) {
+  const allowed = ghosts.filter((r) => ALLOW.has(r.id)).map((r) => r.name);
+  if (allowed.length) console.log(`  (allowed empties, ignored by --strict: ${allowed.join(', ')})`);
+}
+if (STRICT && strictGhosts.length) {
+  console.error(`\nstrict: ${strictGhosts.length} UNEXPECTED ghost town(s) in the picker → failing: ${strictGhosts.map((r) => r.name).join(', ')}`);
   process.exit(1);
 }
