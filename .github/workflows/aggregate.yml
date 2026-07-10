@@ -126,13 +126,9 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          set -o pipefail
-          cd site && zip -qr ../site.zip . && cd ..
-          curl -sf -X POST "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys" \
-            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-            -H "Content-Type: application/zip" \
-            --data-binary @site.zip \
-            -o deploy.json
-          head -c 300 deploy.json
-          grep -q '"id"' deploy.json
+        # Use the CLI --prod deploy, which explicitly PUBLISHES. The old raw zip POST to
+        # /sites/{id}/deploys uploaded the files but left the deploy "ready" yet
+        # UNPUBLISHED (2026-07-10: an 8.3k-file deploy sat unpublished, so localloop.io
+        # kept serving the previous deploy and the SEO/portal/widget pages 404'd). --dir
+        # deploys site/ as-is (no build), --site targets the site without a link.
+        run: npx --yes netlify-cli deploy --prod --dir=site --site "$NETLIFY_SITE_ID" --message "aggregate ${{ github.run_id }}"
