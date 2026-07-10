@@ -6,7 +6,7 @@ import { useApp } from '../src/context/AppContext';
 import { fetchCityUsers } from '../src/lib/db';
 import { rateForUsers } from '../src/data/pricing';
 import { formatCount } from '../src/utils/dates';
-import { REGION_LINK, CHECKOUT_BY_TIER, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, CHECKOUT_ANNUAL_BY_TIER } from '../src/data/checkout';
+import { REGION_LINK, CHECKOUT_BY_TIER, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, CHECKOUT_ANNUAL_BY_TIER, DEAL_LINK } from '../src/data/checkout';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 // Hosted advertise page + live Stripe Payment Links. Purchases stay on the web
@@ -139,6 +139,7 @@ export default function PromoteScreen() {
       <View style={styles.rateCard}>
         <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={known ? `$${rate.featured7}` : '$…'} />
         <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${links ? ' · tap to buy' : ' · email us'}`} price={known ? `$${rate.featured30}` : '$…'} url={links ? links.featured30 : undefined} />
+        <RateRow label="Local Deal" sub="Your coupon or special in your town's Deals list · monthly · tap to buy" price="$9/mo" url={DEAL_LINK} />
         <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${links ? ' · tap to buy' : ' · email us'}`} price={known ? `$${rate.sponsor}/mo` : '$…'} url={links ? links.town : undefined} />
         <RateRow label="Metro sponsor" sub="A whole metro (Toledo, Akron, Canton, and more) · monthly · tap to buy" price="$39/mo" url={METRO_LINK} />
         <RateRow label="All towns" sub="Every town we cover · monthly · tap to buy" price="$79/mo" url={REGION_LINK} />

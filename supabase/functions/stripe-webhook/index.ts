@@ -184,6 +184,39 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
         });
       }
+
+      // Local Deal ($9/mo) -> a row in the deals table (shown in the app's Deals
+      // list), NOT a between-listings ad. resolvedCity is guaranteed here (the
+      // cityIds emptiness check above already alerted on an unresolvable town).
+      if (product === 'deal') {
+        const dealoffer = clamp(field(s, 'dealoffer'), 120);
+        const { error: dealErr } = await supabase.from('deals').upsert({
+          city_id: resolvedCity,
+          business_name: business,
+          title: dealoffer || 'Local deal',
+          link_url: link || null,
+          active: true,
+          stripe_customer_id: custId,
+          stripe_subscription_id: subId,
+          stripe_session_id: s.id,
+        }, { onConflict: 'stripe_session_id', ignoreDuplicates: true });
+        if (dealErr) throw dealErr;
+        await sendEmail(
+          `New Local Deal: ${business} (${resolvedCity})`,
+          `A Local Deal was just purchased and is live.\n\nBusiness: ${business}\nDeal: ${dealoffer || '(none)'}\nTown: ${resolvedCity}\nLink: ${link || '(none)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nManage it in the app: Settings -> MODERATOR -> Manage Deals.`,
+        );
+        const dealBuyer = s.customer_details?.email;
+        if (dealBuyer) {
+          await resendSend(
+            dealBuyer,
+            'Your Local Loop deal is live',
+            `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer}" is now showing in ${resolvedCity} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+          );
+        }
+        return new Response(JSON.stringify({ received: true, fulfilled: 'deal created' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       const endsAt = null;
 
       const rows = cityIds.map((city_id) => ({
@@ -236,6 +269,9 @@ Deno.serve(async (req) => {
       await supabase.from('sponsors')
         .update({ active: false, paused_reason: 'canceled' })
         .eq('stripe_subscription_id', event.data.object.id);
+      await supabase.from('deals')
+        .update({ active: false, paused_reason: 'canceled' })
+        .eq('stripe_subscription_id', event.data.object.id);
     } else if (event.type === 'invoice.payment_failed') {
       // Post-2025 Stripe API versions move invoice.subscription under
       // parent.subscription_details — read both so the handler works on any
@@ -244,6 +280,9 @@ Deno.serve(async (req) => {
       const subId = obj.subscription ?? obj.parent?.subscription_details?.subscription ?? null;
       if (subId) {
         await supabase.from('sponsors')
+          .update({ active: false, paused_reason: 'payment_failed' })
+          .eq('stripe_subscription_id', subId);
+        await supabase.from('deals')
           .update({ active: false, paused_reason: 'payment_failed' })
           .eq('stripe_subscription_id', subId);
       }
@@ -255,6 +294,10 @@ Deno.serve(async (req) => {
       const subId = obj.subscription ?? obj.parent?.subscription_details?.subscription ?? null;
       if (subId) {
         await supabase.from('sponsors')
+          .update({ active: true, paused_reason: null })
+          .eq('stripe_subscription_id', subId)
+          .eq('paused_reason', 'payment_failed');
+        await supabase.from('deals')
           .update({ active: true, paused_reason: null })
           .eq('stripe_subscription_id', subId)
           .eq('paused_reason', 'payment_failed');

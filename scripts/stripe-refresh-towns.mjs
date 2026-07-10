@@ -14,7 +14,7 @@
 
 import Stripe from 'stripe';
 import { CITIES } from '../src/data/cities.js';
-import { CHECKOUT_BY_TIER, CHECKOUT_ANNUAL_BY_TIER } from '../src/data/checkout.js';
+import { CHECKOUT_BY_TIER, CHECKOUT_ANNUAL_BY_TIER, DEAL_LINK } from '../src/data/checkout.js';
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('Set STRIPE_SECRET_KEY (the tier links live in LIVE mode, so sk_live_...).');
@@ -50,6 +50,13 @@ const TOWN_FIELDS = [
   text('headline', 'Your ad headline'),
   { key: 'town', label: { type: 'custom', custom: 'Your town' }, type: 'dropdown', dropdown: { options } },
 ];
+// The Local Deal link carries the town dropdown too, but its middle field is the
+// deal offer, not an ad headline — so it gets its OWN field set on refresh.
+const DEAL_FIELDS = [
+  text('businessname', 'Business name'),
+  text('dealoffer', 'Your deal, e.g. 2-for-1 Tuesdays'),
+  { key: 'town', label: { type: 'custom', custom: 'Your town' }, type: 'dropdown', dropdown: { options } },
+];
 
 // The tier links that carry a town dropdown (All-Region has none — skip it),
 // with the metadata.product the webhook routes on.
@@ -61,6 +68,7 @@ const targets = [
   // Annual town links carry the SAME 122-town dropdown, so refresh them too.
   ...Object.entries(CHECKOUT_ANNUAL_BY_TIER).flatMap(([tier, l]) =>
     l.town ? [{ name: `${tier} town annual`, url: l.town, product: 'town_sponsor' }] : []),
+  { name: 'Local Deal', url: DEAL_LINK, product: 'deal', fields: DEAL_FIELDS },
 ];
 
 // checkout.js stores the links' buy.stripe.com URLs, not their API ids — list
@@ -86,7 +94,7 @@ for (const t of targets) {
   }
   const current = link.custom_fields?.find((f) => f.key === 'town')?.dropdown?.options || [];
   console.log(`${t.name}: ${current.length} -> ${options.length} towns${APPLY ? '' : ' (dry run)'}`);
-  if (APPLY) await stripe.paymentLinks.update(link.id, { custom_fields: TOWN_FIELDS });
+  if (APPLY) await stripe.paymentLinks.update(link.id, { custom_fields: t.fields || TOWN_FIELDS });
 }
 if (!APPLY) console.log('\nNothing written. Re-run with --apply to update the links.');
 if (problems) process.exit(1);

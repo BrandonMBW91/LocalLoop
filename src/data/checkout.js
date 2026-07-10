@@ -30,3 +30,7 @@ export const METRO_ANNUAL_LINK = 'https://buy.stripe.com/eVq8wQ6TdgZc7Gu4kn4Vy07
 export const CHECKOUT_ANNUAL_BY_TIER = {
   Founding: { town: 'https://buy.stripe.com/3cIdRa0uPfV8bWK3gj4Vy05' }, // $190/yr
 };
+
+// Local Deal — cheap self-serve micro-SKU (metadata.product=deal + businessname,
+// dealoffer, town). The webhook creates a deals row shown in the app's Deals list.
+export const DEAL_LINK = 'https://buy.stripe.com/8x25kE5P9dN06CqcQT4Vy09'; // $9/mo

@@ -11,7 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES, REGION_ORDER } from '../src/data/cities.js';
 import { rateForUsers } from '../src/data/pricing.js';
-import { REGION_LINK, CHECKOUT_BY_TIER, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, CHECKOUT_ANNUAL_BY_TIER } from '../src/data/checkout.js';
+import { REGION_LINK, CHECKOUT_BY_TIER, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, CHECKOUT_ANNUAL_BY_TIER, DEAL_LINK } from '../src/data/checkout.js';
 
 loadDotEnv();
 const here = dirname(fileURLToPath(import.meta.url));
@@ -137,6 +137,12 @@ const html = `<!DOCTYPE html><html lang="en"><head>
     <div class="amt" id="featAmt"></div>
     <ul><li>Float an event, sale, or food truck to the top</li><li>★ Featured badge and highlight</li><li>Great for a one-time event or grand opening</li><li>Shorter 7-day option available too</li></ul>
     <a class="buy alt" id="featBuy" href="#">Feature my listing</a>
+  </div>
+  <div class="price">
+    <span class="tag">Just $9</span><h3>Local Deal</h3>
+    <div class="amt">$9<span>/month</span><small>A coupon or special in the Deals list</small></div>
+    <ul><li>Your offer shown in your town's Deals section</li><li>Perfect for a standing special or coupon</li><li>The easiest, cheapest way in front of locals</li><li>Cancel anytime</li></ul>
+    <a class="buy" href="${DEAL_LINK}">Post a deal</a>
   </div>
   <div class="price">
     <span class="tag">Regional</span><h3>Metro Bundle</h3>

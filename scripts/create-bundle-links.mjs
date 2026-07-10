@@ -17,6 +17,7 @@ import { METRO_BUNDLES, BUNDLE_PRICING } from '../src/data/bundles.js';
 if (!process.env.STRIPE_SECRET_KEY) { console.error('Set STRIPE_SECRET_KEY (sk_live_...).'); process.exit(1); }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const APPLY = process.argv.includes('--apply');
+const ONLY = (process.argv.find((a) => a.startsWith('--sku=')) || '').split('=')[1] || null; // create just this product
 
 const townOptions = CITIES.map((c) => ({ label: c.name, value: c.id.replace(/-/g, '') })).sort((a, b) => a.label.localeCompare(b.label));
 const metroOptions = Object.entries(METRO_BUNDLES).map(([k, b]) => ({ label: b.name, value: k })).sort((a, b) => a.label.localeCompare(b.label));
@@ -32,10 +33,14 @@ const SKUS = [
     fields: [text('businessname', 'Business name'), text('headline', 'Your ad headline'), dropdown('metro', 'Your metro area', metroOptions)] },
   { nick: 'All-Region Annual', product: 'all_region', amount: BUNDLE_PRICING.allRegion.annual * 100, interval: 'year',
     fields: [text('businessname', 'Business name'), text('headline', 'Your ad headline')] },
+  // Local Deal — cheap self-serve micro-SKU (big-ticket #6). Creates a deals row.
+  { nick: 'Local Deal', product: 'deal', amount: 900, interval: 'month',
+    fields: [text('businessname', 'Business name'), text('dealoffer', 'Your deal, e.g. 2-for-1 Tuesdays'), dropdown('town', 'Your town', townOptions)] },
 ];
 
 console.log(`Metro options: ${metroOptions.map((m) => m.value).join(', ')} | Town options: ${townOptions.length}`);
 for (const s of SKUS) {
+  if (ONLY && s.product !== ONLY && !s.nick.toLowerCase().includes(ONLY.toLowerCase())) continue;
   console.log(`\n${s.nick} — $${s.amount / 100}/${s.interval} — product=${s.product} — ${s.fields.length} fields`);
   if (!APPLY) { console.log('  (dry run — nothing created)'); continue; }
   const price = await stripe.prices.create({
