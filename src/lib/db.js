@@ -805,8 +805,8 @@ export async function fetchMetrics(cityId) {
 
   const [evRows, gsRows, ftRows, spRows] = await Promise.all([
     pull('events', 'id,title,view_count,featured,featured_until,city_id'),
-    pull('garage_sales', 'id,title,view_count,featured,featured_until,city_id'),
-    pull('food_trucks', 'id,name,view_count,featured,featured_until,city_id'),
+    pull('garage_sales', 'id,title,view_count,featured,featured_until,city_id,start_date,end_date,created_by'),
+    pull('food_trucks', 'id,name,view_count,featured,featured_until,city_id,date,created_by,source_uid'),
     pullSponsors(),
   ]);
   const sumViews = (rows) => rows.reduce((n, r) => n + (r.view_count || 0), 0);
@@ -843,6 +843,29 @@ export async function fetchMetrics(cityId) {
     adItems: spRows
       .filter((r) => r.active)
       .map((r) => ({ id: r.id, title: r.title, city_id: r.city_id, link_url: r.link_url })),
+    // Every live garage sale / food truck with where-it-came-from, so the
+    // metrics rows can expand into an inspectable list. Events are omitted —
+    // thousands of aggregator rows would bloat the payload for no admin value.
+    // source: 'feed' = aggregator/calendar ingest, 'user' = a signed-in poster,
+    // 'anon' = no account attached (usually an owner/test insert).
+    listItems: {
+      garage_sale: gsRows.map((r) => ({
+        id: r.id,
+        title: r.title,
+        city_id: r.city_id,
+        when: r.start_date,
+        ended: r.end_date ? r.end_date < new Date().toISOString().slice(0, 10) : false,
+        source: r.created_by ? 'user' : 'anon',
+      })),
+      food_truck: ftRows.map((r) => ({
+        id: r.id,
+        title: r.name,
+        city_id: r.city_id,
+        when: r.date,
+        ended: r.date ? r.date < new Date().toISOString().slice(0, 10) : false,
+        source: r.source_uid ? 'feed' : r.created_by ? 'user' : 'anon',
+      })),
+    },
     top,
   };
 }

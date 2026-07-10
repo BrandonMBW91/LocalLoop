@@ -234,17 +234,70 @@ export default function MetricsScreen() {
         Views by type
       </ThemedText>
       <View style={styles.card}>
-        {['event', 'garage_sale', 'food_truck'].map((k, i) => (
-          <View key={k} style={[styles.breakRow, i > 0 && styles.rowBorder]}>
-            <View style={[styles.dot, { backgroundColor: KIND_COLOR[k] }]} />
-            <ThemedText size="body" style={{ flex: 1 }}>{KIND_LABEL[k]}</ThemedText>
-            <ThemedText size="small" color={colors.textMuted} style={{ marginRight: spacing.md }}>
-              {m.counts?.[k] ?? 0} live
-            </ThemedText>
-            <ThemedText size="body" weight="bold">{m.views?.[k] ?? 0}</ThemedText>
-            <Ionicons name="eye-outline" size={16} color={colors.textMuted} style={{ marginLeft: 4 }} />
-          </View>
-        ))}
+        {['event', 'garage_sale', 'food_truck'].map((k, i) => {
+          // Garage sales + food trucks expand into the actual listings (they
+          // stay countable-by-hand for a long time); events would be thousands.
+          const items = m.listItems?.[k];
+          const canExpand = Boolean(items?.length);
+          const row = (
+            <>
+              <View style={[styles.dot, { backgroundColor: KIND_COLOR[k] }]} />
+              <ThemedText size="body" style={{ flex: 1 }}>{KIND_LABEL[k]}</ThemedText>
+              <ThemedText size="small" color={colors.textMuted} style={{ marginRight: spacing.md }}>
+                {m.counts?.[k] ?? 0} live
+              </ThemedText>
+              <ThemedText size="body" weight="bold">{m.views?.[k] ?? 0}</ThemedText>
+              <Ionicons name="eye-outline" size={16} color={colors.textMuted} style={{ marginLeft: 4 }} />
+              {canExpand ? (
+                <Ionicons
+                  name={expanded === `kind-${k}` ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.textMuted}
+                  style={{ marginLeft: spacing.sm }}
+                />
+              ) : null}
+            </>
+          );
+          if (!canExpand) {
+            return <View key={k} style={[styles.breakRow, i > 0 && styles.rowBorder]}>{row}</View>;
+          }
+          return (
+            <React.Fragment key={k}>
+              <Pressable
+                style={[styles.breakRow, i > 0 && styles.rowBorder]}
+                onPress={() => toggle(`kind-${k}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`${KIND_LABEL[k]}: ${m.counts?.[k] ?? 0} live. Tap to ${expanded === `kind-${k}` ? 'hide' : 'see'} them.`}
+              >
+                {row}
+              </Pressable>
+              {expanded === `kind-${k}`
+                ? items.map((it) => (
+                    <Pressable
+                      key={`${k}-${it.id}`}
+                      style={[styles.detailRow, styles.rowBorder, { paddingLeft: spacing.lg }]}
+                      onPress={() => router.push(`/${KIND_ROUTE[k]}/${it.id}`)}
+                    >
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <ThemedText size="body" numberOfLines={1}>{it.title}</ThemedText>
+                        <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>
+                          {CITY_NAME[it.city_id] || it.city_id}
+                          {it.when ? ` · ${it.when}` : ''}
+                          {it.ended ? ' · ended' : ''}
+                        </ThemedText>
+                      </View>
+                      <View style={[styles.srcBadge, it.source === 'user' ? styles.srcUser : it.source === 'feed' ? styles.srcFeed : styles.srcAnon]}>
+                        <ThemedText size="small" weight="bold" color={colors.textInverse}>
+                          {it.source === 'user' ? 'User post' : it.source === 'feed' ? 'Auto feed' : 'No account'}
+                        </ThemedText>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginLeft: 4 }} />
+                    </Pressable>
+                  ))
+                : null}
+            </React.Fragment>
+          );
+        })}
       </View>
 
       {/* Top listings */}
@@ -333,6 +386,10 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
   rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.sm },
+  srcBadge: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.sm },
+  srcUser: { backgroundColor: colors.success },
+  srcFeed: { backgroundColor: colors.primary },
+  srcAnon: { backgroundColor: colors.textMuted },
   rank: {
     width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
   },
