@@ -21,6 +21,7 @@ const AGG = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(AGG);
 const CITIES_FILE = join(ROOT, 'src', 'data', 'cities.js');
 const TOWNS_FILE = join(AGG, 'towns.mjs');
+const WEBHOOK_FILE = join(ROOT, 'supabase', 'functions', 'stripe-webhook', 'index.ts');
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -86,6 +87,26 @@ if (tAt === -1) {
   for (let i = decl; i < tLines.length; i++) if (/^\s*\];/.test(tLines[i])) { tAt = i; break; }
 }
 
+// Webhook CATALOG_CITY_IDS: the edge function bakes its own town list (edge fns
+// can't import src). Without the new id here, a purchase from the town falls to the
+// manual owner-email path instead of fanning out. Order is irrelevant (it becomes a
+// Set), so we append before the array's closing `];`. Returns a plan so --dry-run can
+// preview it and the real run can apply + report it.
+function webhookCatalogPlan() {
+  let src;
+  try { src = readFileSync(WEBHOOK_FILE, 'utf8'); }
+  catch { return { msg: '… webhook source not found — skipping CATALOG_CITY_IDS (add "' + id + '" by hand)' }; }
+  const start = src.indexOf('const CATALOG_CITY_IDS = [');
+  const end = start === -1 ? -1 : src.indexOf('\n];', start);
+  if (end === -1) return { msg: `⚠ could not locate CATALOG_CITY_IDS array — add '${id}' to the webhook by hand` };
+  if (new RegExp(`'${reEsc(id)}'`).test(src.slice(start, end))) return { msg: `✓ webhook CATALOG_CITY_IDS already lists "${id}"` };
+  const next = `${src.slice(0, end)}\n  '${id}', // added by add-city.mjs${src.slice(end)}`;
+  return {
+    msg: `✓ added "${id}" to webhook CATALOG_CITY_IDS — REDEPLOY the function to apply (supabase functions deploy stripe-webhook)`,
+    write: () => writeFileSync(WEBHOOK_FILE, next),
+  };
+}
+
 const cov = lat && lng ? anchorFor(Number(lat), Number(lng)) : undefined;
 const covMsg = cov === undefined
   ? '… no --lat/--lng — anchor coverage unchecked (add coords to verify ticketed coverage)'
@@ -94,9 +115,11 @@ const covMsg = cov === undefined
     : '⚠ NOT inside any anchor — add a NEW anchor to geo.mjs or this town gets ZERO ticketed events';
 
 if (DRY) {
+  const wh = webhookCatalogPlan();
   console.log('DRY RUN — nothing written.\n');
   console.log(`cities.js  (after line ${cAt + 1}):\n${citiesEntry}\n`);
   console.log(`towns.mjs  (before line ${tAt + 1}):\n${namesEntry}\n`);
+  console.log(wh.msg);
   console.log(covMsg);
   process.exit(0);
 }
@@ -105,16 +128,24 @@ cLines.splice(cAt + 1, 0, citiesEntry);
 writeFileSync(CITIES_FILE, cLines.join('\n'));
 tLines.splice(tAt, 0, namesEntry);
 writeFileSync(TOWNS_FILE, tLines.join('\n'));
+const wh = webhookCatalogPlan();
+if (wh.write) wh.write();
 console.log(`✓ inserted "${id}" into cities.js (${region}) and towns.mjs NAMES`);
+console.log(wh.msg);
 console.log(covMsg);
 
 console.log('\n── check-cities ──');
 try { execSync('node check-cities.mjs', { stdio: 'inherit', cwd: AGG }); }
 catch { die('check-cities failed — review the config above'); }
 
-console.log(`\nNext (see docs/NEW_CITY.md):
+console.log(`\nNext (see docs/NEW_CITY.md) — auto-done above: cities.js, towns.mjs, webhook catalog.
   1. Wire a feed for "${id}"  (event_sources iCal/jsonld row OR librarymarket.mjs LIBS)
-  2. node run-all.mjs            # aggregate + build pages
-  3. node check-content.mjs      # confirm "${id}" has events (not a ghost town)
-  4. bump src/version.js BUILD, then: npx eas update --branch production
-  5. git commit + push           # CI regenerates + deploys the website`);
+  2. node build-polygons.mjs     # add "${id}" boundary polygon (geocode assignment)
+  3. node run-all.mjs            # aggregate + build pages
+  4. node check-content.mjs      # confirm "${id}" has events (not a ghost town)
+  5. supabase functions deploy stripe-webhook --project-ref wtaefyspddadcrnovumk --no-verify-jwt
+                                 # ships the CATALOG_CITY_IDS add so ad purchases fan out
+  6. cd ../scripts && STRIPE_SECRET_KEY=sk_live_... node stripe-refresh-towns.mjs --apply
+                                 # adds "${id}" to the Stripe checkout town dropdowns
+  7. bump src/version.js BUILD, then: npx eas update --branch production
+  8. git commit + push           # CI regenerates + deploys the website`);
