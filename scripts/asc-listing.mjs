@@ -53,7 +53,7 @@ console.log('\nlocalization id:', en.id, '| version:', editable.attributes.versi
 
 // Update promotional text only (takes effect without a review submission).
 if (process.argv.includes('--set-promo')) {
-  const PROMO = 'Now covering 120 Ohio towns across all five regions. Find local events, garage sales, and food trucks near you, updated every morning. Free.';
+  const PROMO = 'Now covering over 120 Ohio towns across all five regions. Find local events, garage sales, and food trucks near you, updated every morning. Free.';
   const res = await api(`/v1/appStoreVersionLocalizations/${en.id}`, {
     method: 'PATCH',
     body: JSON.stringify({ data: { type: 'appStoreVersionLocalizations', id: en.id, attributes: { promotionalText: PROMO } } }),
@@ -65,7 +65,7 @@ if (process.argv.includes('--set-promo')) {
 // facts fixed (24 -> 79 towns, + Northeast Ohio and its metros, + the map view).
 const DESCRIPTION = `Everything happening around Ohio, in one free app.
 
-Local Loop brings together local events, garage sales, and food trucks across 120 towns in all five regions of Ohio, from Toledo and Findlay to Akron, Canton, Youngstown, Athens, and Springfield, all in one place, grouped by Today, This Week, and beyond.
+Local Loop brings together local events, garage sales, and food trucks across over 120 towns in all five regions of Ohio, from Toledo and Findlay to Akron, Canton, Youngstown, Athens, and Springfield, all in one place, grouped by Today, This Week, and beyond.
 
 Open it to answer one question: what's going on around here? Browse what's on today, this weekend, or later. Save the ones you like, get directions, and add them to your calendar in a tap.
 
@@ -77,9 +77,9 @@ What you'll find:
 
 Built by a local, for locals. Post your own event or garage sale free in seconds, no account needed to browse.
 
-Towns include Findlay, Toledo, Lima, Akron, Canton, Youngstown, Athens, Springfield, Mansfield, Marion, and 100 more across Northwest, Central, Northeast, Southeast, and Southwest Ohio.`;
+Towns include Findlay, Toledo, Lima, Akron, Canton, Youngstown, Athens, Springfield, Mansfield, Marion, and dozens more across Northwest, Central, Northeast, Southeast, and Southwest Ohio.`;
 
-const WHATS_NEW = `Local Loop now covers 120 towns across all five regions of Ohio, from Toledo and Findlay to Athens and Springfield. Plus a new map view: see what's on around you, then zoom out to catch nearby towns.`;
+const WHATS_NEW = `Local Loop now covers over 120 towns across all five regions of Ohio, from Toledo and Findlay to Athens and Springfield. Plus a new map view: see what's on around you, then zoom out to catch nearby towns.`;
 
 // Pre-stage the corrected description on the NEXT version so it ships with the
 // next binary. A live (READY_FOR_SALE) version's description can't be edited in
