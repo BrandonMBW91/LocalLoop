@@ -138,4 +138,6 @@ export const CITIES = [
   { id: 'ripley', name: "Ripley", state: 'OH', region: SW, tagline: "Freedom's landing on the Ohio" },
   { id: 'west-union', name: "West Union", state: 'OH', region: SW, tagline: "Adams County seat" },
   { id: 'peebles', name: "Peebles", state: 'OH', region: SW, tagline: "Gateway to Serpent Mound" },
+  { id: 'xenia', name: "Xenia", state: 'OH', region: SW, tagline: "Bike trail crossroads of Ohio" },
+  { id: 'beavercreek', name: "Beavercreek", state: 'OH', region: SW, tagline: "Greene County's largest city" },
 ];

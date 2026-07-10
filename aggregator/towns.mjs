@@ -140,6 +140,8 @@ export const NAMES = [
   ['ripley', "Ripley"],
   ['west-union', "West Union"],
   ['peebles', "Peebles"],
+  ['xenia', "Xenia"],
+  ['beavercreek', "Beavercreek"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

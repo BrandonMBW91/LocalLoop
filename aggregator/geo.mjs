@@ -43,6 +43,10 @@ export const ANCHORS = [
   { name: 'Wilmington / Clinton', city: 'wilmington', lat: 39.445, lng: -83.828, radius: 15 },
   { name: 'Eaton / Preble', city: 'eaton', lat: 39.744, lng: -84.637, radius: 12 }, // tight: Dayton 24mi E, Richmond IN 18mi W
   { name: 'Brown / Adams', city: 'georgetown', lat: 38.870, lng: -83.680, radius: 18 }, // Georgetown, Ripley, West Union, Peebles
+  // Dayton ring towns (cores excluded): Beavercreek/Xenia + Wright State's Nutter
+  // Center. r=12 keeps it off Dayton city; core-Dayton venues drop via the town
+  // matcher (no served town to route to).
+  { name: 'Dayton Ring / Greene', city: 'beavercreek', lat: 39.720, lng: -84.010, radius: 12 },
 ];
 
 // Great-circle miles between two points (haversine).

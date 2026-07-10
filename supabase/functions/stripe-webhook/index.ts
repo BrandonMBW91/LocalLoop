@@ -57,6 +57,7 @@ const CATALOG_CITY_IDS = [
   // Southwest
   'springfield', 'urbana', 'washington-court-house', 'hillsboro', 'greenfield',
   'wilmington', 'eaton', 'georgetown', 'ripley', 'west-union', 'peebles',
+  'xenia', 'beavercreek',
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);
