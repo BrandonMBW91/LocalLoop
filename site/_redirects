@@ -1,3 +1,8 @@
+# Serve the Apple App Site Association from a non-hidden file — Netlify zip
+# deploys drop dot-directories, so /.well-known/ 404s. This rewrite (200, not
+# redirect) serves the JSON with the right path for iOS universal links.
+/.well-known/apple-app-site-association  /aasa.json  200
+
 # Deep-link paths: the app intercepts these via Universal Links when installed.
 # When opened in a browser (app not installed), fall back to the App Store.
 /event/*         https://apps.apple.com/app/id6780306721  302
