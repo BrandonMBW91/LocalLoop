@@ -20,6 +20,13 @@ const OUT = join(here, '..', 'site', 'advertise.html');
 const MAIL = 'mailto:localloop@localloop.io?subject=Advertising%20on%20Local%20Loop';
 
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+// Gate the $9 Local Deal buy button on the same flag as the self-serve pages
+// (SEO_ITEM_PAGES). A buyable deal link must NEVER be published by the daily cron
+// before the deal-aware webhook is deployed — the live webhook has no product='deal'
+// branch, so a deal purchase would be mis-fulfilled as a blank sponsor ad and the
+// buyer charged monthly. Flip SEO_ITEM_PAGES=1 at deploy, AFTER the webhook redeploy.
+const DEALS_LIVE = process.env.SEO_ITEM_PAGES === '1';
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
 // Per-town monthly active users = distinct devices seen in last 30 days.
@@ -138,12 +145,12 @@ const html = `<!DOCTYPE html><html lang="en"><head>
     <ul><li>Float an event, sale, or food truck to the top</li><li>★ Featured badge and highlight</li><li>Great for a one-time event or grand opening</li><li>Shorter 7-day option available too</li></ul>
     <a class="buy alt" id="featBuy" href="#">Feature my listing</a>
   </div>
-  <div class="price">
+  ${DEALS_LIVE ? `<div class="price">
     <span class="tag">Just $9</span><h3>Local Deal</h3>
     <div class="amt">$9<span>/month</span><small>A coupon or special in the Deals list</small></div>
     <ul><li>Your offer shown in your town's Deals section</li><li>Perfect for a standing special or coupon</li><li>The easiest, cheapest way in front of locals</li><li>Cancel anytime</li></ul>
     <a class="buy" href="${DEAL_LINK}">Post a deal</a>
-  </div>
+  </div>` : ''}
   <div class="price">
     <span class="tag">Regional</span><h3>Metro Bundle</h3>
     <div class="amt">$39<span>/month</span><small>A whole metro: Toledo, Akron, Canton and more</small></div>
