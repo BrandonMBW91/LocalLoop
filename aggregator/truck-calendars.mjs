@@ -54,6 +54,12 @@ const UA = { 'User-Agent': 'Mozilla/5.0 (LocalLoop truck-calendars)' };
 const sha1 = (s) => createHash('sha1').update(s).digest('hex');
 
 // --- minimal iCal parser: unfold, then split VEVENTs ---
+// A stop the owner clearly doesn't want on their public list. The reliable signal is
+// the calendar's own Private flag (CLASS:PRIVATE / CONFIDENTIAL) or a Cancelled status;
+// this title keyword list is a backstop for owners who forget to set that. Kept
+// conservative to avoid dropping legit public stops (e.g. "Holiday Market" is fine).
+const PERSONAL_RE = /\b(private|personal|appointment|appt\.?|dentist|doctor|dr\.|vacation|day ?off|out of (office|town)|not available|unavailable|do not book|blocked|birthday|anniversary|family (time|dinner|event|gathering|party)|closed)\b/i;
+
 function parseICS(text) {
   const unfolded = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
   const events = [];
@@ -65,7 +71,7 @@ function parseICS(text) {
       const r = new RegExp('^' + name + '(;[^:\\n]*)?:(.*)$', 'm').exec(block);
       return r ? { params: r[1] || '', value: r[2].trim() } : null;
     };
-    events.push({ summary: get('SUMMARY'), location: get('LOCATION'), dtstart: get('DTSTART'), dtend: get('DTEND'), desc: get('DESCRIPTION') });
+    events.push({ summary: get('SUMMARY'), location: get('LOCATION'), dtstart: get('DTSTART'), dtend: get('DTEND'), desc: get('DESCRIPTION'), cls: get('CLASS'), status: get('STATUS') });
   }
   return events;
 }
@@ -118,7 +124,7 @@ console.log(`${cals.length} enabled truck calendar(s).`);
 
 let totalStops = 0;
 for (const cal of cals) {
-  let stops = 0, error = null;
+  let stops = 0, skipped = 0, error = null;
   try {
     const res = await safeFeedFetch(cal.ical_url, UA);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -128,6 +134,12 @@ for (const cal of cals) {
     for (const ev of parseICS(text)) {
       const start = whenET(ev.dtstart);
       if (!start || start.date < todayET) continue; // future stops only
+      // Privacy: never publish an event the owner marked Private/Confidential or
+      // Cancelled in their calendar, or whose title reads as a personal appointment.
+      const vis = (ev.cls?.value || '').toUpperCase();
+      if (vis === 'PRIVATE' || vis === 'CONFIDENTIAL') { skipped++; continue; }
+      if ((ev.status?.value || '').toUpperCase() === 'CANCELLED') { skipped++; continue; }
+      if (PERSONAL_RE.test(ev.summary?.value || '')) { skipped++; continue; }
       const loc = (ev.summary?.value || ev.location?.value || cal.name).slice(0, 200);
       const end = whenET(ev.dtend);
       rows.push({
@@ -140,11 +152,23 @@ for (const cal of cals) {
       });
     }
     stops = rows.length;
-    if (!DRY && rows.length) {
-      const { error: upErr } = await sb.from('food_trucks').upsert(rows, { onConflict: 'source_uid', ignoreDuplicates: false });
-      if (upErr) throw upErr;
+    if (!DRY) {
+      if (rows.length) {
+        const { error: upErr } = await sb.from('food_trucks').upsert(rows, { onConflict: 'source_uid', ignoreDuplicates: false });
+        if (upErr) throw upErr;
+      }
+      // Reconcile: remove this truck's FUTURE calendar-stops that are no longer in the
+      // feed — a stop the owner deleted, or one now filtered out as private/personal —
+      // so the public food-truck side always mirrors the current calendar. Only runs on
+      // a successful fetch (inside the try), so a temporarily-down feed never wipes stops.
+      let del = sb.from('food_trucks').delete()
+        .eq('city_id', cal.city_id).eq('name', cal.name)
+        .gte('date', todayET).not('source_uid', 'is', null);
+      if (rows.length) del = del.not('source_uid', 'in', `(${rows.map((r) => r.source_uid).join(',')})`);
+      const { error: delErr } = await del;
+      if (delErr) throw delErr;
     }
-    console.log(`  ${cal.name} (${cal.city_id}): ${stops} upcoming stop(s)${DRY ? ' [dry]' : ''}`);
+    console.log(`  ${cal.name} (${cal.city_id}): ${stops} upcoming stop(s)${skipped ? `, ${skipped} private/personal skipped` : ''}${DRY ? ' [dry]' : ''}`);
   } catch (e) {
     error = e.message;
     console.log(`  ! ${cal.name}: ${error}`);

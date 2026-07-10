@@ -119,7 +119,7 @@ export default function NewFoodTruckScreen() {
       setCalUrl('');
       Alert.alert(
         "You're all set! 🚚",
-        `Your stops will start showing in ${city.name} automatically from your calendar. No need to post them one by one.`,
+        `Your stops will start showing in ${city.name} automatically from your calendar. No need to post them one by one.\n\nAnything you mark Private in your calendar stays off Local Loop.`,
         [{ text: 'Done', onPress: () => router.replace('/food-trucks') }]
       );
     } catch (e) {
@@ -196,6 +196,9 @@ export default function NewFoodTruckScreen() {
             </View>
             <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 8 }}>
               Add your Google Calendar or website calendar link once and we'll keep your stops updated automatically, so you never have to post them one by one. Just fill in your truck name and food type above first.
+            </ThemedText>
+            <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 8 }}>
+              Keep something private? Anything you mark Private in your calendar (or keep on a separate personal calendar) stays off Local Loop. Only your public stops show.
             </ThemedText>
             <TextInput
               value={calUrl}
