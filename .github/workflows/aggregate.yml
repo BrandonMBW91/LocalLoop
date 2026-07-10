@@ -52,6 +52,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node dedupe.mjs --apply
+      - name: Food-truck calendars (auto-ingest stops from registered calendars)
+        working-directory: aggregator
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node truck-calendars.mjs
       - name: Retention (drop aggregator events older than 60 days)
         working-directory: aggregator
         continue-on-error: true

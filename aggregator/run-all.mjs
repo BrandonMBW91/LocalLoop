@@ -21,6 +21,7 @@ const STEPS = [
   ['Ticketmaster', 'ticketmaster.mjs'],
   ['SeatGeek', 'seatgeek.mjs'],
   ['De-duplicate', 'dedupe.mjs --apply'],
+  ['Food-truck calendars (auto-ingest stops)', 'truck-calendars.mjs'],
   ['Retention (drop aggregator events >60d)', 'retention.mjs'],
   ['Geocode', 'geocode.mjs'],
   ['City boundaries (true town lines)', 'assign-boundaries.mjs'],

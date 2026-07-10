@@ -5,7 +5,7 @@
 // timestamps on CI (UTC) vs a local ET machine, breaking source_uid stability.
 const ET = 'America/New_York';
 
-function wallParts(dt) {
+export function wallParts(dt) {
   const p = new Intl.DateTimeFormat('en-US', {
     timeZone: ET, year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
