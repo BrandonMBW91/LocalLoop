@@ -38,6 +38,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { resolveMx, resolve4 } from 'node:dns/promises';
 import { execFileSync } from 'node:child_process';
+import os from 'node:os';
 import nodemailer from 'nodemailer';
 import { ImapFlow } from 'imapflow';
 import { orderPending } from './town-order.mjs';
@@ -74,6 +75,21 @@ const SUPPRESS = join(OUTREACH, 'suppress.txt');
   const addr = existsSync(addrFile) ? readFileSync(addrFile, 'utf8').trim() : '';
   if (!addr || /^\[SET MAILING ADDRESS/i.test(addr)) {
     console.log('HELD: outreach/mailing-address.txt is not set — CAN-SPAM requires a physical postal address in every email. No mail sent. Set the address, run node outreach/assemble-drafts.cjs and node outreach/assemble-truck-drafts.mjs --round2 (and again without --round2 for round 1), then re-run.');
+    process.exit(0);
+  }
+}
+// Machine guard: send ONLY from the automation host (the desktop). The daily
+// quota + warm-up ramp are derived from the machine-local, gitignored sent-log,
+// which is NOT synced across machines — so running the sender on a second machine
+// (the laptop) the same day would double the day's volume and reset the warm-up
+// ramp to 5/day. Refuse unless the hostname matches OUTREACH_HOST (default
+// BrandonPC, the desktop) or --any-host is passed. Sweeps below never run because
+// we exit first; that's intended (they mutate shared Zoho state too).
+{
+  const wantHost = (process.env.OUTREACH_HOST || g('OUTREACH_HOST') || 'BrandonPC').trim();
+  const thisHost = os.hostname();
+  if (!args['any-host'] && thisHost.toLowerCase() !== wantHost.toLowerCase()) {
+    console.log(`HELD: outreach sends only from the automation host (${wantHost}); this machine is ${thisHost}. The daily quota + warm-up ramp live in the gitignored sent-log, so sending here would double volume and reset the ramp. Set OUTREACH_HOST=${thisHost} (in .env) or pass --any-host to override.`);
     process.exit(0);
   }
 }
@@ -315,8 +331,11 @@ const followedUp = new Set(fuEntries.map((e) => e.to).filter(Boolean));
 const followupsToday = fuEntries.filter((e) => e.ts === today).length;
 const dueCut = new Date(Date.now() - FOLLOWUP_DAYS * 86400000).toLocaleDateString('en-CA');
 
-// Opt-out / reply sweep across everyone we've actually emailed.
-const { newlySuppressed, replies } = await sweepReplies(new Set([...sentTos, ...loggedTos]));
+// Opt-out / reply sweep across everyone we've actually OUTREACHED (the sent-log),
+// not the whole Zoho Sent folder — the latter also holds one-off mail like the
+// public-records requests, whose office replies would otherwise clutter the
+// "REPLY — review" list (they're handled by check-rosters.mjs instead).
+const { newlySuppressed, replies } = await sweepReplies(loggedTos);
 
 // email -> town, so the queue can be interleaved ACROSS towns by priority
 // (population + current users; see aggregator/town-priority.mjs) — one lead per

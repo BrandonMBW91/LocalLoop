@@ -6,15 +6,27 @@
 //         node geocode.mjs --dry-run  (look up, write nothing)
 // Env (aggregator/.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MAPBOX_TOKEN
 
+import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES } from '../src/data/cities.js';
-import { ANCHORS } from './geo.mjs';
+import { ANCHORS, milesBetween } from './geo.mjs';
 
 loadDotEnv();
 const DRY = process.argv.includes('--dry-run');
 const ALL = process.argv.includes('--all'); // re-geocode everything, not just missing
 const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
+
+// Per-town center (bbox midpoint from the Census polygons) so a geocode that
+// lands far from its ASSIGNED town — a same-name venue elsewhere ("John Bryan"
+// in Yellow Springs vs Bryan; a multi-branch "all branches" library HQ) — can be
+// rejected instead of dropping a pin tens-to-hundreds of miles away. The state
+// footprint BBOX below can't catch this; the point is still inside Ohio.
+const POLY = JSON.parse(readFileSync(new URL('./data/city-polygons.json', import.meta.url), 'utf8'));
+const CENTER = Object.fromEntries(
+  Object.entries(POLY).map(([id, p]) => [id, { lng: (p.bbox[0] + p.bbox[2]) / 2, lat: (p.bbox[1] + p.bbox[3]) / 2 }])
+);
+const MAX_TOWN_MI = 35; // a real venue for a town sits within ~this far of its center
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MAPBOX_TOKEN } = process.env;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !MAPBOX_TOKEN) {
   console.error('Missing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or MAPBOX_TOKEN.');
@@ -82,15 +94,21 @@ async function main() {
     const town = CITY_NAME[e.city_id];
     const query = town ? `${base}, ${town}, OH` : base;
     const key = `${query}`;
-    if (!groups.has(key)) groups.set(key, { query, ids: [] });
+    if (!groups.has(key)) groups.set(key, { query, ids: [], cityId: e.city_id });
     groups.get(key).ids.push(e.id);
   }
 
   console.log(`${rows.length} events across ${groups.size} distinct address+town combos.`);
-  let done = 0, updated = 0, missed = 0;
-  for (const { query, ids } of groups.values()) {
+  let done = 0, updated = 0, missed = 0, farRejected = 0;
+  for (const { query, ids, cityId } of groups.values()) {
     let coords = null;
     try { coords = await geocode(query); } catch {}
+    // Reject a geocode that landed too far from its assigned town (same-name
+    // collision or a system-HQ address) so it falls back to no pin, not a wrong one.
+    if (coords) {
+      const ctr = CENTER[cityId];
+      if (ctr && milesBetween(coords.lat, coords.lng, ctr.lat, ctr.lng) > MAX_TOWN_MI) { coords = null; farRejected += 1; }
+    }
     done += 1;
     if (!coords) {
       missed += 1;
@@ -111,7 +129,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 110)); // stay well under Mapbox rate limits
   }
   process.stdout.write('\n');
-  console.log(DRY ? 'dry run — nothing written' : `Done. Geocoded ${updated} events.`);
+  console.log(DRY ? 'dry run — nothing written' : `Done. Geocoded ${updated} events.` + (farRejected ? ` (${farRejected} rejected as too far from town)` : ''));
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

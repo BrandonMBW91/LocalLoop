@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>Open in Local Loop</title>
+<style>
+:root{--navy:#15315B;--red:#B22234;--bg:#FBF8F1;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E4DED4;}
+*{box-sizing:border-box;}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);
+  color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;padding:24px;}
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;max-width:420px;width:100%;
+  padding:32px 26px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.06);}
+.logo{width:72px;height:72px;border-radius:18px;margin:0 auto 14px;display:block;}
+h1{font-size:23px;margin:0 0 6px;color:var(--navy);}
+p{color:var(--muted);font-size:15px;margin:0 auto 20px;max-width:320px;}
+.btn{display:block;text-decoration:none;font-weight:800;font-size:16px;padding:14px 18px;border-radius:999px;margin:10px 0;}
+.btn.primary{background:var(--navy);color:#fff;}
+.btn.red{background:var(--red);color:#fff;}
+.btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy);}
+.note{font-size:13px;color:var(--muted);margin-top:16px;}
+a.plain{color:var(--navy);font-weight:600;}
+.hidden{display:none;}
+</style></head><body>
+<div class="card">
+  <svg class="logo" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#15315B"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" transform="translate(176 176) scale(28)" fill="#fff"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#B22234"/></svg>
+  <h1>Open in Local Loop</h1>
+  <p id="lede">Get the free app to see this and everything else going on around your Ohio town.</p>
+
+  <a class="btn primary" id="openApp" href="#">Open in the app</a>
+  <a class="btn red hidden" id="ios" href="https://apps.apple.com/app/id6780306721">Get it on the App Store</a>
+  <a class="btn red hidden" id="android" href="mailto:localloop@localloop.io?subject=Join%20the%20Local%20Loop%20Android%20test&body=Hi%20Michael%2C%20please%20add%20me%20to%20the%20Local%20Loop%20Android%20test.">Join the Android test</a>
+
+  <div class="note" id="androidNote" style="display:none">Local Loop is in early testing on Android. Tap above and I'll add you to the test build.</div>
+  <div class="note"><a class="plain" href="/">← Back to localloop.io</a></div>
+</div>
+<script>
+(function(){
+  var path = location.pathname || '/';          // e.g. /event/{id}
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  var isAndroid = /Android/i.test(ua);
+  var APPSTORE = 'https://apps.apple.com/app/id6780306721';
+  var appUrl = 'localloop:' + path;             // custom scheme opens the app if installed
+
+  document.getElementById('openApp').setAttribute('href', appUrl);
+
+  if (isIOS) {
+    // The app (if installed) would have caught this via Universal Links before the
+    // page loaded, so here we're almost certainly app-not-installed -> App Store.
+    document.getElementById('ios').classList.remove('hidden');
+    document.getElementById('lede').textContent = 'Get the free app to see this and everything else going on around your Ohio town.';
+    setTimeout(function(){ location.href = APPSTORE; }, 1400);
+  } else if (isAndroid) {
+    // No public Play listing yet (closed testing). Try to open an installed test
+    // build via the scheme, and offer the test-join path as the real fallback.
+    document.getElementById('android').classList.remove('hidden');
+    document.getElementById('androidNote').style.display = 'block';
+    try { location.href = appUrl; } catch (e) {}
+  } else {
+    // Desktop / other: show both, no auto-redirect.
+    document.getElementById('ios').classList.remove('hidden');
+  }
+})();
+</script>
+</body></html>

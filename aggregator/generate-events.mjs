@@ -131,9 +131,9 @@ footer a{color:var(--green);text-decoration:none;}
 <nav><a href="/events/">All towns</a><a href="/advertise.html">For businesses</a></nav></header>`;
 
 const FOOT = `<div class="banner"><h2>Get the free app</h2>
-<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Northwest, Central, and Northeast Ohio, free.</p>
+<p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Ohio, free.</p>
 <a class="get" href="${APP_STORE_URL}">Download Local Loop</a></div>
-<footer><div>© 2026 Local Loop · Northwest, Central &amp; Northeast Ohio</div>
+<footer><div>© 2026 Local Loop · Serving all five regions of Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
 <script>
 /* Keep this static page current: hide events once they're over (by the viewer's
@@ -289,7 +289,7 @@ ${FOOT}`;
   const hubDesc = `Browse ${grandTotal} upcoming events across ${APP_CITIES.length} Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
   const hub = `${HEAD(hubTitle, hubDesc, '/events/')}
 <section class="town-hero"><div class="kicker">Local events across</div>
-<h1>Northwest, Central &amp; Northeast Ohio</h1>
+<h1>Local Events Across Ohio</h1>
 <div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events in ${APP_CITIES.length} towns</span></div>
 <a class="get" href="${APP_STORE_URL}">Get the free app</a></section>
 ${regionSections}

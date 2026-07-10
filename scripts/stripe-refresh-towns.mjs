@@ -27,6 +27,16 @@ const options = CITIES
   .map((c) => ({ label: c.name, value: c.id.replace(/-/g, '') }))
   .sort((a, b) => a.label.localeCompare(b.label));
 
+// Stripe hard-caps a dropdown at 200 options. Fail loudly BEFORE touching any
+// live link, so crossing ~200 towns during the statewide scale-up can't silently
+// half-update the checkout or drop towns 201+. When this trips, move the town
+// field off a single flat dropdown (split per region, or pass town via metadata
+// on a hosted checkout) — see the scale-readiness note in docs.
+if (options.length > 200) {
+  console.error(`ABORT: ${options.length} towns exceeds Stripe's 200-option dropdown cap. Re-architect the town field (per-region links or metadata checkout) before running this. No link was modified.`);
+  process.exit(1);
+}
+
 // Updating a payment link REPLACES the whole custom_fields array, so every
 // field the webhook reads must be restated here, not just the dropdown.
 const text = (key, label) => ({ key, label: { type: 'custom', custom: label }, type: 'text' });

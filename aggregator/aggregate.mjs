@@ -70,6 +70,12 @@ const GOV_MEETING_RE = /\b(committee|board|commission|city council|council|trust
 // slip past the title filter because the title is a plain holiday name. Catch
 // them by the closure language that lands in the location/description instead.
 const CLOSURE_RE = /\b(offices?|city hall|building|library|branch|facilit)\w*\b[^.]{0,40}\bwill be closed\b|\bclosed in observance\b|\bin observance of\b[^.]{0,30}\bclosed\b/i;
+// Academic-calendar administrivia from college feeds (add/drop, tuition due,
+// graduation-application and grade deadlines). Nobody "attends" these; they
+// cluttered every college town after the .edu feeds went live (Jul 2026 review).
+// Kept tight to admin phrasing so real attendable events (exam-prep, advising
+// sessions, orientations) are NOT caught.
+const ACADEMIC_RE = /\b(?:last day to (?:add|drop|withdraw|register|enroll|apply|pay|cancel)|add\/drop|drop\/add|withdraw(?:al)? (?:deadline|period|without)|last day for (?:removing|filing)|incomplete grades?|tuition(?: and fees)? (?:due|payment)|fees? due|payment due|balance due|bill due|registration (?:deadline|opens|closes)|enrollment deadline|deadline:\s|application (?:for|deadline)[^.]{0,24}(?:graduation|degree)|graduation application|grades? (?:due|posted)|census date|semester (?:begins|ends|start|deadline)|term (?:begins|ends)|classes (?:begin|end|resume|start)|first day of (?:class|classes|the semester)|last day of class(?:es)?)\b/i;
 
 // Only keep https links (no javascript:/http: etc.) for the "Get Tickets" button.
 function httpsUrl(raw) {
@@ -167,6 +173,20 @@ function isNearDupe(a, b) {
   return Math.abs(new Date(a.start_at) - new Date(b.start_at)) <= 5 * 60000;
 }
 
+// All-day events re-anchored to local noon (atLocalNoon) can end up with an end
+// BEFORE the start: a date-only endDate parses to same-day midnight, so after the
+// noon re-anchor end(00:00) sits before start(12:00). Some jsonld feeds also emit
+// a clock-only end that never rolled a day. Null a same-day all-day end; roll a
+// real backwards end forward one day, else drop it — so no end_at<start_at rows
+// are ever written (Jul 2026 review found 47 recurring from CVB/Eventbrite feeds).
+function saneEnd(start, end, allDay) {
+  if (!end) return null;
+  if (end >= start) return end;
+  if (allDay) return null;
+  const rolled = new Date(end.getTime() + 864e5);
+  return (rolled - start) < 864e5 ? rolled : null;
+}
+
 function makeRow(ev, source, start, end) {
   const { venue: rawVenue, address: rawAddress } = deriveVenue(ev.location, source.name);
   const venue = cleanLocation(rawVenue);
@@ -175,6 +195,7 @@ function makeRow(ev, source, start, end) {
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
   if (WEATHER_RE.test(title)) return null; // skip NWS/weather alerts (not events)
   if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
+  if (ACADEMIC_RE.test(title)) return null; // skip academic-calendar admin (add/drop, tuition due, deadlines)
   const description = cleanDescription(ev.description) || `From ${source.name}.`;
   // Not an event people attend, even though the title reads like a holiday.
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
@@ -227,7 +248,7 @@ async function pullSource(source) {
     for (const ev of await platform.pull(source, { floor, cutoff })) {
       const start = ev.allDay ? atLocalNoon(ev.start) : ev.start;
       const t = start.getTime();
-      const end = ev.end || null;
+      const end = saneEnd(start, ev.end || null, ev.allDay);
       const endT = end ? end.getTime() : t;
       if (Number.isNaN(t) || endT < floor || t > cutoff) continue;
       const row = makeRow(ev, source, start, end);
@@ -246,7 +267,7 @@ async function pullSource(source) {
     for (const ev of extractJsonLdEvents(text)) {
       const start = ev.allDay ? atLocalNoon(ev.start) : ev.start;
       const t = start.getTime();
-      const end = ev.end || null;
+      const end = saneEnd(start, ev.end || null, ev.allDay);
       const endT = end ? end.getTime() : t;
       if (endT < floor || t > cutoff) continue;
       const row = makeRow(ev, source, start, end);
@@ -271,7 +292,7 @@ async function pullSource(source) {
         /T\d{2}:\d{2}/.test(s) && !/[Zz]|[+-]\d{2}:?\d{2}$/.test(s) ? etToDate(s) : new Date(s);
       const start = et(String(it.start));
       if (!start || Number.isNaN(start.getTime())) continue;
-      const end = it.end ? et(String(it.end)) : null;
+      const end = saneEnd(start, it.end ? et(String(it.end)) : null, false);
       const t = start.getTime();
       const endT = end ? end.getTime() : t;
       if (endT < floor || t > cutoff) continue;

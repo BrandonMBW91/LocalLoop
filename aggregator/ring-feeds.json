@@ -1,0 +1,362 @@
+[
+ {
+  "city_id": "parma",
+  "name": "Parma",
+  "best_feed_url": "https://www.cityofparma-oh.gov/common/modules/iCalendar/iCalendar.aspx?catID=25&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City CivicEngage/CivicPlus iCal, catID=25 (Donna Smallwood Activities Center) is the only category with real community programs (~11 upcoming: quilting, senior veterans, craft clubs through Sept 2026). catID=6/10 empty; catID=14 holidays only. Parma library is a CCPL branch on Communico (no stable machine-readable iCal). This is the best available Parma feed but low-volume."
+ },
+ {
+  "city_id": "lakewood",
+  "name": "Lakewood",
+  "best_feed_url": "https://www.lakewoodpubliclibrary.org/events/?ical=1",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Lakewood Public Library runs The Events Calendar (WordPress). iCal returns ~30 upcoming events (cinema, book clubs, writing groups, storytimes) from Jul 2026 on. Fetch with a Referer header (site briefly 403s bare requests). Old LibCal instance (lakewoodpubliclibrary.libcal.com) is decommissioned. City site uses egov/WebTrac (no iCal)."
+ },
+ {
+  "city_id": "euclid",
+  "name": "Euclid",
+  "best_feed_url": "https://euclidlibrary.libcal.com/ical_subscribe.php?src=p&cid=9506",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Euclid Public Library LibCal (Springshare), master calendar cid=9506, ~74 upcoming events through Oct 2026. feed_type is LibCal (schema enum has no 'libcal'; LibCal ical_subscribe returns real VCALENDAR -> type ical. Euclid city CivicPlus path 404s."
+ },
+ {
+  "city_id": "mentor",
+  "name": "Mentor",
+  "best_feed_url": "https://mentorpl.libcal.com/ical_subscribe.php?src=p&cid=11397",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Mentor Public Library LibCal, master cal cid=11397 (sub-cals 1804-1812), 500 events (iCal cap) with real upcoming programs. LibCal feed; LibCal ical_subscribe returns real VCALENDAR -> type ical. CivicPlus path is WAF-blocked (403)."
+ },
+ {
+  "city_id": "willoughby",
+  "name": "Willoughby",
+  "best_feed_url": "https://welibrary.libcal.com/ical_subscribe.php?src=p&cid=11512",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Willoughby-Eastlake Public Library LibCal, master cid=11512, 404 events through Dec 2026. Covers Willoughby, Willowick, Willoughby Hills, Eastlake branches (one feed serves several Lake County suburbs). LibCal; LibCal ical_subscribe returns real VCALENDAR -> type ical."
+ },
+ {
+  "city_id": "elyria",
+  "name": "Elyria",
+  "best_feed_url": "https://elyrialibrary.libcal.com/ical_subscribe.php?src=p&cid=11384",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Elyria Public Library System LibCal, master cid=11384, 293 events through Dec 2026. LibCal (LibCal ical_subscribe returns real VCALENDAR -> type ical.). BiblioCommons events gateway for this CLEVNET library is disabled. City CivicPlus path 404s."
+ },
+ {
+  "city_id": "lorain",
+  "name": "Lorain",
+  "best_feed_url": "https://lorainpubliclibrary.libcal.com/ical_subscribe.php?cid=21416",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Lorain Public Library System LibCal, cid=21416, 500 events (cap). One feed covers the whole system: Main (Lorain), Avon, Columbia, Domonkas, North Ridgeville branches - so it also serves Avon. Rich program mix. LibCal (LibCal ical_subscribe returns real VCALENDAR -> type ical.). Lorain city CivicPlus catID=14 is meetings-only; library is far better."
+ },
+ {
+  "city_id": "amherst",
+  "name": "Amherst",
+  "best_feed_url": "https://amherstpl.librarycalendar.com/events/feed/ical",
+  "feed_type": "librarymarket",
+  "verified": true,
+  "notes": "Amherst Public Library on LibraryMarket (Drupal). Stable iCal at /events/feed/ical, 171 events (storytimes, reading buddies, summer reading) through 2026. Amherst is its own library, NOT part of Lorain PLS, so it needs this separate feed. City CivicPlus path 404s (WordPress site)."
+ },
+ {
+  "city_id": "vermilion",
+  "name": "Vermilion",
+  "best_feed_url": "https://ritterpubliclibrary.libcal.com/ical_subscribe.php?cid=12211",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Ritter Public Library (Vermilion) LibCal, cid=12211, 496 events including community items (Fish Festival, Chocolate Fest, concerts). LibCal (LibCal ical_subscribe returns real VCALENDAR -> type ical.). City site (vermilion.net) CivicPlus path is WAF-blocked (403)."
+ },
+ {
+  "city_id": "avon",
+  "name": "Avon",
+  "best_feed_url": "https://lorainpubliclibrary.libcal.com/ical_subscribe.php?cid=21416",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Avon is served by the Lorain Public Library System Avon Branch, included in the shared LPLS LibCal feed (cid=21416) - 96 Avon-branch event references in that feed. Same URL as Lorain. The Avon city CivicPlus feed (cityofavon.com catID=26/28) is only council/planning meetings (~19), so the library feed is the better pick."
+ },
+ {
+  "city_id": "avon-lake",
+  "name": "Avon Lake",
+  "best_feed_url": "https://alpl.librarymarket.com/events/feed/ical",
+  "feed_type": "librarymarket",
+  "verified": true,
+  "notes": "Avon Lake Public Library on LibraryMarket (independent of Lorain PLS). Stable iCal at /events/feed/ical, 278 events through 2026. City site (avonlake.org) has no CivicPlus iCal (404)."
+ },
+ {
+  "city_id": "brunswick",
+  "name": "Brunswick",
+  "best_feed_url": "https://medinacounty.librarycalendar.com/events/feed/ical",
+  "feed_type": "librarymarket",
+  "verified": true,
+  "notes": "Medina County District Library on LibraryMarket. Stable iCal at /events/feed/ical, 712 events; ~296 reference the Brunswick branch, so this system feed covers Brunswick well (also covers Medina, Highland, Lodi, etc.). City site (brunswick.oh.us) blocks the CivicPlus path (WordPress)."
+ },
+ {
+  "city_id": "painesville",
+  "name": "Painesville",
+  "best_feed_url": "https://events.morleylibrary.org/ical_subscribe.php?src=p&cid=14772",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Morley Library (Painesville) LibCal, master cid=14772, 219 events through Dec 2026. LibCal (LibCal ical_subscribe returns real VCALENDAR -> type ical.). City site (painesville.com) is not CivicPlus (no iCal)."
+ },
+ {
+  "city_id": "twinsburg",
+  "name": "Twinsburg",
+  "best_feed_url": "https://twinsburglibrary.libcal.com/ical_subscribe.php?src=p&cid=12805",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "Twinsburg Public Library LibCal, master cid=12805, 391 real program events. Chosen over the city CivicPlus feed (mytwinsburg.com catID=14, ~47 govt meetings) because the library is far richer in community programming. LibCal (LibCal ical_subscribe returns real VCALENDAR -> type ical.)."
+ },
+ {
+  "city_id": "aurora",
+  "name": "Aurora",
+  "best_feed_url": "https://www.aurora-cityhall.org/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Aurora CivicEngage/CivicPlus iCal, catID=14 (all), ~906 VEVENTs but heavily padded with recurring 'City Offices Closed' holidays plus real meetings/events through 2029. No cleaner category is exposed. Aurora Memorial Library is a Portage County District Library branch on Communico (no stable iCal). Use with a holiday/keyword filter on ingest."
+ },
+ {
+  "city_id": "solon",
+  "name": "Solon",
+  "best_feed_url": "https://www.solonohio.gov/common/modules/iCalendar/iCalendar.aspx?catID=22&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Solon CivicEngage iCal on the .gov domain (note: old solonohio.org only returns holidays). catID=22 = Public Meetings & Notices, 36 upcoming (Council, Civil Service, boards) through late 2026. Solon's Community Events category is not exported to iCal, and Solon Library is a CCPL/Communico branch, so this civic-meeting feed is the best machine-readable option - low community value."
+ },
+ {
+  "city_id": "strongsville",
+  "name": "Strongsville",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "No machine-readable feed. City site (strongsville.org) uses a custom CMS with a rich /upcoming-events page (concerts, community market) but exposes no iCal/RSS (all feed paths 404). Strongsville library is a CCPL branch on Communico (no stable iCal export URL). Chamber calendar is GrowthZone (no public feed). Skip to avoid a ghost town, or scrape the HTML events page later."
+ },
+ {
+  "city_id": "westlake",
+  "name": "Westlake",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "No stable machine-readable feed. Westlake Porter Public Library is on Communico (westlakelibrary.libnet.info) whose iCal export is a JS-generated tokenized link, not a guessable stable URL (bare /events/ical returns the HTML page). City recreation site is Apptegy/Thrillshare (org 27875) but /o/{slug}/events.rss returns 404/500. City egov calendar has no iCal."
+ },
+ {
+  "city_id": "north-olmsted",
+  "name": "North Olmsted",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "No machine-readable feed. City site (north-olmsted.com) uses a custom PHP calendar (calendar.php) with no iCal/RSS export (?ical=1 and variants return HTML). North Olmsted library is a CCPL branch on Communico (no stable iCal). Community Council site has no feed."
+ },
+ {
+  "city_id": "macedonia",
+  "name": "Macedonia",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "No accessible feed. City site (macedonia.oh.us) is CivicPlus but its WAF returns 'Access Denied' on the iCalendar module for automated requests (403), even with browser headers/referer. Library is the Akron-Summit County Nordonia Hills branch on Communico (akronlibrary.libnet.info) with no per-branch stable iCal. Skip."
+ },
+ {
+  "city_id": "hamilton",
+  "name": "Hamilton",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "City site (hamilton-oh.gov) is Squarespace with no working iCal export (event-collection slugs return HTML, not VCALENDAR). Public library is Lane Libraries (Butler County), a custom Drupal site with no discoverable iCal/RSS/JSON feed. Downtown Hamilton and the Chamber run separate event calendars but no machine-readable feed found. No usable feed."
+ },
+ {
+  "city_id": "middletown",
+  "name": "Middletown",
+  "best_feed_url": "https://www.cityofmiddletown.org/common/modules/iCalendar/iCalendar.aspx?catID=1026&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Middletown CivicEngage (CivicPlus). catID=1026 (General) returns real upcoming community events (Free Community Lunch, Gingerbread Houses & Movie, through 2027). Other categories: catID=1025 Entertainment/Festivals (14), catID=1029 City Meetings (338, mostly meetings). Library is MidPointe (Communico, no generic feed)."
+ },
+ {
+  "city_id": "mason",
+  "name": "Mason",
+  "best_feed_url": "https://www.imaginemason.org/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&no_html=true",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Mason (imaginemason.org) runs WordPress with the All-in-One Event Calendar (ai1ec) plugin. iCal export returns BEGIN:VCALENDAR with 150+ real events (municipal meetings, Music in Mason, festivals) through 2027. NOTE: Cloudflare blocks generic curl user-agents (200 for real browsers/WebFetch); connector may need a browser-like UA. webcal:// variant also available."
+ },
+ {
+  "city_id": "fairfield",
+  "name": "Fairfield",
+  "best_feed_url": "https://www.fairfield-city.org/common/modules/iCalendar/iCalendar.aspx?catID=26&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Fairfield CivicEngage (CivicPlus). catID=26 has 48 events (best volume); catID=23 has 19, catID=25 has 9. Verified BEGIN:VCALENDAR with real events. Library is Lane Libraries Fairfield branch (no feed). This is the Butler County Fairfield (not Fairfield County/Lancaster)."
+ },
+ {
+  "city_id": "west-chester",
+  "name": "West Chester",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "West Chester Township site (westchesteroh.org, Home/Components/Calendar URL pattern, CivicPlus-family) is behind a WAF that returns Access Denied to feed/RSS requests; no public iCal/RSS confirmed. Library is MidPointe (Communico) whose generic RSS feeds return an empty channel without an admin-configured feed ID. No verified feed."
+ },
+ {
+  "city_id": "springboro",
+  "name": "Springboro",
+  "best_feed_url": "https://www.cityofspringboro.com/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Springboro (cityofspringboro.com, NOT springboro.org) CivicEngage (CivicPlus). catID=14 returns 127 real events. Verified BEGIN:VCALENDAR. Straddles Warren/Montgomery counties; library is Wright Memorial / Franklin-Springboro (no generic feed found)."
+ },
+ {
+  "city_id": "lebanon",
+  "name": "Lebanon",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "City of Lebanon (lebanonohio.gov) is Revize; its calendar (calendar.php) uses the revize_calendar FullCalendar plugin that loads events from an internal JSP editform endpoint with no public JSON/iCal export (ical.min.js only does per-event client-side downloads). Warren County Library (warrenlib.libnet.info, Communico) generic RSS returns an empty channel. No verified feed."
+ },
+ {
+  "city_id": "loveland",
+  "name": "Loveland",
+  "best_feed_url": "https://www.lovelandoh.gov/common/modules/iCalendar/iCalendar.aspx?catID=33&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Loveland CivicEngage (CivicPlus). catID=33 is the broadest feed (313 events; mixes community events with recurring board/commission meetings projected far out). catID=22 (35) is more meetings, catID=25/26 (~10 each) community. Verified BEGIN:VCALENDAR with real events."
+ },
+ {
+  "city_id": "milford",
+  "name": "Milford",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "City of Milford (milfordohio.org) is Revize with the revize_calendar plugin; no public iCal/JSON export (same limitation as Lebanon). Clermont County Public Library (clermontlibrary.libnet.info, Communico) is bot-walled to curl and its generic RSS returns no populated items without an admin feed ID. No verified feed."
+ },
+ {
+  "city_id": "blue-ash",
+  "name": "Blue Ash",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "City of Blue Ash (blueash.com) is Revize with the revize_calendar plugin (ical.min.js present) but no public subscribable iCal/JSON feed. In the Cincinnati & Hamilton County Public Library system, whose county-wide BiblioCommons RSS (gateway.bibliocommons.com/v2/libraries/cincinnatilibrary/rss/events) works but is only ~9 items covering all branches, not Blue-Ash-specific. No good single-town feed."
+ },
+ {
+  "city_id": "sharonville",
+  "name": "Sharonville",
+  "best_feed_url": "https://www.sharonville.org/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Sharonville CivicEngage (CivicPlus). catID=14 has 78 events (best); also catID=26 (24), 27 (10), 29 (16), 30 (14). Verified BEGIN:VCALENDAR with real events. Straddles Hamilton/Butler counties."
+ },
+ {
+  "city_id": "montgomery",
+  "name": "Montgomery",
+  "best_feed_url": "https://www.montgomeryohio.gov/events/?ical=1",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Montgomery runs WordPress with the Events Manager plugin (PRODID wp-events-plugin.com). /events/?ical=1 returns BEGIN:VCALENDAR with 58 real upcoming events (CPR class, Soiree en Rose 2026, concerts). Equivalent alt: /?post_type=tribe_events&ical=1."
+ },
+ {
+  "city_id": "oxford",
+  "name": "Oxford",
+  "best_feed_url": "",
+  "feed_type": "none",
+  "verified": false,
+  "notes": "City of Oxford (cityofoxford.org) is Revize; its calendar is served via an internal Revize JSP/JSON endpoint (builder1.revize.com) with no public iCal/RSS. Parks/rec uses RecDesk (oprd.recdesk.com) and tourism uses enjoyoxford.org, neither exposing a verified machine-readable feed. Library is Lane Libraries Oxford branch (Communico/Drupal, no generic feed). Home of Miami University but no city/library feed found."
+ },
+ {
+  "city_id": "kettering",
+  "name": "Kettering",
+  "best_feed_url": "https://gateway.bibliocommons.com/v2/libraries/dayton/rss/events",
+  "feed_type": "bibliocommons",
+  "verified": true,
+  "notes": "Kettering city site is ProudCity (Proud City / Drupal) with NO machine-readable iCal — all CivicPlus .aspx paths 404 and the events plugin exposes only per-event add-to-calendar. Best feed is Dayton Metro Library BiblioCommons RSS (sub 'dayton'), verified with live 2026 events. This ONE feed serves several Montgomery County suburbs via branch-address routing: Kettering has TWO branches in the feed — Wilmington-Stroop Branch (Wilmington Pike, Kettering 45429) and Kettering-Moraine Branch (Far Hills Ave, Kettering 45429). Add the Dayton RSS once (city_id kettering as fallback) and let the boundary/name router split Trotwood/Miamisburg/Huber Heights/Englewood/West Carrollton events out. RSS confirmed bc: namespace + real upcoming events (e.g. 'Financial Fridays: Identity Theft', 'Spirit of Independence' at Wilmington-Stroop, Jul 2026)."
+ },
+ {
+  "city_id": "centerville",
+  "name": "Centerville",
+  "best_feed_url": "https://www.centervilleohio.gov/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Centerville CivicEngage (CivicPlus). Main Calendar catID=14 — VERIFIED BEGIN:VCALENDAR with 24 rich community events for 2026 (Summer Concert Series, Party in the Park, Uptown First Friday, Fall Fest, Shakespeare in the Park). This is the best feed by far. Also available: Washington-Centerville Public Library on LibCal/Springshare (events.wclibrary.info) as a secondary source if you want library programs too, but the city feed already carries the marquee community events."
+ },
+ {
+  "city_id": "xenia",
+  "name": "Xenia",
+  "best_feed_url": "https://gateway.bibliocommons.com/v2/libraries/greenelibrary/rss/events",
+  "feed_type": "bibliocommons",
+  "verified": true,
+  "notes": "Xenia migrated OFF CivicPlus to a ProudCity/Drupal site (www.cityofxenia.org) — every CivicEngage .aspx / iCalendar path now 404s, and the old ci.xenia.oh.us host is dead (connection reset). No city iCal exists. Best feed is Greene County Public Library BiblioCommons RSS (sub 'greenelibrary'), VERIFIED bc: namespace + real 2026 events, and it explicitly includes the Xenia Community Library branch (76 East Market Street, Xenia). This SAME greenelibrary feed also covers Fairborn, Bellbrook, Beavercreek, Yellow Springs and Jamestown branches via address routing — add it once."
+ },
+ {
+  "city_id": "beavercreek",
+  "name": "Beavercreek",
+  "best_feed_url": "https://beavercreekohio.gov/common/modules/iCalendar/iCalendar.aspx?catID=24&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Beavercreek CivicEngage (CivicPlus). 'City Events' category is CID/catID=24 — VERIFIED BEGIN:VCALENDAR with real 2026 community events (Summer Entertainment Series concerts, Beavercreek Night Against Crime, Town Halls). Note catID=14 returns only a VTIMEZONE stub (no events) so use 24. Beavercreek is ALSO in the shared Greene County greenelibrary RSS (Carol Graff Beavercreek Library branch) if you want library programs in addition, but the city iCal is the better primary."
+ },
+ {
+  "city_id": "fairborn",
+  "name": "Fairborn",
+  "best_feed_url": "https://gateway.bibliocommons.com/v2/libraries/greenelibrary/rss/events",
+  "feed_type": "bibliocommons",
+  "verified": true,
+  "notes": "City of Fairborn runs a legacy custom .php website (fairbornoh.gov/calendar.php + calendar_app) with NO iCal/ICS or structured feed. Best machine-readable option is the shared Greene County Public Library BiblioCommons RSS (sub 'greenelibrary'), VERIFIED to include the Fairborn Community Library branch (1 East Main Street, Fairborn) with real 2026 events. Same feed already assigned to Xenia — the branch-address router sends Fairborn-branch events to Fairborn. Do not create a duplicate source row; reuse the greenelibrary RSS."
+ },
+ {
+  "city_id": "huber-heights",
+  "name": "Huber Heights",
+  "best_feed_url": "https://www.hhoh.org/common/modules/iCalendar/iCalendar.aspx?catID=33&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Huber Heights CivicEngage (CivicPlus). 'Events' category catID=33 — VERIFIED BEGIN:VCALENDAR with 13 real 2026 entries (Cups and Conversation Q3, seasonal Yard Waste Site Open dates, City offices closed). Volume is modest and skews municipal, but it is a real, live city feed. Huber Heights is ALSO in the Dayton Metro Library 'dayton' RSS (Huber Heights Branch, Brandt Pike) for additional library programming."
+ },
+ {
+  "city_id": "miamisburg",
+  "name": "Miamisburg",
+  "best_feed_url": "https://gateway.bibliocommons.com/v2/libraries/dayton/rss/events",
+  "feed_type": "bibliocommons",
+  "verified": true,
+  "notes": "City of Miamisburg (cityofmiamisburg.com) runs a WordPress events plugin (wp-events-plugin 7.4) whose iCal export is STALE/broken — the ?ical=1 export only contains events from 2015-2023 and the Tribe-style /events/list/?ical=1 path returns 0 events. Not usable. Best feed is the shared Dayton Metro Library 'dayton' BiblioCommons RSS, VERIFIED, which includes TWO Miamisburg-area branches: Miamisburg Branch (E. Linden Ave, Miamisburg 45342) and Miami Township Branch (Lyons Rd, Miamisburg 45342). Reuse the single dayton RSS row."
+ },
+ {
+  "city_id": "vandalia",
+  "name": "Vandalia",
+  "best_feed_url": "https://www.vandaliaohio.org/common/modules/iCalendar/iCalendar.aspx?catID=23&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Vandalia CivicEngage (CivicPlus). 'Parks and Recreation' category catID=23 is the RICH community feed — VERIFIED BEGIN:VCALENDAR with 21 real 2026 events (Vandalia Summer Splashtacular, CampREC camps, Family Movie Night, Guitar Man Concert, terrarium/kids programs). The Main Calendar catID=14 exists too but is mostly board meetings; catID=23 is the better pick. Vandalia is NOT in the Dayton Metro library RSS (no Vandalia branch), so this city iCal is the only good source."
+ },
+ {
+  "city_id": "bellbrook",
+  "name": "Bellbrook",
+  "best_feed_url": "https://gateway.bibliocommons.com/v2/libraries/greenelibrary/rss/events",
+  "feed_type": "bibliocommons",
+  "verified": true,
+  "notes": "City of Bellbrook uses a CivicPlus content page for events but routes meetings to municodemeetings.com (agendas only, no event feed); no city iCal/ICS. Best machine-readable option is the shared Greene County Public Library BiblioCommons RSS (sub 'greenelibrary'), VERIFIED to include the Winters-Bellbrook Community Library branch (57 West Franklin Street, Bellbrook) with real 2026 events. Reuse the same greenelibrary RSS already assigned to Xenia/Fairborn — branch routing handles Bellbrook."
+ },
+ {
+  "city_id": "tipp-city",
+  "name": "Tipp City",
+  "best_feed_url": "https://www.tippcityohio.gov/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Tipp City CivicEngage (CivicPlus), Miami County. Main Calendar catID=14 — VERIFIED BEGIN:VCALENDAR with 20 real 2026 entries. Content skews to public meetings (City Council, Planning/Restoration Board) but also carries community items (the city advertises Fireworks & Food Truck Rally, Beggar's Night, etc. under Community Events section 132). Tipp City is in Miami County so no Dayton/Greene library RSS covers it; this city iCal is the primary source."
+ },
+ {
+  "city_id": "englewood",
+  "name": "Englewood",
+  "best_feed_url": "https://www.englewood.oh.us/common/modules/iCalendar/iCalendar.aspx?catID=23&feed=calendar",
+  "feed_type": "ical",
+  "verified": true,
+  "notes": "City of Englewood CivicEngage (CivicPlus). 'Events Calendar' category catID=23 — VERIFIED BEGIN:VCALENDAR with real 2026 community events (Englewood Festival Aug 8-9, Trick or Treat, Holiday Open House Nov 28). Low count (~5 marquee events) but they are the big community draws. Englewood is ALSO covered by the Dayton Metro 'dayton' RSS via the Northmont Branch (W. National Rd, Englewood 45322) for library programming — add both if you want more volume, city iCal as primary."
+ },
+ {
+  "city_id": "trotwood",
+  "name": "Trotwood",
+  "best_feed_url": "https://gateway.bibliocommons.com/v2/libraries/dayton/rss/events",
+  "feed_type": "bibliocommons",
+  "verified": true,
+  "notes": "City of Trotwood (trotwood.org) runs WordPress + Modern Events Calendar (MEC). MEC's iCal export endpoints (?mec-ical-feed=1, /events/?ical=1) all return HTML, and the generic WP /events/feed/ RSS lists real items (Homefull Mobile Grocery, Madison Park Live 2026) but is unstructured (no machine-readable start-time/location), so the aggregator's iCal/jsonld parsers can't consume it. Best structured feed is the shared Dayton Metro Library 'dayton' BiblioCommons RSS, VERIFIED, which includes the Trotwood Branch (E Main St, Trotwood 45426). Reuse the single dayton RSS row."
+ }
+]

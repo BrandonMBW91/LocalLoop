@@ -46,6 +46,28 @@ const mau = {};
   }
 }
 
+// Which towns actually have upcoming events RIGHT NOW. A town with zero can't
+// display an ad, so we must not sell a sponsorship there — a ghost-town ad is a
+// paying customer whose ad literally cannot be shown. Empty towns route their buy
+// buttons to email ("coming soon") instead of a live Stripe link, so nobody is
+// charged for invisible inventory. HARD-FAIL on query error (same as MAU).
+const activeTowns = new Set();
+{
+  const nowIso = new Date().toISOString();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb
+      .from('events')
+      .select('city_id')
+      .eq('status', 'approved')
+      .gte('start_at', nowIso)
+      .order('city_id', { ascending: true })
+      .range(from, from + 999);
+    if (error) { console.error('active-town query failed — refusing to publish:', error.message); process.exit(1); }
+    (data || []).forEach((r) => activeTowns.add(r.city_id));
+    if (!data || data.length < 1000) break;
+  }
+}
+
 // Live source count for the pitch — counted from event_sources at generation
 // time (+2 for Ticketmaster & SeatGeek) and rounded DOWN to the nearest 10, so
 // the "N+ local sources" claim is always true and self-updates as feeds grow.
@@ -61,12 +83,12 @@ for (const c of CITIES) {
   const users = mau[c.id] || 0;
   const r = rateForUsers(users);
   const l = CHECKOUT_BY_TIER[r.name] || null;
-  DATA[c.id] = { name: c.name, users, tier: r.name, sponsor: r.sponsor, featured30: r.featured30, townLink: l ? l.town : null, feat30Link: l ? l.featured30 : null };
+  DATA[c.id] = { name: c.name, users, tier: r.name, sponsor: r.sponsor, featured30: r.featured30, townLink: l ? l.town : null, feat30Link: l ? l.featured30 : null, active: activeTowns.has(c.id) };
 }
 const DEFAULT = DATA.findlay ? 'findlay' : CITIES[0].id;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const options = REGION_ORDER.map((region) => {
-  const opts = CITIES.filter((c) => c.region === region).map((c) => `<option value="${c.id}"${c.id === DEFAULT ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+  const opts = CITIES.filter((c) => c.region === region).map((c) => `<option value="${c.id}"${c.id === DEFAULT ? ' selected' : ''}>${esc(c.name)}${activeTowns.has(c.id) ? '' : ' (coming soon)'}</option>`).join('');
   return `<optgroup label="${esc(region)}">${opts}</optgroup>`;
 }).join('');
 // Derived from PRICING_TIERS so the public table can never drift from the real
@@ -150,6 +172,16 @@ var DATA=${JSON.stringify(DATA)},MAIL=${JSON.stringify(MAIL)};
 var sel=document.getElementById('townPick');
 function up(){
   var t=DATA[sel.value]; if(!t)return;
+  if(t.active===false){
+    document.getElementById('sponsorAmt').innerHTML='<small>Coming soon to '+t.name+'</small>';
+    document.getElementById('featAmt').innerHTML='<small>Coming soon to '+t.name+'</small>';
+    var _sb=document.getElementById('sponsorBuy'),_fb=document.getElementById('featBuy');
+    _sb.href=MAIL;_sb.textContent='Email to pre-register';
+    _fb.href=MAIL;_fb.textContent='Email to pre-register';
+    document.getElementById('rateNote').textContent=t.name+' is coming to Local Loop soon — email us to be first in line.';
+    document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){r.classList.remove('now');var b=r.querySelector('.tier-badge');if(b)b.style.display='none';});
+    return;
+  }
   document.getElementById('sponsorAmt').innerHTML='$'+t.sponsor+'<span>/month</span><small>'+t.tier+' rate in '+t.name+'</small>';
   document.getElementById('featAmt').innerHTML='$'+t.featured30+'<span>/30 days</span><small>'+t.tier+' rate in '+t.name+'</small>';
   var sb=document.getElementById('sponsorBuy'), fb=document.getElementById('featBuy');

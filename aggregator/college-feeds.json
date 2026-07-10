@@ -1,0 +1,146 @@
+[
+ {
+  "name": "Wright State University Events",
+  "city_id": "beavercreek",
+  "type": "ical",
+  "url": "https://www.wright.edu/calendar/term/all/events.ics",
+  "verified": true,
+  "notes": "Fetched, begins BEGIN:VCALENDAR (iCalcreator, X-WR-CALNAME 'Events from ...'). ~55-60 real upcoming events Jul-Oct 2026 (orientation, WOW week, athletics, trainings). Rolling ~3-month window. WSU main campus is in the Beavercreek/Fairborn area; assigned beavercreek per Dayton-ring target."
+ },
+ {
+  "name": "Cedarville University Events (Trumba)",
+  "city_id": "cedarville",
+  "type": "trumba",
+  "url": "https://www.trumba.com/calendars/cedarville.ics",
+  "verified": true,
+  "notes": "Fetched, BEGIN:VCALENDAR, PRODID Trumba, X-WR-CALNAME 'Cedarville University Events'. 150+ events May-Sep 2026 (academic, chapel, athletics, performances). Full-institution feed. Variant ?filterview=onetime also verified and filters to one-time (non-recurring) events. School is IN Cedarville (target listed as 'Cedarville University nearby' for Beavercreek)."
+ },
+ {
+  "name": "City of Beavercreek - City Events",
+  "city_id": "beavercreek",
+  "type": "ical",
+  "url": "https://beavercreekohio.gov/common/modules/iCalendar/iCalendar.aspx?catID=24&feed=calendar",
+  "verified": true,
+  "notes": "Fetched, BEGIN:VCALENDAR, PRODID iCalendar-Ruby (CivicEngage/CivicPlus). Real community events (Summer Entertainment Series concerts, Night Against Crime, Town Hall) Jul-Oct 2026, ~8 events. Other CivicEngage cals on same host: catID=22 City Council, catID=23 Boards & Commissions."
+ },
+ {
+  "name": "Beavercreek Township",
+  "city_id": "beavercreek",
+  "type": "ical",
+  "url": "https://www.beavercreektwpohio.gov/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+  "verified": true,
+  "notes": "Fetched, BEGIN:VCALENDAR (CivicEngage). Main Calendar: township trustee meetings plus recurring civic observances. Separate legal entity from the City of Beavercreek but same physical community; useful supplemental civic feed for beavercreek."
+ },
+ {
+  "name": "Greene County Public Library Events (BiblioCommons)",
+  "city_id": "xenia",
+  "type": "jsonld",
+  "url": "https://gateway.bibliocommons.com/v2/libraries/greenelibrary/rss/events",
+  "verified": true,
+  "notes": "Fetched, valid BiblioCommons events RSS with bc: event namespace (bc:start_date etc.), machine-readable/structured (not plain iCal). Real events incl. 'Xenia Reading Dragons'. GCPL is headquartered in Xenia and also serves Beavercreek, Bellbrook, Cedarville branches, so this one feed covers library events across the Dayton-ring targets. Consumer should parse RSS+bc namespace, not BEGIN:VCALENDAR. BiblioCommons /events/search/*.rss and /v2/events HTML paths do NOT return a feed; the gateway URL is the working feed."
+ },
+ {
+  "name": "University of Toledo Events (Modern Campus Calendar)",
+  "city_id": "toledo",
+  "type": "ical",
+  "url": "https://api.calendar.moderncampus.net/pubcalendar/602bf64e-2dad-4996-94d5-158c189ba52c/ics",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 3203 VEVENTs incl. real upcoming 2026 events. UToledo runs Modern Campus Calendar (calendar ID 602bf64e-2dad-4996-94d5-158c189ba52c, found embedded in www.utoledo.edu/events). Same host also serves JSON at /pubcalendar/{id}/events and RSS at /pubcalendar/{id}/rss. Highest-volume feed of the set. Note: calendar.utoledo.edu 301-redirects to the plain events page; the moderncampus.net API host is the real feed."
+ },
+ {
+  "name": "Bowling Green State University Events",
+  "city_id": "bowling-green",
+  "type": "localist",
+  "url": "https://events.bgsu.edu/calendar.ics",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 524 VEVENTs incl. campus events, farmers markets, athletics, community events. BGSU runs Localist (cert on the host is *.localist.com). Localist JSON API also live at https://events.bgsu.edu/api/2/events (use with ?days=365&pp=100 to page). Strong ongoing volume."
+ },
+ {
+  "name": "Ashland University Events (Coursedog)",
+  "city_id": "ashland",
+  "type": "ical",
+  "url": "https://ashlandu-events.coursedog.com/ical/upcoming.ics",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 603 VEVENTs (admissions events, athletics, MFA residency, town halls, academic). Powered by Coursedog at ashlandu-events.coursedog.com; the page exposes iCal (/ical/upcoming.ics) and RSS (/xml/upcoming). Convert the site's webcal:// link to https. Excellent volume."
+ },
+ {
+  "name": "University of Findlay Events (The Events Calendar / WordPress)",
+  "city_id": "findlay",
+  "type": "ical",
+  "url": "https://www.findlay.edu/?post_type=tribe_events&ical=1&eventDisplay=list",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 30 VEVENTs incl. exhibitions, sports camps, worship, upcoming 2026 events. Findlay uses The Events Calendar (Tribe) on WordPress. calendar.findlay.edu redirects to www.findlay.edu; this ical=1 export is the working feed. Equivalent: /events/list/?ical=1."
+ },
+ {
+  "name": "Tiffin University Events (The Events Calendar / WordPress)",
+  "city_id": "tiffin",
+  "type": "ical",
+  "url": "https://www.tiffin.edu/?post_type=tribe_events&ical=1&eventDisplay=list",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 30 VEVENTs (music camp, TU Comes to You events, STEM institute, academic deadlines). Tiffin University uses The Events Calendar (Tribe). Use eventDisplay=list variant for full volume; the plain /events/?ical=1 only returns the current 4-event view. Covers tiffin along with Heidelberg."
+ },
+ {
+  "name": "North Central State College Events (The Events Calendar / WordPress)",
+  "city_id": "mansfield",
+  "type": "ical",
+  "url": "https://ncstatecollege.edu/?post_type=tribe_events&ical=1&eventDisplay=list",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 19 VEVENTs incl. wellness workshops, ACCUPLACER testing, nursing/respiratory info sessions (2026). Uses The Events Calendar (Tribe) on WordPress. Best local-college feed for Mansfield since OSU-Mansfield (Drupal) exposes no machine feed. Equivalent: /events/list/?ical=1."
+ },
+ {
+  "name": "University of Northwestern Ohio Events (Trumba)",
+  "city_id": "lima",
+  "type": "trumba",
+  "url": "https://www.trumba.com/calendars/unoh-calendar.ics",
+  "verified": true,
+  "notes": "VERIFIED: BEGIN:VCALENDAR, 32 VEVENTs incl. orientation, alumni night, registration dates (2026). UNOH embeds Trumba (Trumba.addSpud webName: 'unoh-calendar' found on www.unoh.edu/events). Trumba iCal = /calendars/{webName}.ics. Covers Lima; OSU-Lima itself has no exposed feed."
+ },
+ {
+  "name": "University of Akron Events (LiveWhale iCal)",
+  "city_id": "akron",
+  "type": "ical",
+  "url": "https://calendar.uakron.edu/live/ical/events",
+  "verified": true,
+  "notes": "VERIFIED: fetched, starts BEGIN:VCALENDAR, PRODID The University of Akron, 179 VEVENTs including real upcoming events (Summer Music Series, academic-calendar dates). calendar.uakron.edu runs LiveWhale (Concept3D). This is the whole-university feed and by far the richest of the batch. Note: a couple of stray 'Test' VEVENTs are present but harmless. Best feed of the set."
+ },
+ {
+  "name": "Kent State University - KSU Engage Events (CampusLabs JSON API)",
+  "city_id": "kent",
+  "type": "jsonld",
+  "url": "https://kent.campuslabs.com/engage/api/discovery/event/search?endsAfter=2026-07-09T00:00:00-04:00&orderByField=endsOn&orderByDirection=ascending&status=Approved&take=100",
+  "verified": true,
+  "notes": "VERIFIED: HTTP 200 JSON, @odata.count 16 upcoming (summer-low; grows to hundreds in fall). Real titles: KSU KICKOFF CHECK-IN, Convocation, Flashes First Friday, Blastoff. This is CampusLabs/Engage's public discovery API (JSON, not literal JSON-LD but structured JSON events - closest machine-readable feed for Kent; parse the 'value' array). NOTE: the main kent.edu/calendars university calendar is a custom Drupal 10 build with NO aggregate iCal/RSS export (only per-event Modern Campus 'ouical' widgets), and the Engage aggregate .ics (kent.campuslabs.com/engage/events.ics) returns an EMPTY VCALENDAR without a per-org token, so the JSON API is the way in. Set take= higher and roll endsAfter forward when ingesting."
+ },
+ {
+  "name": "Youngstown State University - All Events (CampusGroups mobile JSON)",
+  "city_id": "youngstown",
+  "type": "unknown",
+  "url": "https://ysuapp.ysu.edu/mobile_ws/v17/mobile_events_list?range=60&filter4_contains=OR",
+  "verified": true,
+  "notes": "VERIFIED: HTTP 200, ~95KB JSON array, counter 304 events over 60 days across ALL YSU departments/clubs (whole-university, richest YSU feed). Real titles: Puppy Palooza, Welcome Week Cookout, Football/Volleyball vs Mercyhurst, Outdoor Movie Night. CampusGroups proprietary JSON schema (fields p0/p1..., NOT JSON-LD or iCal), so needs a custom connector - but volume is excellent. Original ysu.campusgroups.com host 302-redirects to ysuapp.ysu.edu (use the ysuapp URL directly). Increase range= for a wider window."
+ },
+ {
+  "name": "Youngstown State University - Student Activities (CampusGroups iCal)",
+  "city_id": "youngstown",
+  "type": "ical",
+  "url": "https://ysuapp.ysu.edu/ical/ysu/ical_club_18633.ics",
+  "verified": true,
+  "notes": "VERIFIED: fetched, starts BEGIN:VCALENDAR, PRODID CAMPUSGROUPS, X-WR-CALNAME 'Student Activities', 77 VEVENTs with real upcoming events (YSU Day @ Pickle Fest, Midnight Breakfast, Karaoke Nights, anti-hazing programs). CLEAN standard iCal - use this if you want a plain .ics rather than the proprietary mobile JSON. This is one department (club id 18633); YSU has NO single public whole-university .ics (aggregate ysuapp.ysu.edu/ical/ysu.ics = 403, ysu.campusgroups.com/ics?calid=2 = 400). Per-club .ics feeds follow pattern ysuapp.ysu.edu/ical/ysu/ical_club_<id>.ics (ids enumerable from ysu.campusgroups.com/ics_helper?modal=true&embed=1&mode=set)."
+ },
+ {
+  "name": "Ohio University Events (Localist JSON API)",
+  "city_id": "athens",
+  "type": "localist",
+  "url": "https://calendar.ohio.edu/api/2/events",
+  "verified": true,
+  "notes": "VERIFIED. Localist JSON with 'events' array; page object reports 60 total pages of events. Supports params: ?days=90&pp=50&keyword=... . Rich upcoming-event volume (exhibits, orientations, lectures, closures). Athens main campus; regional-campus events are sparse so map all to athens. This is the priority anchor feed."
+ },
+ {
+  "name": "Ohio University Events (Localist iCal)",
+  "city_id": "athens",
+  "type": "ical",
+  "url": "https://calendar.ohio.edu/calendar.ics",
+  "verified": true,
+  "notes": "VERIFIED. Begins BEGIN:VCALENDAR; ~90-100 VEVENT blocks with real 2026 events (Bobcat Student Orientation, exhibitions, camps, parking closures, etc.). Stable subscribe feed. Same data as the JSON API; use whichever the aggregator's connector prefers."
+ }
+]

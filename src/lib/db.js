@@ -122,6 +122,10 @@ function rowToTruck(r) {
     featuredUntil: r.featured_until,
     viewCount: r.view_count,
     host: cleanText(r.host) || 'Community submission',
+    // source_uid is set only by the calendar-pull aggregator; user submissions
+    // have none. Lets the card show an honest byline instead of always claiming
+    // "Posted by a neighbor" on official truck-calendar stops.
+    source: r.source_uid ? 'calendar' : 'community',
     pending: r.status !== 'approved',
     note: cleanDescription(r.note),
   };
@@ -766,9 +770,9 @@ export async function fetchMetrics(cityId) {
   };
 
   const [evRows, gsRows, ftRows, spRows] = await Promise.all([
-    pull('events', 'id,title,view_count,featured,city_id'),
-    pull('garage_sales', 'id,title,view_count,featured,city_id'),
-    pull('food_trucks', 'id,name,view_count,featured,city_id'),
+    pull('events', 'id,title,view_count,featured,featured_until,city_id'),
+    pull('garage_sales', 'id,title,view_count,featured,featured_until,city_id'),
+    pull('food_trucks', 'id,name,view_count,featured,featured_until,city_id'),
     pullSponsors(),
   ]);
   const sumViews = (rows) => rows.reduce((n, r) => n + (r.view_count || 0), 0);
@@ -786,18 +790,21 @@ export async function fetchMetrics(cityId) {
     views: { event: sumViews(evRows), garage_sale: sumViews(gsRows), food_truck: sumViews(ftRows) },
     totalViews: sumViews(evRows) + sumViews(gsRows) + sumViews(ftRows),
     totalListings: evRows.length + gsRows.length + ftRows.length,
+    // Match the live public gating (isFeatured checks featured_until), so the
+    // metrics tile can't over-count a promotion whose paid window already lapsed
+    // but whose boolean the daily expire job hasn't flipped off yet.
     featuredCount:
-      evRows.filter((r) => r.featured).length +
-      gsRows.filter((r) => r.featured).length +
-      ftRows.filter((r) => r.featured).length,
+      evRows.filter(isFeatured).length +
+      gsRows.filter(isFeatured).length +
+      ftRows.filter(isFeatured).length,
     activeAds: spRows.filter((r) => r.active).length,
     totalAds: spRows.length,
     // The actual items behind the "Featured now" / "Active ads" tiles, so the
     // metrics screen can expand them into a tappable list.
     featuredItems: [
-      ...evRows.filter((r) => r.featured).map((r) => ({ kind: 'event', id: r.id, title: r.title })),
-      ...gsRows.filter((r) => r.featured).map((r) => ({ kind: 'garage_sale', id: r.id, title: r.title })),
-      ...ftRows.filter((r) => r.featured).map((r) => ({ kind: 'food_truck', id: r.id, title: r.name })),
+      ...evRows.filter(isFeatured).map((r) => ({ kind: 'event', id: r.id, title: r.title })),
+      ...gsRows.filter(isFeatured).map((r) => ({ kind: 'garage_sale', id: r.id, title: r.title })),
+      ...ftRows.filter(isFeatured).map((r) => ({ kind: 'food_truck', id: r.id, title: r.name })),
     ],
     adItems: spRows
       .filter((r) => r.active)

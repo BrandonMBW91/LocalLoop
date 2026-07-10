@@ -32,7 +32,21 @@ function parseICS(text) {
   return events;
 }
 
-// DTSTART/DTEND -> ET wall date + display time. Handles Z (UTC), TZID/floating
+// Convert a wall-clock in a named IANA zone to the equivalent UTC instant, using
+// Node's full tz database (server-side Intl is fine — the Hermes ban is on-device
+// only). Corrects the naive "treat wall as UTC" guess by the zone's real offset.
+function wallInZoneToUTC(y, mo, d, h, mi, tz) {
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+      .formatToParts(new Date(guess)).map((p) => [p.type, p.value])
+  );
+  const asUTC = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute);
+  return new Date(guess - (asUTC - guess));
+}
+
+// DTSTART/DTEND -> ET wall date + display time. Handles Z (UTC), a named TZID
+// (e.g. a truck whose Google Calendar is set to America/Chicago), floating times
 // (treated as local ET), and date-only (all-day, no time).
 function whenET(field) {
   if (!field) return null;
@@ -42,9 +56,15 @@ function whenET(field) {
   const dt = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/.exec(v);
   if (!dt) return null;
   let [, y, mo, d, h, mi, , z] = dt;
-  if (z) {
-    // UTC -> ET wall clock
-    const p = wallParts(new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, 0)));
+  const tzid = (String(field.params || '').match(/TZID=([^;:]+)/) || [])[1];
+  let instant = null;
+  if (z) instant = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, 0)); // UTC
+  else if (tzid && tzid !== 'America/New_York') {
+    // Named non-Eastern zone -> convert its wall clock to a UTC instant first.
+    try { instant = wallInZoneToUTC(+y, +mo, +d, +h, +mi, tzid); } catch { instant = null; }
+  }
+  if (instant) {
+    const p = wallParts(instant); // -> ET wall clock
     y = String(p.y); mo = String(p.mo).padStart(2, '0'); d = String(p.d).padStart(2, '0');
     h = String(p.h).padStart(2, '0'); mi = String(p.mi).padStart(2, '0');
   }

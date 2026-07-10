@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "primaryColor": "#15315B",
-    "description": "Local events, garage sales, and food trucks across 38 Ohio towns in Northwest, Central, and Northeast Ohio.",
+    "description": "Local events, garage sales, and food trucks across 120+ Ohio towns in all five regions of Ohio.",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.michaelwilliams.localloop",
@@ -27,7 +27,19 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": []
+      "permissions": [],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            { "scheme": "https", "host": "localloop.io", "pathPrefix": "/event" },
+            { "scheme": "https", "host": "localloop.io", "pathPrefix": "/garage-sale" },
+            { "scheme": "https", "host": "localloop.io", "pathPrefix": "/food-truck" }
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
