@@ -9,7 +9,7 @@
 //
 // Env (from aggregator/.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
@@ -22,6 +22,10 @@ loadDotEnv();
 
 const APP_STORE_URL = 'https://apps.apple.com/app/id6780306721';
 const SITE = 'https://localloop.io';
+// PUBLIC Supabase publishable key — baked into the embed widget (a public web page).
+// Safe by design: RLS restricts it to reads of approved content, exactly like the
+// app bundle already ships it. Not a secret.
+const EMBED_ANON = 'sb_publishable__7DDuHpyiU8xNr5YndfZCQ_8MuVMoRw';
 const HORIZON_DAYS = 45;
 const TZ = 'America/New_York'; // CI runs in UTC — all day math must be Eastern
 
@@ -274,6 +278,36 @@ ${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;
 ${FOOT}`;
 }
 
+// Partner-facing landing: pick a town, copy the iframe snippet, see a live preview.
+// The page chambers/CVBs/libraries are pointed to when adopting the embed widget.
+function partnersPage(optionsHtml) {
+  return `${HEAD('Add Local Loop events to your website | Local Loop', 'Embed your town’s upcoming events on your own site, free. One line of HTML for chambers of commerce, visitor bureaus, libraries and town sites — always current.', '/partners.html')}
+<section class="town-hero"><div class="kicker">For chambers, CVBs, libraries &amp; town sites</div>
+<h1>Put your town’s events on your site</h1>
+<div class="tag">${PIN_SVG}<span>Free, always current, one line of HTML</span></div></section>
+<p style="font-size:16px;line-height:1.6;margin:14px 4px;">Pick your town, copy the snippet, and paste it into your page. The widget updates itself as new events are added &mdash; nothing to maintain on your end.</p>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;">
+  <label style="font-weight:700;font-size:14px;display:block;margin-bottom:8px;">Your town
+    <select id="town" style="font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);margin-left:6px;">${optionsHtml}</select>
+  </label>
+  <textarea id="snippet" readonly rows="3" aria-label="Embed snippet" style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--green-l);color:var(--ink);resize:vertical;"></textarea>
+  <button id="copy" class="get" style="border:0;cursor:pointer;margin-top:10px;">Copy snippet</button>
+</div>
+<div style="margin:14px 0 8px;font-weight:800;color:var(--muted);font-size:13px;letter-spacing:.5px;text-transform:uppercase;">Live preview</div>
+<iframe id="preview" src="https://localloop.io/embed.html?town=findlay" style="width:100%;max-width:420px;height:560px;border:0" loading="lazy" title="Local Loop events preview"></iframe>
+<script>
+(function(){
+  var sel=document.getElementById('town'),ta=document.getElementById('snippet'),pv=document.getElementById('preview'),btn=document.getElementById('copy');
+  function snip(t){return '<iframe src="https://localloop.io/embed.html?town='+t+'" style="width:100%;max-width:420px;height:560px;border:0" loading="lazy" title="Upcoming events"></iframe>';}
+  function upd(){var t=sel.value;ta.value=snip(t);pv.src='https://localloop.io/embed.html?town='+t;}
+  sel.addEventListener('change',upd);
+  btn.addEventListener('click',function(){ta.select();try{document.execCommand('copy');}catch(e){}btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy snippet';},1500);});
+  upd();
+})();
+</script>
+${FOOT}`;
+}
+
 async function main() {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -391,6 +425,18 @@ ${FOOT}`;
       writeFileSync(join(SALE_OUT, `${s.id}.html`), sharePage('garage-sale', item, name, s.city_id));
       salePages++;
     }
+    // Embeddable town widget — one runtime-data-driven file serves every town via
+    // ?town=. Partners (chambers/CVBs) iframe it; it fetches current events itself.
+    const embedTpl = readFileSync(join(here, 'embed.template.html'), 'utf8')
+      .replace(/__SUPABASE_URL__/g, SUPABASE_URL)
+      .replace(/__SUPABASE_ANON__/g, EMBED_ANON);
+    writeFileSync(join(here, '..', 'site', 'embed.html'), embedTpl);
+    // Partner landing (copy-paste snippet + live preview) — towns with events only.
+    const partnerOpts = APP_CITIES.filter((c) => (counts[c.id] || 0) > 0)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((c) => `<option value="${c.id}"${c.id === 'findlay' ? ' selected' : ''}>${esc(c.name)}, OH</option>`)
+      .join('');
+    writeFileSync(join(here, '..', 'site', 'partners.html'), partnersPage(partnerOpts));
   }
 
   // Hub page — towns grouped by region and alphabetized, like the app's picker.

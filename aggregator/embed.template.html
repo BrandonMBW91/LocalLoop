@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Local Loop events widget</title>
+<!--
+  Embeddable town events widget. A chamber/CVB/town site drops this in:
+    <iframe src="https://localloop.io/embed.html?town=findlay"
+            style="width:100%;max-width:420px;height:560px;border:0" loading="lazy"
+            title="Upcoming events in Findlay"></iframe>
+  Params:  town=<id> (required) · limit=<n> (default 6) · accent=<hex, no #>
+           · theme=light|dark|auto (default light) · bg=transparent
+  Runtime-data-driven (fetches approved upcoming events straight from the public
+  API), so it's always current with no rebuild. Optional auto-height: the widget
+  postMessages {type:'localloop-embed-height', height} to the parent — resize the
+  iframe from that if you want it to fit exactly.
+-->
+<style>
+  :root{
+    --accent:#15315B; --ink:#1A1A1A; --muted:#5B5B5B; --line:#E4DED4;
+    --surface:#ffffff; --chip:#EEF1F6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"]{ --ink:#F3F3F3; --muted:#A9AEB6; --line:#2A2F37; --surface:#14171C; --chip:#20242B; }
+  }
+  :root[data-theme="dark"]{ --ink:#F3F3F3; --muted:#A9AEB6; --line:#2A2F37; --surface:#14171C; --chip:#20242B; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--surface); line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  body[data-bg="transparent"]{ background:transparent; }
+  .card{ border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--surface); }
+  body[data-bg="transparent"] .card{ background:transparent; }
+  .hd{ display:flex; align-items:center; gap:8px; padding:13px 15px; border-bottom:1px solid var(--line); }
+  .hd .mark{ width:22px; height:22px; border-radius:6px; flex:0 0 auto; }
+  .hd .t{ font-weight:800; font-size:14.5px; letter-spacing:-.01em; }
+  .hd .t small{ display:block; font-weight:600; font-size:11.5px; color:var(--muted); letter-spacing:.01em; }
+  ul{ list-style:none; margin:0; padding:4px 0; }
+  a.ev{ display:flex; gap:12px; align-items:flex-start; padding:11px 15px; text-decoration:none; color:inherit; border-top:1px solid transparent; }
+  a.ev + a.ev{ border-top-color:var(--line); }
+  a.ev:hover{ background:color-mix(in srgb, var(--accent) 6%, transparent); }
+  a.ev:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; border-radius:8px; }
+  .chip{ flex:0 0 44px; text-align:center; background:var(--chip); border-radius:9px; padding:5px 0 6px; }
+  .chip .d{ font-size:18px; font-weight:800; line-height:1; color:var(--accent); }
+  .chip .m{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-top:2px; }
+  .bd{ min-width:0; flex:1; }
+  .bd h4{ margin:0 0 3px; font-size:14px; font-weight:700; line-height:1.25; }
+  .bd .meta{ font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ft{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 15px; border-top:1px solid var(--line); }
+  .ft a.all{ font-size:13px; font-weight:800; color:var(--accent); text-decoration:none; }
+  .ft a.all:hover{ text-decoration:underline; }
+  .ft .pb{ font-size:11px; color:var(--muted); text-decoration:none; }
+  .ft .pb:hover{ color:var(--accent); }
+  .state{ padding:26px 16px; text-align:center; color:var(--muted); font-size:13.5px; }
+  .sk{ height:64px; margin:4px 15px; border-radius:10px; background:linear-gradient(90deg,var(--chip),transparent,var(--chip)); background-size:200% 100%; animation:sh 1.2s infinite; }
+  @keyframes sh{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @media (prefers-reduced-motion: reduce){ .sk{ animation:none; } }
+</style></head>
+<body>
+  <div class="card">
+    <div class="hd">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M12 5.5c-2.5 0-4.5 2-4.5 4.5 0 3.4 4.5 8.5 4.5 8.5s4.5-5.1 4.5-8.5c0-2.5-2-4.5-4.5-4.5zm0 6.1a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z" fill="#fff"/></svg>
+      <div class="t">What's on<small id="sub">Loading events…</small></div>
+    </div>
+    <ul id="list">
+      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
+    </ul>
+    <div class="ft">
+      <a class="all" id="all" href="https://localloop.io/" target="_blank" rel="noopener">See all events →</a>
+      <a class="pb" href="https://localloop.io/" target="_blank" rel="noopener">Powered by Local Loop</a>
+    </div>
+  </div>
+<script>
+(function(){
+  var API = "__SUPABASE_URL__";
+  var KEY = "__SUPABASE_ANON__";
+  var q = new URLSearchParams(location.search);
+  var town = (q.get("town") || "findlay").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  var limit = Math.min(Math.max(parseInt(q.get("limit") || "6", 10) || 6, 1), 15);
+  var accent = q.get("accent");
+  var theme = (q.get("theme") || "light").toLowerCase();
+  if (accent && /^[0-9a-fA-F]{3,8}$/.test(accent)) document.documentElement.style.setProperty("--accent", "#" + accent);
+  document.documentElement.setAttribute("data-theme", theme === "dark" ? "dark" : (theme === "auto" ? "auto" : "light"));
+  if (q.get("bg") === "transparent") document.body.setAttribute("data-bg", "transparent");
+
+  var townName = town.split("-").map(function(w){ return w.charAt(0).toUpperCase() + w.slice(1); }).join(" ");
+  document.getElementById("all").href = "https://localloop.io/events/" + town + ".html";
+
+  function fmt(iso){
+    try{
+      var p = new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", weekday:"short", month:"short", day:"numeric", hour:"numeric", minute:"2-digit" }).formatToParts(new Date(iso));
+      var g = function(t){ return (p.find(function(x){return x.type===t;})||{}).value || ""; };
+      return { d:g("day"), m:g("month"), t:(g("hour")+":"+g("minute")+" "+g("dayPeriod")).replace(":00 "," "), dow:g("weekday") };
+    }catch(e){ return { d:"", m:"", t:"", dow:"" }; }
+  }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+
+  function postHeight(){
+    try{ parent.postMessage({ type:"localloop-embed-height", height: document.body.scrollHeight }, "*"); }catch(e){}
+  }
+  function render(html){ document.getElementById("list").innerHTML = html; postHeight(); }
+
+  var now = new Date().toISOString();
+  var url = API + "/rest/v1/events?select=id,title,start_at,venue,category&city_id=eq." + encodeURIComponent(town) +
+            "&status=eq.approved&start_at=gte." + encodeURIComponent(now) + "&order=start_at.asc&limit=" + limit;
+
+  fetch(url, { headers: { apikey: KEY } })
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(rows){
+      document.getElementById("sub").textContent = "Upcoming in " + townName + ", OH";
+      if(!rows || !rows.length){
+        render('<div class="state">No upcoming events listed yet.<br>Check back soon.</div>');
+        return;
+      }
+      var html = rows.map(function(e){
+        var f = fmt(e.start_at);
+        var meta = [f.dow + " · " + f.t, e.venue].filter(Boolean).join(" · ");
+        return '<a class="ev" href="https://localloop.io/event/' + encodeURIComponent(e.id) + '" target="_blank" rel="noopener">' +
+               '<div class="chip"><div class="d">' + esc(f.d) + '</div><div class="m">' + esc(f.m) + '</div></div>' +
+               '<div class="bd"><h4>' + esc(e.title) + '</h4><div class="meta">' + esc(meta) + '</div></div></a>';
+      }).join("");
+      render(html);
+    })
+    .catch(function(){
+      document.getElementById("sub").textContent = townName + ", OH";
+      render('<div class="state">Couldn\'t load events right now.<br><a href="https://localloop.io/events/' + esc(town) + '.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Open Local Loop →</a></div>');
+    });
+
+  window.addEventListener("load", postHeight);
+})();
+</script>
+</body></html>

@@ -65,6 +65,8 @@ play-service-account*.json
 site/event/
 site/food-truck/
 site/garage-sale/
+site/embed.html
+site/partners.html
 
 # Local Loop FB routine runtime state
 .fb-featured.json
