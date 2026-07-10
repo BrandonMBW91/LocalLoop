@@ -36,6 +36,13 @@ export const ANCHORS = [
   { name: 'Gallipolis / Ohio River', city: 'gallipolis', lat: 38.810, lng: -82.202, radius: 18 },  // Gallipolis, Pomeroy
   { name: 'Belmont / Ohio Valley', city: 'st-clairsville', lat: 40.081, lng: -80.900, radius: 20 },// St. Clairsville, Cadiz, Martins Ferry (Wheeling WV dropped by router)
   { name: 'Steubenville / Jefferson', city: 'steubenville', lat: 40.370, lng: -80.634, radius: 15 }, // Steubenville (kept tight to exclude Pittsburgh)
+  // --- Southwest Ohio (2026 statewide phase 2) ---
+  { name: 'Springfield / Clark', city: 'springfield', lat: 39.924, lng: -83.809, radius: 18 }, // Springfield, Urbana (r kept tight to exclude Dayton)
+  { name: 'Washington Court House', city: 'washington-court-house', lat: 39.536, lng: -83.439, radius: 15 },
+  { name: 'Hillsboro / Highland', city: 'hillsboro', lat: 39.202, lng: -83.612, radius: 18 }, // Hillsboro, Greenfield
+  { name: 'Wilmington / Clinton', city: 'wilmington', lat: 39.445, lng: -83.828, radius: 15 },
+  { name: 'Eaton / Preble', city: 'eaton', lat: 39.744, lng: -84.637, radius: 12 }, // tight: Dayton 24mi E, Richmond IN 18mi W
+  { name: 'Brown / Adams', city: 'georgetown', lat: 38.870, lng: -83.680, radius: 18 }, // Georgetown, Ripley, West Union, Peebles
 ];
 
 // Great-circle miles between two points (haversine).

@@ -129,6 +129,17 @@ export const NAMES = [
   ['woodsfield', "Woodsfield"],
   ['caldwell', "Caldwell"],
   ['mcconnelsville', "McConnelsville"],
+  ['springfield', "Springfield"],
+  ['urbana', "Urbana"],
+  ['washington-court-house', "Washington Court House"],
+  ['hillsboro', "Hillsboro"],
+  ['greenfield', "Greenfield"],
+  ['wilmington', "Wilmington"],
+  ['eaton', "Eaton"],
+  ['georgetown', "Georgetown"],
+  ['ripley', "Ripley"],
+  ['west-union', "West Union"],
+  ['peebles', "Peebles"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

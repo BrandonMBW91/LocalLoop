@@ -54,6 +54,9 @@ const CATALOG_CITY_IDS = [
   'nelsonville', 'logan', 'new-lexington', 'chillicothe', 'waverly', 'portsmouth',
   'ironton', 'jackson', 'wellston', 'mcarthur', 'gallipolis', 'pomeroy',
   'st-clairsville', 'steubenville', 'cadiz', 'woodsfield', 'caldwell', 'mcconnelsville',
+  // Southwest
+  'springfield', 'urbana', 'washington-court-house', 'hillsboro', 'greenfield',
+  'wilmington', 'eaton', 'georgetown', 'ripley', 'west-union', 'peebles',
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);
