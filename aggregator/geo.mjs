@@ -26,6 +26,16 @@ export const ANCHORS = [
   { name: 'Defiance / NW corner', city: 'defiance', lat: 41.400, lng: -84.280, radius: 30 },   // Defiance, Napoleon, Bryan, Wauseon (Fremont=Sandusky, Wapakoneta=Lima)
   { name: 'Youngstown / Mahoning Valley', city: 'youngstown', lat: 41.100, lng: -80.700, radius: 25 }, // Youngstown, Warren, Boardman, Austintown, Niles, Girard, Struthers, Canfield, Salem, Columbiana
   { name: 'Wooster / Wayne', city: 'wooster', lat: 40.805, lng: -81.935, radius: 18 }, // Wooster; Wayne CVB feed routes county-wide
+  // --- Southeast Ohio (2026 statewide phase 1) ---
+  { name: 'Zanesville / Cambridge', city: 'zanesville', lat: 39.990, lng: -81.800, radius: 25 }, // Zanesville, Cambridge, Coshocton, New Lexington edge
+  { name: 'Marietta / Mid-Ohio Valley', city: 'marietta', lat: 39.415, lng: -81.455, radius: 20 }, // Marietta, Belpre (Parkersburg WV events dropped by router)
+  { name: 'Athens / Hocking Hills', city: 'athens', lat: 39.420, lng: -82.250, radius: 25 },       // Athens, Nelsonville, Logan, New Lexington
+  { name: 'Chillicothe / Ross', city: 'chillicothe', lat: 39.333, lng: -82.982, radius: 20 },      // Chillicothe, Waverly
+  { name: 'Portsmouth / Scioto', city: 'portsmouth', lat: 38.732, lng: -82.998, radius: 20 },      // Portsmouth, Ironton edge
+  { name: 'Jackson / Vinton', city: 'jackson', lat: 39.052, lng: -82.637, radius: 18 },            // Jackson, Wellston, McArthur
+  { name: 'Gallipolis / Ohio River', city: 'gallipolis', lat: 38.810, lng: -82.202, radius: 18 },  // Gallipolis, Pomeroy
+  { name: 'Belmont / Ohio Valley', city: 'st-clairsville', lat: 40.081, lng: -80.900, radius: 20 },// St. Clairsville, Cadiz, Martins Ferry (Wheeling WV dropped by router)
+  { name: 'Steubenville / Jefferson', city: 'steubenville', lat: 40.370, lng: -80.634, radius: 15 }, // Steubenville (kept tight to exclude Pittsburgh)
 ];
 
 // Great-circle miles between two points (haversine).

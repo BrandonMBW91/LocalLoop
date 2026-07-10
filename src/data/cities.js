@@ -3,10 +3,14 @@
 // population, used to size markets (e.g. the spotlight scan only considers towns
 // above a population bar so we don't push tiny-village events region-wide).
 
-export const REGION_ORDER = ['Northwest Ohio', 'Central Ohio', 'Northeast Ohio'];
+export const REGION_ORDER = ['Northwest Ohio', 'Central Ohio', 'Northeast Ohio', 'Southeast Ohio', 'Southwest Ohio'];
 const NW = 'Northwest Ohio';
 const CENTRAL = 'Central Ohio';
 const NE = 'Northeast Ohio';
+const SE = 'Southeast Ohio';
+const SW = 'Southwest Ohio';
+// Keep unused region consts referenced so nothing flags them before their first town lands.
+void SE; void SW;
 
 export const CITIES = [
   // --- Northwest Ohio ---
@@ -99,4 +103,28 @@ export const CITIES = [
   { id: 'salem', name: "Salem", state: 'OH', region: NE, pop: 11915, tagline: "Historic Quaker town" },
   { id: 'columbiana', name: "Columbiana", state: 'OH', region: NE, pop: 6384, tagline: "Historic small-town square" },
   { id: 'wooster', name: "Wooster", state: 'OH', region: NE, tagline: "Heart of Wayne County" },
+  { id: 'zanesville', name: "Zanesville", state: 'OH', region: SE, tagline: "Y-Bridge city on the Muskingum" },
+  { id: 'cambridge', name: "Cambridge", state: 'OH', region: SE, tagline: "Guernsey County's Dickens town" },
+  { id: 'coshocton', name: "Coshocton", state: 'OH', region: SE, tagline: "Historic Roscoe Village" },
+  { id: 'marietta', name: "Marietta", state: 'OH', region: SE, tagline: "Ohio's first city" },
+  { id: 'belpre', name: "Belpre", state: 'OH', region: SE, tagline: "Ohio River neighbor of Marietta" },
+  { id: 'athens', name: "Athens", state: 'OH', region: SE, tagline: "Ohio University's hometown" },
+  { id: 'nelsonville', name: "Nelsonville", state: 'OH', region: SE, tagline: "Gateway to the Hocking Valley" },
+  { id: 'logan', name: "Logan", state: 'OH', region: SE, tagline: "Heart of the Hocking Hills" },
+  { id: 'new-lexington', name: "New Lexington", state: 'OH', region: SE, tagline: "Perry County seat" },
+  { id: 'chillicothe', name: "Chillicothe", state: 'OH', region: SE, tagline: "Ohio's first capital" },
+  { id: 'waverly', name: "Waverly", state: 'OH', region: SE, tagline: "Pike County seat" },
+  { id: 'portsmouth', name: "Portsmouth", state: 'OH', region: SE, tagline: "Ohio River murals city" },
+  { id: 'ironton', name: "Ironton", state: 'OH', region: SE, tagline: "Lawrence County's river city" },
+  { id: 'jackson', name: "Jackson", state: 'OH', region: SE, tagline: "Apple City of southern Ohio" },
+  { id: 'wellston', name: "Wellston", state: 'OH', region: SE, tagline: "Jackson County's lake town" },
+  { id: 'mcarthur', name: "McArthur", state: 'OH', region: SE, tagline: "Vinton County seat" },
+  { id: 'gallipolis', name: "Gallipolis", state: 'OH', region: SE, tagline: "Old French City on the Ohio" },
+  { id: 'pomeroy', name: "Pomeroy", state: 'OH', region: SE, tagline: "Meigs County's riverfront seat" },
+  { id: 'st-clairsville', name: "St. Clairsville", state: 'OH', region: SE, tagline: "Belmont County seat" },
+  { id: 'steubenville', name: "Steubenville", state: 'OH', region: SE, tagline: "City of Murals" },
+  { id: 'cadiz', name: "Cadiz", state: 'OH', region: SE, tagline: "Harrison County seat" },
+  { id: 'woodsfield', name: "Woodsfield", state: 'OH', region: SE, tagline: "Monroe County seat" },
+  { id: 'caldwell', name: "Caldwell", state: 'OH', region: SE, tagline: "Noble County seat" },
+  { id: 'mcconnelsville', name: "McConnelsville", state: 'OH', region: SE, tagline: "Morgan County's river village" },
 ];

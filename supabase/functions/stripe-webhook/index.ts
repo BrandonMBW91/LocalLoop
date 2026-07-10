@@ -49,6 +49,11 @@ const CATALOG_CITY_IDS = [
   'alliance', 'medina', 'ravenna', 'streetsboro', 'orrville', 'dover',
   'new-philadelphia', 'youngstown', 'warren', 'boardman', 'austintown', 'niles',
   'girard', 'struthers', 'canfield', 'salem', 'columbiana', 'wooster',
+  // Southeast
+  'zanesville', 'cambridge', 'coshocton', 'marietta', 'belpre', 'athens',
+  'nelsonville', 'logan', 'new-lexington', 'chillicothe', 'waverly', 'portsmouth',
+  'ironton', 'jackson', 'wellston', 'mcarthur', 'gallipolis', 'pomeroy',
+  'st-clairsville', 'steubenville', 'cadiz', 'woodsfield', 'caldwell', 'mcconnelsville',
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);
