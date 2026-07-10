@@ -54,7 +54,7 @@ const EMIT_ITEM_PAGES = process.env.SEO_ITEM_PAGES === '1';
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;'); // ' too, so single-quoted attrs are safe
 }
 
 // --- Eastern-time date helpers ------------------------------------------------
@@ -89,7 +89,9 @@ function timeRange(e) {
 // at noon UTC so the calendar day never shifts, and compare as plain date strings.
 function fmtDay(ymd) {
   if (!ymd) return '';
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).formatToParts(new Date(`${ymd}T12:00:00Z`));
+  const d = new Date(`${ymd}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return ''; // non-date input (e.g. a timestamptz) must not crash the whole run
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).formatToParts(d);
   const get = (t) => (parts.find((p) => p.type === t) || {}).value || '';
   return `${get('weekday')}, ${get('month')} ${get('day')}`;
 }
@@ -108,11 +110,11 @@ const HEAD = (title, desc, path, noindex = false) => `<!DOCTYPE html><html lang=
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}"/>${noindex ? '\n<meta name="robots" content="noindex,follow"/>' : ''}
-<link rel="canonical" href="${SITE}${path}"/>
+<link rel="canonical" href="${SITE}${esc(path)}"/>
 <meta property="og:title" content="${esc(title)}"/>
 <meta property="og:description" content="${esc(desc)}"/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="${SITE}${path}"/>
+<meta property="og:url" content="${SITE}${esc(path)}"/>
 <style>
 :root{--green:${GREEN};--green-d:#0E2444;--green-l:#E8EDF5;--orange:#B22234;--bg:#FBF8F1;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E4DED4;}
 *{box-sizing:border-box;}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;}
@@ -248,7 +250,7 @@ function eventPage(e, cityName, cityId) {
 <div class="tag">${CLOCK_SVG}<span>${esc(when)}</span></div>
 ${venue ? `<div class="tag">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}
 <a class="get" href="${APP_STORE_URL}">Get directions in the app</a></section>
-${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description).slice(0, 1500)}</p>` : ''}
+${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description.slice(0, 1500))}</p>` : ''}
 <a class="town" href="/events/${cityId}.html"><span><b>See everything in ${esc(cityName)}, OH</b><span class="tg">More events, garage sales &amp; food trucks</span></span><span class="n">Browse</span></a>
 </article>
 ${FOOT}`;
@@ -272,7 +274,7 @@ function sharePage(kind, item, cityName, cityId) {
 ${when ? `<div class="tag">${CLOCK_SVG}<span>${esc(when)}</span></div>` : ''}
 ${venue ? `<div class="tag">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}
 <a class="get" href="${APP_STORE_URL}">Open in the app</a></section>
-${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description).slice(0, 1200)}</p>` : ''}
+${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description.slice(0, 1200))}</p>` : ''}
 <a class="town" href="/events/${cityId}.html"><span><b>See everything in ${esc(cityName)}, OH</b><span class="tg">Events, garage sales &amp; food trucks</span></span><span class="n">Browse</span></a>
 </article>
 ${FOOT}`;
@@ -335,15 +337,24 @@ async function main() {
 
   for (const c of APP_CITIES) {
     const { id, name, tagline } = c;
-    const { data, error } = await sb
-      .from('events')
-      .select('id,title,start_at,end_at,venue,address,host,description,category')
-      .eq('city_id', id).eq('status', 'approved')
-      .gte('start_at', backIso).lte('start_at', cutoff)
-      .order('start_at', { ascending: true })
-      .limit(1000); // PostgREST cap; 300 clipped Toledo/Akron (~730 each) to ~9 of the 45 days
+    // Paginate past PostgREST's 1000-row cap so a high-volume town (Akron is ~900
+    // and climbing) never silently drops its later days from the page + sitemap.
+    // Secondary order on id makes the page boundaries deterministic across ties.
+    let data = [];
+    let error = null;
+    for (let from = 0; ; from += 1000) {
+      const page = await sb
+        .from('events')
+        .select('id,title,start_at,end_at,venue,address,host,description,category')
+        .eq('city_id', id).eq('status', 'approved')
+        .gte('start_at', backIso).lte('start_at', cutoff)
+        .order('start_at', { ascending: true }).order('id', { ascending: true })
+        .range(from, from + 999);
+      if (page.error) { error = page.error; break; }
+      data = data.concat(page.data || []);
+      if ((page.data || []).length < 1000) break; // last page reached
+    }
     if (error) { console.error(`  ! ${id}: ${error.message}`); continue; }
-    if ((data || []).length === 1000) console.warn(`  … ${id} hit the 1000-event cap — page is truncated, paginate soon`);
     // Render-time dedup guard: collapse same title+venue on the same ET day,
     // so a page is never wrong even if a duplicate slips past ingest dedup.
     const seen = new Set();

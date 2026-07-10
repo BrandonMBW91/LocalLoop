@@ -79,6 +79,7 @@
   var KEY = "__SUPABASE_ANON__";
   var q = new URLSearchParams(location.search);
   var town = (q.get("town") || "findlay").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (!town) town = "findlay"; // re-default if the param sanitized to empty (else a broken /events/.html link)
   var limit = Math.min(Math.max(parseInt(q.get("limit") || "6", 10) || 6, 1), 15);
   var accent = q.get("accent");
   var theme = (q.get("theme") || "light").toLowerCase();
@@ -103,19 +104,32 @@
   }
   function render(html){ document.getElementById("list").innerHTML = html; postHeight(); }
 
-  var now = new Date().toISOString();
-  var url = API + "/rest/v1/events?select=id,title,start_at,venue,category&city_id=eq." + encodeURIComponent(town) +
-            "&status=eq.approved&start_at=gte." + encodeURIComponent(now) + "&order=start_at.asc&limit=" + limit;
+  // Reach back a few hours so an in-progress event still shows (like the town pages),
+  // and over-fetch so title de-dup of recurring series still fills the list.
+  var since = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
+  var fetchLimit = Math.min(limit * 4, 40);
+  var url = API + "/rest/v1/events?select=id,title,start_at,end_at,venue,category&city_id=eq." + encodeURIComponent(town) +
+            "&status=eq.approved&start_at=gte." + encodeURIComponent(since) + "&order=start_at.asc&limit=" + fetchLimit;
 
   fetch(url, { headers: { apikey: KEY } })
     .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(rows){
       document.getElementById("sub").textContent = "Upcoming in " + townName + ", OH";
-      if(!rows || !rows.length){
+      // Drop events that have already ended, then de-dupe a recurring series (many
+      // rows, one title) so the widget never lists the same event twice.
+      var nowMs = Date.now(), seen = {}, items = [];
+      (rows || []).forEach(function(e){
+        if (e.end_at && Date.parse(e.end_at) < nowMs) return;
+        var key = (e.title || "").trim().toLowerCase();
+        if (!key || seen[key]) return;
+        seen[key] = 1;
+        if (items.length < limit) items.push(e);
+      });
+      if(!items.length){
         render('<div class="state">No upcoming events listed yet.<br>Check back soon.</div>');
         return;
       }
-      var html = rows.map(function(e){
+      var html = items.map(function(e){
         var f = fmt(e.start_at);
         var meta = [f.dow + " · " + f.t, e.venue].filter(Boolean).join(" · ");
         return '<a class="ev" href="https://localloop.io/event/' + encodeURIComponent(e.id) + '" target="_blank" rel="noopener">' +

@@ -113,8 +113,19 @@ Deno.serve(async (req) => {
       const ranked = ints.length
         ? [...list].sort((a, b) => (ints.includes(b.category || '') ? 1 : 0) - (ints.includes(a.category || '') ? 1 : 0))
         : list;
-      const titles = ranked.slice(0, 2).map((e) => e.title).join(', ');
-      const body = list.length > 2 ? `${titles}, and more` : titles;
+      // De-dupe by title so a recurring series (many rows, one title) can't fill the
+      // body with the same event twice, e.g. "Art Show, Art Show, and more".
+      const seenTitle = new Set<string>();
+      const distinct: string[] = [];
+      for (const e of ranked) {
+        const t = (e.title || '').trim();
+        if (!t || seenTitle.has(t.toLowerCase())) continue;
+        seenTitle.add(t.toLowerCase());
+        distinct.push(t);
+        if (distinct.length >= 3) break; // 2 shown + 1 to know there's "more"
+      }
+      if (!distinct.length) continue;
+      const body = distinct.length > 2 ? `${distinct.slice(0, 2).join(', ')}, and more` : distinct.slice(0, 2).join(', ');
       messages.push({ to: tk.token, title: 'This weekend near you', body, sound: 'default' });
     }
   }

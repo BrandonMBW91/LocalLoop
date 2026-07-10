@@ -268,7 +268,11 @@ export function AppProvider({ children }) {
   // the digest is opt-out-able by ignoring it.
   const pushAskedRef = useRef(false);
   useEffect(() => {
-    if (!isSupabaseEnabled || isAdmin || Platform.OS === 'web' || !cityId) return;
+    // Wait for hydration: before it, interests is still the empty default, and
+    // registering then would send null and clobber the device's stored interests
+    // until the effect re-ran. Gating on `hydrated` also collapses the pre-hydration
+    // duplicate fire, so a returning granted user registers once with real interests.
+    if (!isSupabaseEnabled || !hydrated || isAdmin || Platform.OS === 'web' || !cityId) return;
     (async () => {
       if (await hasPermission()) {
         const t = await getPushToken();
@@ -284,7 +288,7 @@ export function AppProvider({ children }) {
         if (t) savePushToken(t, cityId, Platform.OS, interests);
       }
     })();
-  }, [cityId, onboarded, interests]);
+  }, [hydrated, cityId, onboarded, interests]);
 
   // Record this device as active in the current town (anonymous) — powers
   // user-based ad pricing.

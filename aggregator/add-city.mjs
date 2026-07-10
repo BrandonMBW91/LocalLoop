@@ -100,7 +100,10 @@ function webhookCatalogPlan() {
   const end = start === -1 ? -1 : src.indexOf('\n];', start);
   if (end === -1) return { msg: `⚠ could not locate CATALOG_CITY_IDS array — add '${id}' to the webhook by hand` };
   if (new RegExp(`'${reEsc(id)}'`).test(src.slice(start, end))) return { msg: `✓ webhook CATALOG_CITY_IDS already lists "${id}"` };
-  const next = `${src.slice(0, end)}\n  '${id}', // added by add-city.mjs${src.slice(end)}`;
+  // Add the separating comma if the last existing element lacks a trailing one, so
+  // the insert can't produce two adjacent string literals (invalid TS).
+  const needsComma = !/,\s*$/.test(src.slice(start, end));
+  const next = `${src.slice(0, end)}${needsComma ? ',' : ''}\n  '${id}', // added by add-city.mjs${src.slice(end)}`;
   return {
     msg: `✓ added "${id}" to webhook CATALOG_CITY_IDS — REDEPLOY the function to apply (supabase functions deploy stripe-webhook)`,
     write: () => writeFileSync(WEBHOOK_FILE, next),

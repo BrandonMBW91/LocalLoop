@@ -532,8 +532,16 @@ export async function insertDeal(d) {
 }
 
 export async function setDealActive(id, active) {
-  const { error } = await supabase.from('deals').update({ active }).eq('id', id);
+  // Mirror setSponsorActive: turning ON clears a stale payment_failed pause (else the
+  // invoice.paid webhook, which reactivates WHERE paused_reason='payment_failed',
+  // could later resurrect a deal the moderator deliberately disabled) and any
+  // already-passed end date (which RLS would otherwise keep hidden).
+  const patch = active ? { active: true, paused_reason: null } : { active: false };
+  const { error } = await supabase.from('deals').update(patch).eq('id', id);
   if (error) throw error;
+  if (active) {
+    await supabase.from('deals').update({ ends_at: null }).eq('id', id).lt('ends_at', new Date().toISOString());
+  }
 }
 
 export async function deleteDeal(id) {

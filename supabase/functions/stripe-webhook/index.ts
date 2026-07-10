@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
   try {
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
-      const product = s.metadata?.product || 'town_sponsor'; // town_sponsor | all_region | featured_30
+      const product = s.metadata?.product || 'town_sponsor'; // town_sponsor | all_region | metro_sponsor | featured_30 | deal
       // Sanitize buyer-supplied checkout fields before they become a live ad.
       const clamp = (v: string, n: number) => (v || '').slice(0, n);
       const business = clamp(field(s, 'businessname') || s.customer_details?.name || 'Local business', 120);
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
           await resendSend(
             dealBuyer,
             'Your Local Loop deal is live',
-            `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer}" is now showing in ${resolvedCity} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+            `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer || 'Local deal'}" is now showing in ${resolvedCity} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
           );
         }
         return new Response(JSON.stringify({ received: true, fulfilled: 'deal created' }), {

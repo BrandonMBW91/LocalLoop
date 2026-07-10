@@ -33,6 +33,7 @@ as $$
   where p_token is not null and length(p_token) >= 20 and edit_token = p_token
   having count(*) > 0;
 $$;
+revoke execute on function public.get_sponsor_ad(text) from public;
 grant execute on function public.get_sponsor_ad(text) to anon, authenticated;
 
 -- Update the ad across every town it runs in. Only display fields; link is
@@ -52,9 +53,18 @@ begin
 
   clean_link := nullif(btrim(coalesce(p_link_url, '')), '');
   if clean_link is not null then
-    if clean_link !~* '^https?://' then clean_link := 'https://' || clean_link; end if;
-    if length(clean_link) > 300 or clean_link !~* '^https?://[^ ]+\.[^ ]+' then
-      raise exception 'invalid link';
+    if clean_link ~* '^tel:' then
+      -- Phone link: the checkout webhook whitelists tel: and the app renders a Call
+      -- CTA, so a pre-filled tel: link must round-trip. Allow digits + separators only.
+      if clean_link !~* '^tel:\+?[0-9().\- ]{3,20}$' then raise exception 'invalid link'; end if;
+    else
+      if clean_link !~* '^https?://' then clean_link := 'https://' || clean_link; end if;
+      -- http(s) to a real host, and NO whitespace/control chars, quotes, or angle
+      -- brackets — so a stored link can never break out of an href/attribute if any
+      -- surface ever renders it as HTML (defense in depth for the clickable ad).
+      if length(clean_link) > 300 or clean_link !~* '^https?://[^[:space:]"''<>]+\.[^[:space:]"''<>]+$' then
+        raise exception 'invalid link';
+      end if;
     end if;
   end if;
 
@@ -68,4 +78,5 @@ begin
   return n;
 end;
 $$;
+revoke execute on function public.update_sponsor_ad(text, text, text, text) from public;
 grant execute on function public.update_sponsor_ad(text, text, text, text) to anon, authenticated;
