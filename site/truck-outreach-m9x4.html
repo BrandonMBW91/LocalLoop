@@ -60,6 +60,14 @@
 </header>
 <div class="bar"><span class="count" id="prog"></span><button class="copybtn" id="copyem">Copy emails (0)</button><button class="copybtn" id="open10" style="background:var(--navy)">Open next 10</button><label><input type="checkbox" id="hidedone"> Hide checked</label></div>
 
+<div style="background:#FFF7E6;border:1.5px solid var(--red);border-radius:10px;padding:12px 14px;margin:12px 0 14px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+    <b style="font-size:14px;">Calendar-first message to send (FB DM or email)</b>
+    <button class="copybtn" id="copymsg">Copy message</button>
+  </div>
+  <p id="msgtext" style="margin:0;font-size:13.5px;line-height:1.55;color:#333;">Hi! I'm Michael, I run Local Loop, a free Ohio app people open to find food trucks near them. Here's the easy part for you: if you keep a Google Calendar of your stops, send me the link once and your whole schedule shows up in the app automatically. You never post anything. It's free, and it puts your truck in front of locals who are already looking for somewhere to eat. Want in? Just reply with your calendar link (or "tell me more").</p>
+</div>
+
 <h2>Toledo · Wood · Fulton <span class="n" data-n></span></h2>
 <div class="grp" data-g data-town-default="Toledo">
   <div class="row"><input type="checkbox"><span class="name">Hot Dogs 2 Go</span><span class="town">Swanton</span></div>
@@ -312,6 +320,13 @@
       setTimeout(updateCopy,3500);
     }
   });
+  // Copy the calendar-first outreach message.
+  const copyMsgBtn=document.getElementById('copymsg');
+  if(copyMsgBtn){ copyMsgBtn.addEventListener('click', async ()=>{
+    const t=document.getElementById('msgtext').textContent.trim();
+    try{ await navigator.clipboard.writeText(t); copyMsgBtn.textContent='Copied!'; setTimeout(()=>copyMsgBtn.textContent='Copy message',1800); }
+    catch(_){ const rng=document.createRange(); rng.selectNodeContents(document.getElementById('msgtext')); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(rng); copyMsgBtn.textContent='Select + copy'; setTimeout(()=>copyMsgBtn.textContent='Copy message',3000); }
+  }); }
   // Bulk-open: the next 10 unchecked trucks' links, one tab each. Browsers
   // block multi-open until the user allows popups for this site once.
   const openBtn = document.getElementById('open10');
