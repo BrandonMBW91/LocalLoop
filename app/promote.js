@@ -14,6 +14,11 @@ import { colors, spacing, radius } from '../src/theme/theme';
 // CHECKOUT_BY_TIER live in src/data/checkout.js — shared with the web advertise
 // generator so the links can't drift.
 const ADVERTISE_URL = 'https://localloop.io/advertise.html';
+// The in-app $9 Local Deal buy button stays hidden until the deal-aware webhook is
+// deployed — the live webhook has no product='deal' branch yet, so a purchase would be
+// mis-fulfilled as a blank sponsor ad. Flip to true (+ OTA) as the last step of the
+// deals deploy, together with the advertise-page deal card (SEO_ITEM_PAGES).
+const DEALS_LIVE = false;
 
 function Benefit({ icon, title, body }) {
   return (
@@ -139,7 +144,7 @@ export default function PromoteScreen() {
       <View style={styles.rateCard}>
         <RateRow label="Featured listing" sub="One event, sale, or truck · 7 days · email us" price={known ? `$${rate.featured7}` : '$…'} />
         <RateRow label="Featured listing" sub={`One event, sale, or truck · 30 days${links ? ' · tap to buy' : ' · email us'}`} price={known ? `$${rate.featured30}` : '$…'} url={links ? links.featured30 : undefined} />
-        <RateRow label="Local Deal" sub="Your coupon or special in your town's Deals list · monthly · tap to buy" price="$9/mo" url={DEAL_LINK} />
+        {DEALS_LIVE ? <RateRow label="Local Deal" sub="Your coupon or special in your town's Deals list · monthly · tap to buy" price="$9/mo" url={DEAL_LINK} /> : null}
         <RateRow label="Town sponsor" sub={`Your ad in ${city.name} · monthly${links ? ' · tap to buy' : ' · email us'}`} price={known ? `$${rate.sponsor}/mo` : '$…'} url={links ? links.town : undefined} />
         <RateRow label="Metro sponsor" sub="A whole metro (Toledo, Akron, Canton, and more) · monthly · tap to buy" price="$39/mo" url={METRO_LINK} />
         <RateRow label="All towns" sub="Every town we cover · monthly · tap to buy" price="$79/mo" url={REGION_LINK} />
