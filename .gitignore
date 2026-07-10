@@ -59,6 +59,13 @@ outreach/
 *service-account*.json
 play-service-account*.json
 
+# Generated per-item SEO/share pages — high-volume, high-churn, rebuilt each run
+# by aggregator/generate-events.mjs and deployed fresh (town pages in site/events/
+# stay committed). Keeping ~10k daily-changing files out of git.
+site/event/
+site/food-truck/
+site/garage-sale/
+
 # Local Loop FB routine runtime state
 .fb-featured.json
 local-refresh.log

@@ -9,7 +9,7 @@
 //
 // Env (from aggregator/.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
@@ -34,6 +34,18 @@ const GREEN = '#15315B'; // PATRIOTIC navy (Jul 2026 seasonal). REVERT: '#1F6F54
 
 const here = dirname(fileURLToPath(import.meta.url));
 const OUT = join(here, '..', 'site', 'events');
+// One indexable page per event/truck/sale. High-churn + high-volume, so these
+// dirs are gitignored and regenerated fresh each run (the town pages in OUT stay
+// committed — a small, stable set). Wiped at the start of main() so a removed or
+// expired listing never lingers as a stale page in the next atomic deploy.
+const EVENT_OUT = join(here, '..', 'site', 'event');
+const TRUCK_OUT = join(here, '..', 'site', 'food-truck');
+const SALE_OUT = join(here, '..', 'site', 'garage-sale');
+// Ship gate: the per-event/truck/sale pages only generate when SEO_ITEM_PAGES=1.
+// Default OFF so committing this code is inert in the daily cron until we opt in
+// (add `SEO_ITEM_PAGES: '1'` to the generate-events step in aggregate.yml, then
+// run the workflow). Town pages + hub + sitemap are unaffected either way.
+const EMIT_ITEM_PAGES = process.env.SEO_ITEM_PAGES === '1';
 
 function esc(s) {
   return String(s == null ? '' : s)
@@ -68,6 +80,19 @@ function timeRange(e) {
   if (!e.end_at) return s.time;
   const en = etParts(e.end_at);
   return etDayKey(e.start_at) === etDayKey(e.end_at) ? `${s.time} - ${en.time}` : s.time;
+}
+// Food-truck/garage-sale dates are bare YYYY-MM-DD strings (no time/zone). Format
+// at noon UTC so the calendar day never shifts, and compare as plain date strings.
+function fmtDay(ymd) {
+  if (!ymd) return '';
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).formatToParts(new Date(`${ymd}T12:00:00Z`));
+  const get = (t) => (parts.find((p) => p.type === t) || {}).value || '';
+  return `${get('weekday')}, ${get('month')} ${get('day')}`;
+}
+function shiftDay(ymd, delta) {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
 }
 
 // --- shared page chrome --------------------------------------------------------
@@ -197,6 +222,58 @@ function eventLd(e, cityName) {
   };
 }
 
+// One indexable page per event: real crawlable content + single-Event JSON-LD so
+// Google can surface it, and a working share target — a shared /event/{id} link now
+// shows the event instead of the open.html wall. Missing/expired ids still fall to
+// open.html via the non-forced /event/* rewrite (Netlify serves an existing static
+// file before a non-forced rewrite).
+function eventPage(e, cityName, cityId) {
+  const p = etParts(e.start_at);
+  const title = cleanText(e.title) || 'Event';
+  const venue = cleanLocation([e.venue, e.address].filter(Boolean)[0] || '');
+  const description = cleanDescription(e.description);
+  const cat = e.category || 'Community';
+  const when = `${p.dow}, ${p.mon} ${p.day} · ${timeRange(e)}`;
+  const metaDesc = `${title} in ${cityName}, OH${venue ? ` at ${venue}` : ''} — ${when}. ${description ? description.slice(0, 130) : 'See details and get directions free in the Local Loop app.'}`.replace(/\s+/g, ' ').slice(0, 300);
+  const ld = eventLd(e, cityName);
+  return `${HEAD(`${title} — ${cityName}, OH | Local Loop`, metaDesc, `/event/${e.id}`)}
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
+<article>
+<section class="town-hero"><div class="kicker">${esc(cat)} · ${esc(cityName)}, OH</div>
+<h1>${esc(title)}</h1>
+<div class="tag">${CLOCK_SVG}<span>${esc(when)}</span></div>
+${venue ? `<div class="tag">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}
+<a class="get" href="${APP_STORE_URL}">Get directions in the app</a></section>
+${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description).slice(0, 1500)}</p>` : ''}
+<a class="town" href="/events/${cityId}.html"><span><b>See everything in ${esc(cityName)}, OH</b><span class="tg">More events, garage sales &amp; food trucks</span></span><span class="n">Browse</span></a>
+</article>
+${FOOT}`;
+}
+
+// Lighter share page for a food truck stop or garage sale — reclaims a shared link
+// (was a dead open.html wall) with real content + an app CTA. No rich JSON-LD (these
+// aren't schema.org Events we want indexed the same way); noindex,follow keeps the
+// crawl budget on the event pages while still letting the link render when shared.
+function sharePage(kind, item, cityName, cityId) {
+  const label = kind === 'food-truck' ? 'Food truck' : 'Garage sale';
+  const title = cleanText(item.title) || label;
+  const venue = cleanLocation(item.venue || '');
+  const description = cleanDescription(item.description);
+  const when = item.when || '';
+  const metaDesc = `${title} in ${cityName}, OH${venue ? ` at ${venue}` : ''}${when ? ` — ${when}` : ''}. See it free in the Local Loop app.`.replace(/\s+/g, ' ').slice(0, 300);
+  return `${HEAD(`${title} — ${label} in ${cityName}, OH | Local Loop`, metaDesc, `/${kind}/${item.id}`, true)}
+<article>
+<section class="town-hero"><div class="kicker">${esc(label)} · ${esc(cityName)}, OH</div>
+<h1>${esc(title)}</h1>
+${when ? `<div class="tag">${CLOCK_SVG}<span>${esc(when)}</span></div>` : ''}
+${venue ? `<div class="tag">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}
+<a class="get" href="${APP_STORE_URL}">Open in the app</a></section>
+${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description).slice(0, 1200)}</p>` : ''}
+<a class="town" href="/events/${cityId}.html"><span><b>See everything in ${esc(cityName)}, OH</b><span class="tg">Events, garage sales &amp; food trucks</span></span><span class="n">Browse</span></a>
+</article>
+${FOOT}`;
+}
+
 async function main() {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -205,6 +282,12 @@ async function main() {
   }
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   mkdirSync(OUT, { recursive: true });
+  // Fresh per-item dirs each run so removed/expired listings don't linger as stale
+  // pages in the next (atomic) deploy. Gated — see EMIT_ITEM_PAGES.
+  if (EMIT_ITEM_PAGES) {
+    for (const d of [EVENT_OUT, TRUCK_OUT, SALE_OUT]) { rmSync(d, { recursive: true, force: true }); mkdirSync(d, { recursive: true }); }
+  }
+  const eventUrls = [];
 
   const nowIso = new Date().toISOString();
   const nowMs = Date.now();
@@ -270,7 +353,44 @@ ${tagline ? `<div class="tag">${PIN_SVG}<span>${esc(tagline)}</span></div>` : ''
 ${body}
 ${FOOT}`;
     writeFileSync(join(OUT, `${id}.html`), html);
+    // One indexable page per event (also the share + town-card-link target).
+    if (EMIT_ITEM_PAGES) for (const e of events) {
+      if (!e.id) continue;
+      writeFileSync(join(EVENT_OUT, `${e.id}.html`), eventPage(e, name, id));
+      eventUrls.push(`${SITE}/event/${e.id}`);
+    }
     console.log(`  ${name}: ${events.length} events`);
+  }
+
+  // Share pages for food trucks + garage sales — reclaims a shared link (was a dead
+  // open.html wall) with real content. noindex,follow (set in sharePage) keeps the
+  // crawl budget on events. Volume is tiny, so no cap needed.
+  const cityById = new Map(APP_CITIES.map((c) => [c.id, c.name]));
+  let truckPages = 0, salePages = 0;
+  if (EMIT_ITEM_PAGES) {
+    const { data: trucks } = await sb.from('food_trucks')
+      .select('id,city_id,name,date,start_time,end_time,location_name,address,note')
+      .eq('status', 'approved').gte('date', shiftDay(todayKey, -1));
+    for (const t of trucks || []) {
+      const name = cityById.get(t.city_id);
+      if (!name || !t.id) continue;
+      const when = [fmtDay(t.date), [t.start_time, t.end_time].filter(Boolean).join(' - ')].filter(Boolean).join(' · ');
+      const item = { id: t.id, title: t.name, when, venue: t.location_name || t.address, description: t.note };
+      writeFileSync(join(TRUCK_OUT, `${t.id}.html`), sharePage('food-truck', item, name, t.city_id));
+      truckPages++;
+    }
+    const { data: sales } = await sb.from('garage_sales')
+      .select('id,city_id,title,start_date,end_date,daily_start,daily_end,address,neighborhood,note')
+      .eq('status', 'approved').gte('end_date', todayKey);
+    for (const s of sales || []) {
+      const name = cityById.get(s.city_id);
+      if (!name || !s.id) continue;
+      const days = s.end_date && s.end_date !== s.start_date ? `${fmtDay(s.start_date)} - ${fmtDay(s.end_date)}` : fmtDay(s.start_date);
+      const when = [days, [s.daily_start, s.daily_end].filter(Boolean).join(' - ')].filter(Boolean).join(' · ');
+      const item = { id: s.id, title: s.title, when, venue: s.address || s.neighborhood, description: s.note };
+      writeFileSync(join(SALE_OUT, `${s.id}.html`), sharePage('garage-sale', item, name, s.city_id));
+      salePages++;
+    }
   }
 
   // Hub page — towns grouped by region and alphabetized, like the app's picker.
@@ -304,6 +424,9 @@ ${FOOT}`;
     `${SITE}/`, `${SITE}/events/`, `${SITE}/advertise.html`, `${SITE}/privacy.html`,
     // Only list town pages that actually have events — don't ask Google to index empties.
     ...APP_CITIES.filter((c) => (counts[c.id] || 0) > 0).map((c) => `${SITE}/events/${c.id}.html`),
+    // Every upcoming event page (the big indexable-surface win). Well under the
+    // 50k-URL sitemap cap at current volume; split into a sitemap index if it grows.
+    ...eventUrls,
   ];
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -313,7 +436,7 @@ ${urls.map((u) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).joi
   writeFileSync(join(siteRoot, 'sitemap.xml'), sitemap);
   writeFileSync(join(siteRoot, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE}/sitemap.xml\n`);
 
-  console.log(`\nDone. ${grandTotal} events across ${APP_CITIES.length} town pages + hub + sitemap → site/events/`);
+  console.log(`\nDone. ${grandTotal} events across ${APP_CITIES.length} town pages + ${eventUrls.length} event pages + ${truckPages} food-truck + ${salePages} garage-sale share pages + hub + sitemap.`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
