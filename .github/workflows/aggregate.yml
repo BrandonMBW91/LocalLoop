@@ -129,6 +129,9 @@ jobs:
         # Use the CLI --prod deploy, which explicitly PUBLISHES. The old raw zip POST to
         # /sites/{id}/deploys uploaded the files but left the deploy "ready" yet
         # UNPUBLISHED (2026-07-10: an 8.3k-file deploy sat unpublished, so localloop.io
-        # kept serving the previous deploy and the SEO/portal/widget pages 404'd). --dir
-        # deploys site/ as-is (no build), --site targets the site without a link.
-        run: npx --yes netlify-cli deploy --prod --dir=site --site "$NETLIFY_SITE_ID" --message "aggregate ${{ github.run_id }}"
+        # kept serving the previous deploy and the SEO/portal/widget pages 404'd).
+        # --no-build is REQUIRED: without it the CLI runs the Netlify site UI's stale
+        # build command ("expo export -p web", a leftover from the old web-app era),
+        # which has no expo on this runner and fails the whole deploy (first hit
+        # 2026-07-10 late run). site/ is already fully built by the steps above.
+        run: npx --yes netlify-cli deploy --prod --no-build --dir=site --site "$NETLIFY_SITE_ID" --message "aggregate ${{ github.run_id }}"
