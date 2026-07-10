@@ -12,6 +12,12 @@ on:
 jobs:
   aggregate:
     runs-on: ubuntu-latest
+    # Ship the self-serve public surfaces: per-event SEO pages, the sponsor portal
+    # (manage-ad.html), the embed widget + partners page, and the $9 Local Deal card on
+    # advertise.html. Job-level so BOTH the generate-events and generate-advertise steps
+    # see it. Kept until we ever need to pull these back.
+    env:
+      SEO_ITEM_PAGES: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

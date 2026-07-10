@@ -18,7 +18,7 @@ const ADVERTISE_URL = 'https://localloop.io/advertise.html';
 // deployed — the live webhook has no product='deal' branch yet, so a purchase would be
 // mis-fulfilled as a blank sponsor ad. Flip to true (+ OTA) as the last step of the
 // deals deploy, together with the advertise-page deal card (SEO_ITEM_PAGES).
-const DEALS_LIVE = false;
+const DEALS_LIVE = true;
 
 function Benefit({ icon, title, body }) {
   return (
