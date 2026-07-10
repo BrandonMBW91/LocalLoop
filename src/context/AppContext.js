@@ -253,7 +253,7 @@ export function AppProvider({ children }) {
         const ev = eventObj || findEventById(eventId);
         if (ev) {
           scheduleEventReminder(ev);
-          if (isSupabaseEnabled) getPushToken().then((t) => t && savePushToken(t, cityId, Platform.OS));
+          if (isSupabaseEnabled) getPushToken().then((t) => t && savePushToken(t, cityId, Platform.OS, interests));
         }
         logEvent('save_event', { id: eventId });
       }
@@ -261,17 +261,30 @@ export function AppProvider({ children }) {
     });
   };
 
-  // Silently refresh this device's push token + city if notifications are already
-  // allowed (never prompts on its own — saving an event is what asks).
+  // Register this device for the weekend digest. If notifications are already
+  // allowed, refresh the token/city/interests silently. If not, ask ONCE after
+  // onboarding so EVERY device is reachable (not just those who saved an event) —
+  // the big lever on push reach. We never re-prompt (a stored flag guards it), and
+  // the digest is opt-out-able by ignoring it.
+  const pushAskedRef = useRef(false);
   useEffect(() => {
-    if (!isSupabaseEnabled) return;
+    if (!isSupabaseEnabled || isAdmin || Platform.OS === 'web' || !cityId) return;
     (async () => {
       if (await hasPermission()) {
         const t = await getPushToken();
-        if (t) savePushToken(t, cityId, Platform.OS);
+        if (t) savePushToken(t, cityId, Platform.OS, interests);
+        return;
+      }
+      if (onboarded && !pushAskedRef.current) {
+        pushAskedRef.current = true;
+        const already = await AsyncStorage.getItem('@fe/pushAsked');
+        if (already) return;
+        await AsyncStorage.setItem('@fe/pushAsked', '1');
+        const t = await getPushToken(); // ensurePermission() prompts inside
+        if (t) savePushToken(t, cityId, Platform.OS, interests);
       }
     })();
-  }, [cityId]);
+  }, [cityId, onboarded, interests]);
 
   // Record this device as active in the current town (anonymous) — powers
   // user-based ad pricing.

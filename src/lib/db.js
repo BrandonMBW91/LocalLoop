@@ -561,9 +561,14 @@ export async function deleteAccountRpc() {
 // SECURITY DEFINER function so the table needs no anon write policy — a direct
 // upsert with an open anon UPDATE policy would let anyone overwrite other devices'
 // token rows. See supabase/push.sql / supabase/launch_audit_fixes.sql.
-export async function savePushToken(token, cityId, platform) {
+export async function savePushToken(token, cityId, platform, interests) {
   try {
-    await supabase.rpc('register_push_token', { p_token: token, p_city: cityId, p_platform: platform });
+    await supabase.rpc('register_push_token', {
+      p_token: token,
+      p_city: cityId,
+      p_platform: platform,
+      p_interests: interests && interests.length ? interests : null,
+    });
   } catch (e) {
     // non-fatal
   }

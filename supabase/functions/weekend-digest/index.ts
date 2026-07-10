@@ -76,37 +76,46 @@ Deno.serve(async (req) => {
   const now = new Date();
   const end = nextMondayStartET(now);
 
-  const { data: tokens } = await supabase.from('push_tokens').select('token, city_id');
+  const { data: tokens } = await supabase.from('push_tokens').select('token, city_id, interests');
   if (!tokens?.length) {
     return new Response(JSON.stringify({ sent: 0, reason: 'no tokens' }), {
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const byCity: Record<string, string[]> = {};
-  for (const t of tokens) {
+  type Tok = { token: string; city_id: string | null; interests: string[] | null };
+  const byCity: Record<string, Tok[]> = {};
+  for (const t of tokens as Tok[]) {
     if (!t.token) continue;
-    (byCity[t.city_id || 'findlay'] ||= []).push(t.token);
+    (byCity[t.city_id || 'findlay'] ||= []).push(t);
   }
 
   const messages: Array<Record<string, unknown>> = [];
   for (const [cityId, toks] of Object.entries(byCity)) {
+    // Pull the town's top events once (with category), then personalize per device.
     const { data: events } = await supabase
       .from('events')
-      .select('title')
+      .select('title, category')
       .eq('city_id', cityId)
       .eq('status', 'approved')
       .gte('start_at', now.toISOString())
       .lt('start_at', end.toISOString())
       .order('view_count', { ascending: false })
-      .limit(3);
+      .limit(12);
+    const list = (events as { title: string; category: string | null }[]) || [];
+    if (!list.length) continue;
 
-    const count = events?.length || 0;
-    if (!count) continue;
-    const titles = (events as { title: string }[]).slice(0, 2).map((e) => e.title).join(', ');
-    const body = count > 2 ? `${titles}, and more` : titles;
-    for (const to of toks) {
-      messages.push({ to, title: 'This weekend near you', body, sound: 'default' });
+    for (const tk of toks) {
+      const ints = Array.isArray(tk.interests) ? tk.interests : [];
+      // Interest-matching events first (V8's sort is stable, so the view_count
+      // order is preserved within each group); fall back to the town's top when
+      // the device chose no interests.
+      const ranked = ints.length
+        ? [...list].sort((a, b) => (ints.includes(b.category || '') ? 1 : 0) - (ints.includes(a.category || '') ? 1 : 0))
+        : list;
+      const titles = ranked.slice(0, 2).map((e) => e.title).join(', ');
+      const body = list.length > 2 ? `${titles}, and more` : titles;
+      messages.push({ to: tk.token, title: 'This weekend near you', body, sound: 'default' });
     }
   }
 
