@@ -52,10 +52,18 @@ Deno.serve(async (req) => {
     }
   }
 
-  let tq = supabase.from('push_tokens').select('token, city_id');
-  if (cityId !== 'all') tq = tq.eq('city_id', cityId);
-  const { data: tokens } = await tq;
-  const list = (tokens || []).filter((t) => t.token);
+  // Paginate past PostgREST's 1000-row cap (token count tracks installs since #3
+  // registers every device), so a large audience isn't silently truncated to 1000.
+  const tokens: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    let tq = supabase.from('push_tokens').select('token, city_id').order('token', { ascending: true }).range(from, from + 999);
+    if (cityId !== 'all') tq = tq.eq('city_id', cityId);
+    const { data, error } = await tq;
+    if (error) break;
+    tokens.push(...(data || []));
+    if ((data || []).length < 1000) break;
+  }
+  const list = tokens.filter((t) => t.token);
 
   if (dry) {
     return new Response(JSON.stringify({ dry: true, audience: list.length, cityId, title, body }), { headers: { 'Content-Type': 'application/json' } });

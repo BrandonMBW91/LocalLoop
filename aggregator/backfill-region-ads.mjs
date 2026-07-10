@@ -20,7 +20,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const { data: rows, error } = await sb
   .from('sponsors')
-  .select('city_id, title, body, link_url, active, ends_at, paused_reason, product, stripe_customer_id, stripe_subscription_id, stripe_session_id')
+  .select('city_id, title, body, link_url, active, ends_at, paused_reason, product, edit_token, stripe_customer_id, stripe_subscription_id, stripe_session_id')
   .eq('product', 'all_region')
   .not('stripe_session_id', 'is', null);
 if (error) { console.error(error.message); process.exit(1); }
@@ -48,6 +48,7 @@ for (const [session, group] of bySession) {
     ends_at: rep.ends_at,
     paused_reason: rep.paused_reason,
     product: 'all_region',
+    edit_token: rep.edit_token, // so backfilled towns share the advertiser's self-serve portal token
     stripe_customer_id: rep.stripe_customer_id,
     stripe_subscription_id: rep.stripe_subscription_id,
     stripe_session_id: session,

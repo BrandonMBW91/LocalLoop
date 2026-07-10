@@ -486,16 +486,22 @@ function rowToDeal(r) {
   };
 }
 
+// Explicit display columns — never select('*'), so deals_hardening.sql can revoke
+// anon access to the Stripe id columns without 401-ing these reads.
+const DEAL_COLS = 'id, city_id, business_name, title, description, address, link_url, image_url, active, featured, starts_at, ends_at, view_count, created_at';
+
 // Live deals for a town (newest/featured first).
 export async function fetchDeals(cityId) {
   const { data, error } = await supabase
     .from('deals')
-    .select('*')
+    .select(DEAL_COLS)
     .eq('city_id', cityId)
     .eq('active', true)
     .order('featured', { ascending: false })
     .order('created_at', { ascending: false });
-  if (error) throw error;
+  // Degrade to empty rather than crash the Deals screen (e.g. a brief grant skew
+  // between the hardening migration and OTA saturation).
+  if (error) { console.warn('fetchDeals failed:', error.message); return []; }
   const now = Date.now();
   return (data || [])
     .filter((r) => (!r.starts_at || Date.parse(r.starts_at) <= now) && (!r.ends_at || Date.parse(r.ends_at) >= now))
@@ -504,7 +510,7 @@ export async function fetchDeals(cityId) {
 
 // Admin: every deal regardless of state.
 export async function fetchAllDeals() {
-  const { data, error } = await supabase.from('deals').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('deals').select(DEAL_COLS).order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map(rowToDeal);
 }

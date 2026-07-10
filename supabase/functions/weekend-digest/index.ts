@@ -76,8 +76,20 @@ Deno.serve(async (req) => {
   const now = new Date();
   const end = nextMondayStartET(now);
 
-  const { data: tokens } = await supabase.from('push_tokens').select('token, city_id, interests');
-  if (!tokens?.length) {
+  // Paginate past PostgREST's 1000-row cap. Big-ticket #3 registers a token per
+  // device, so token count now tracks install count; an unpaginated select would
+  // silently drop everyone past 1000 exactly as the app succeeds.
+  const tokens: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('push_tokens')
+      .select('token, city_id, interests')
+      .order('token', { ascending: true })
+      .range(from, from + 999);
+    if (error) break;
+    tokens.push(...(data || []));
+    if ((data || []).length < 1000) break;
+  }
+  if (!tokens.length) {
     return new Response(JSON.stringify({ sent: 0, reason: 'no tokens' }), {
       headers: { 'Content-Type': 'application/json' },
     });
