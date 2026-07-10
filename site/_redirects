@@ -3,6 +3,11 @@
 # redirect) serves the JSON with the right path for iOS universal links.
 /.well-known/apple-app-site-association  /aasa.json  200
 
+# Android App Links: same Netlify dot-dir problem — serve the Digital Asset Links
+# file via a 200 rewrite so /.well-known/assetlinks.json resolves as JSON. Pairs
+# with app.json's android.intentFilters (autoVerify) so Android auto-opens links.
+/.well-known/assetlinks.json  /assetlinks.json  200
+
 # Deep-link paths: when the app is installed, iOS Universal Links / Android App
 # Links intercept these before the browser. When it isn't, serve a small
 # interstitial (200 rewrite, URL preserved) that routes iOS to the App Store and

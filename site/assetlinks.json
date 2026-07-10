@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.michaelwilliams.localloop",
+      "sha256_cert_fingerprints": [
+        "6B:A0:A7:07:A9:C9:4C:5C:A3:3C:2B:2F:4C:B1:FF:F0:13:89:F9:28:36:56:57:65:47:21:C6:31:AC:C9:CD:62",
+        "77:29:1E:50:56:97:55:70:76:48:4F:04:42:AD:84:D4:FB:E1:CE:D7:A9:81:79:C0:72:B4:94:7C:0C:15:6D:FF"
+      ]
+    }
+  }
+]
