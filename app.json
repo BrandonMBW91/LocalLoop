@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "primaryColor": "#15315B",
-    "description": "Local events, garage sales, and food trucks across 120+ Ohio towns in all five regions of Ohio.",
+    "description": "Local events, garage sales, and food trucks across 100+ Ohio towns and growing, in all five regions of Ohio.",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.michaelwilliams.localloop",

@@ -67,6 +67,9 @@ const activeTowns = new Set();
     if (!data || data.length < 1000) break;
   }
 }
+// Live-town count for public copy — "100+ and growing", rounded DOWN to the
+// nearest 10 so the claim is always true (never the raw catalog count).
+const LIVE_PLUS = Math.floor(activeTowns.size / 10) * 10;
 
 // Live source count for the pitch — counted from event_sources at generation
 // time (+2 for Ticketmaster & SeatGeek) and rounded DOWN to the nearest 10, so
@@ -107,9 +110,9 @@ const STYLE = `:root{--green:#15315B;--green-d:#0E2444;--orange:#B22234;--bg:#FB
 const html = `<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Advertise on Local Loop: Reach Your Town</title>
-<meta name="description" content="Put your business in front of locals across ${CITIES.length} Ohio towns. Your rate is set by real usage in your town — pick your town to see today's price."/>
+<meta name="description" content="Put your business in front of locals across ${LIVE_PLUS}+ Ohio towns and growing. Your rate is set by real usage in your town — pick your town to see today's price."/>
 <link rel="canonical" href="https://localloop.io/advertise.html"/>
-<meta property="og:title" content="Advertise on Local Loop"/><meta property="og:description" content="Featured listings and town sponsorships across ${CITIES.length} Ohio towns. Pick your town for today's rate."/>
+<meta property="og:title" content="Advertise on Local Loop"/><meta property="og:description" content="Featured listings and town sponsorships across ${LIVE_PLUS}+ Ohio towns and growing. Pick your town for today's rate."/>
 <meta property="og:url" content="https://localloop.io/advertise.html"/><meta property="og:type" content="website"/>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2315315B'/%3E%3C/svg%3E"/>
 <style>${STYLE}</style></head><body><div class="wrap">
@@ -137,7 +140,7 @@ const html = `<!DOCTYPE html><html lang="en"><head>
   <div class="price">
     <span class="tag">Best value</span><h3>All of Our Region</h3>
     <div class="amt">$79<span>/month</span><small>One flat rate for every town</small></div>
-    <ul><li>Your ad runs in every town we cover</li><li>Maximum local reach across ${CITIES.length} towns</li><li>One price, no matter how each town grows</li><li>Cancel anytime</li></ul>
+    <ul><li>Your ad runs in every town we cover</li><li>Maximum local reach across every Ohio town we cover</li><li>One price, no matter how each town grows</li><li>Cancel anytime</li></ul>
     <a class="buy" href="${REGION_LINK}">Sponsor the region</a>
   </div>
   <div class="price">

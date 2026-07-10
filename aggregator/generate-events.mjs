@@ -285,12 +285,14 @@ ${FOOT}`;
     return `<div class="region-banner"><span class="rb-name">${esc(region)}</span><span class="rb-sub">${towns.length} towns · ${rEvents.toLocaleString()} events</span></div>\n${rows}`;
   }).join('\n');
 
+  // Towns with live content — the honest "100+ and growing" number, not the catalog.
+  const activeCount = Object.values(counts).filter((n) => n > 0).length;
   const hubTitle = 'Local Events Across Ohio: Findlay, Toledo, Akron, Canton and more | Local Loop';
-  const hubDesc = `Browse ${grandTotal} upcoming events across ${APP_CITIES.length} Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
+  const hubDesc = `Browse ${grandTotal} upcoming events across ${activeCount} Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
   const hub = `${HEAD(hubTitle, hubDesc, '/events/')}
 <section class="town-hero"><div class="kicker">Local events across</div>
 <h1>Local Events Across Ohio</h1>
-<div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events in ${APP_CITIES.length} towns</span></div>
+<div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events across ${activeCount} Ohio towns</span></div>
 <a class="get" href="${APP_STORE_URL}">Get the free app</a></section>
 ${regionSections}
 ${FOOT}`;

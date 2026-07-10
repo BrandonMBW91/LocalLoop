@@ -1,10 +1,9 @@
 import { Resvg } from '@resvg/resvg-js';
 import { writeFileSync } from 'node:fs';
-import { CITIES } from '../../src/data/cities.js';
 
-// Town count rounded DOWN to the nearest 10 so "N+ OHIO TOWNS" is always true and
-// self-updates as the catalog grows (no more hardcoded, drifting counts).
-const TOWN_COUNT = Math.floor(CITIES.length / 10) * 10;
+// "100+ OHIO TOWNS" = towns with live content (the honest "live and growing"
+// number), not the raw catalog. Kept as a literal so it doesn't overstate reach.
+const TOWN_LABEL = '100+ OHIO TOWNS';
 
 // Square boost/feed graphic (1080x1080) for paid FB boosts. Same brand system as
 // the cover: navy gradient, white pin + red calendar mark, cream type, faint
@@ -66,7 +65,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080">
 <!-- badge -->
 <rect x="258" y="912" width="564" height="80" rx="40" fill="#B22234"/>
 <text x="540" y="964" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
-      font-weight="800" font-size="34" letter-spacing="2" fill="#ffffff">FREE &#183; ${TOWN_COUNT}+ OHIO TOWNS</text>
+      font-weight="800" font-size="34" letter-spacing="2" fill="#ffffff">FREE &#183; ${TOWN_LABEL}</text>
 </svg>`;
 
 const png = new Resvg(svg, {
