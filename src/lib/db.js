@@ -293,6 +293,21 @@ export async function insertGarageSale(sale) {
   return rowToSale(data);
 }
 
+// Self-serve calendar intake: a truck owner registers their Google Calendar /
+// iCal link ONCE and their stops auto-appear. Goes through a SECURITY DEFINER RPC
+// into a PENDING queue (an admin approves before it ever auto-pulls) — the
+// truck_calendars table itself stays locked to the service role.
+export async function submitTruckCalendar({ name, cityId, cuisine, icalUrl, contact }) {
+  const { error } = await supabase.rpc('submit_truck_calendar', {
+    p_name: name,
+    p_city: cityId,
+    p_cuisine: cuisine || 'Food truck',
+    p_ical_url: icalUrl,
+    p_contact: contact || '',
+  });
+  if (error) throw error;
+}
+
 export async function insertFoodTruck(truck) {
   const { data, error } = await supabase
     .from('food_trucks')

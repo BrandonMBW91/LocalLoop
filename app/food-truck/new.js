@@ -16,6 +16,7 @@ import DateTimeField from '../../src/components/DateTimeField';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { screenContent } from '../../src/utils/moderation';
+import { submitTruckCalendar } from '../../src/lib/db';
 import { CUISINES, CUISINE_EMOJI } from '../../src/data/foodTrucks';
 import { formatTime, toDateString } from '../../src/utils/dates';
 import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
@@ -51,6 +52,8 @@ export default function NewFoodTruckScreen() {
   const [note, setNote] = useState('');
   const [host, setHost] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [calUrl, setCalUrl] = useState('');
+  const [calSubmitting, setCalSubmitting] = useState(false);
 
   const inputFontSize = Math.round(baseFont.body * scale);
 
@@ -96,6 +99,33 @@ export default function NewFoodTruckScreen() {
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Self-serve calendar intake: register a Google/iCal link once, stops auto-appear.
+  const onAddCalendar = async () => {
+    if (!name.trim()) {
+      Alert.alert('Add your truck name', 'Enter your truck name and food type above, then add your calendar link.');
+      return;
+    }
+    const url = calUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      Alert.alert('Check the link', 'Paste your calendar link — it should start with http (a Google Calendar or website .ics link).');
+      return;
+    }
+    try {
+      setCalSubmitting(true);
+      await submitTruckCalendar({ name: name.trim(), cityId: city.id, cuisine, icalUrl: url, contact: host.trim() });
+      setCalUrl('');
+      Alert.alert(
+        'Got it! 🚚',
+        `Thanks — we'll review your calendar, then your stops start showing in ${city.name} automatically. No need to post them one by one.`,
+        [{ text: 'Done', onPress: () => router.replace('/food-trucks') }]
+      );
+    } catch (e) {
+      Alert.alert('Could not add calendar', e?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setCalSubmitting(false);
     }
   };
 
@@ -157,6 +187,49 @@ export default function NewFoodTruckScreen() {
             })}
           </View>
         </Field>
+
+        {backendEnabled ? (
+          <View style={styles.calCard}>
+            <View style={styles.calHead}>
+              <Ionicons name="calendar" size={20} color={colors.foodTruck} />
+              <ThemedText size="body" weight="bold" color={colors.foodTruck}>Have a regular schedule?</ThemedText>
+            </View>
+            <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 8 }}>
+              Add your Google Calendar or website calendar link once and we'll keep your stops updated automatically, so you never have to post them one by one. Just fill in your truck name and food type above first.
+            </ThemedText>
+            <TextInput
+              value={calUrl}
+              onChangeText={setCalUrl}
+              placeholder="https://calendar.google.com/…/basic.ics"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              style={[styles.input, { fontSize: inputFontSize }]}
+            />
+            <Pressable
+              style={[styles.calBtn, calSubmitting && { opacity: 0.6 }]}
+              onPress={onAddCalendar}
+              disabled={calSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel="Add my calendar"
+            >
+              <Ionicons name="add-circle" size={20} color={colors.foodTruck} />
+              <ThemedText size="body" weight="bold" color={colors.foodTruck}>
+                {calSubmitting ? 'Sending…' : 'Add my calendar'}
+              </ThemedText>
+            </Pressable>
+            <ThemedText size="tiny" color={colors.textMuted} style={{ marginTop: 6, textAlign: 'center' }}>
+              We review new calendars before they go live.
+            </ThemedText>
+          </View>
+        ) : null}
+
+        <View style={styles.orRow}>
+          <View style={styles.orLine} />
+          <ThemedText size="small" color={colors.textMuted}>or post a single stop</ThemedText>
+          <View style={styles.orLine} />
+        </View>
 
         <Field label="Date" required>
           <DateTimeField
@@ -263,6 +336,30 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   textArea: { minHeight: 110, paddingTop: 14 },
+  calCard: {
+    backgroundColor: colors.foodTruckLight,
+    borderWidth: 1.5,
+    borderColor: colors.foodTruck,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  calHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  calBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.foodTruck,
+    borderRadius: radius.pill,
+    paddingVertical: 12,
+    marginTop: 8,
+    minHeight: 48,
+  },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
   row: { flexDirection: 'row', gap: spacing.md },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
