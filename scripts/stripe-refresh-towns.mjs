@@ -14,7 +14,7 @@
 
 import Stripe from 'stripe';
 import { CITIES } from '../src/data/cities.js';
-import { CHECKOUT_BY_TIER } from '../src/data/checkout.js';
+import { CHECKOUT_BY_TIER, CHECKOUT_ANNUAL_BY_TIER } from '../src/data/checkout.js';
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('Set STRIPE_SECRET_KEY (the tier links live in LIVE mode, so sk_live_...).');
@@ -53,10 +53,15 @@ const TOWN_FIELDS = [
 
 // The tier links that carry a town dropdown (All-Region has none — skip it),
 // with the metadata.product the webhook routes on.
-const targets = Object.entries(CHECKOUT_BY_TIER).flatMap(([tier, l]) => [
-  { name: `${tier} town`, url: l.town, product: 'town_sponsor' },
-  { name: `${tier} featured30`, url: l.featured30, product: 'featured_30' },
-]);
+const targets = [
+  ...Object.entries(CHECKOUT_BY_TIER).flatMap(([tier, l]) => [
+    { name: `${tier} town`, url: l.town, product: 'town_sponsor' },
+    { name: `${tier} featured30`, url: l.featured30, product: 'featured_30' },
+  ]),
+  // Annual town links carry the SAME 122-town dropdown, so refresh them too.
+  ...Object.entries(CHECKOUT_ANNUAL_BY_TIER).flatMap(([tier, l]) =>
+    l.town ? [{ name: `${tier} town annual`, url: l.town, product: 'town_sponsor' }] : []),
+];
 
 // checkout.js stores the links' buy.stripe.com URLs, not their API ids — list
 // the account's active payment links and match on url.

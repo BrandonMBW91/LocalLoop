@@ -18,3 +18,15 @@ export const CHECKOUT_BY_TIER = {
     featured30: 'https://buy.stripe.com/7sY28s91l8sG1i6bMP4Vy04', // $35
   },
 };
+
+// --- Regional & annual SKUs (see docs/REGIONAL_ANNUAL_SKUS.md) ---
+// Metro = a cluster of towns (metadata.product=metro_sponsor + a "metro" dropdown
+// whose value is a METRO_BUNDLES key). Annual = 2 months free. The webhook routes
+// all of these; a metro/all-region purchase fans out to one sponsors row per town.
+export const REGION_ANNUAL_LINK = 'https://buy.stripe.com/fZu00k5P9aAO4uicQT4Vy08'; // All-Region $790/yr
+export const METRO_LINK = 'https://buy.stripe.com/aFa7sMdhBgZcd0ObMP4Vy06';          // Metro $39/mo
+export const METRO_ANNUAL_LINK = 'https://buy.stripe.com/eVq8wQ6TdgZc7Gu4kn4Vy07';   // Metro $390/yr
+
+export const CHECKOUT_ANNUAL_BY_TIER = {
+  Founding: { town: 'https://buy.stripe.com/3cIdRa0uPfV8bWK3gj4Vy05' }, // $190/yr
+};

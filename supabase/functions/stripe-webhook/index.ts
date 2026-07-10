@@ -104,6 +104,18 @@ const sendEmail = async (subject: string, text: string) => {
   await resendSend(ALERT, subject, text);
 };
 
+// Metro ad bundles — MUST stay in sync with src/data/bundles.js (edge functions
+// can't import app source, so the map is copied here). The metro dropdown VALUE
+// on the Stripe link is one of these keys; a purchase fans out to these towns.
+const METRO_BUNDLES: Record<string, { name: string; towns: string[] }> = {
+  toledo:      { name: 'Greater Toledo', towns: ['toledo', 'perrysburg', 'sylvania', 'bowling-green', 'waterville'] },
+  akron:       { name: 'Akron Metro', towns: ['akron', 'cuyahoga-falls', 'kent', 'stow', 'hudson', 'tallmadge', 'barberton', 'wadsworth', 'medina', 'ravenna', 'streetsboro', 'portage-lakes'] },
+  canton:      { name: 'Canton–Massillon', towns: ['canton', 'massillon', 'north-canton', 'hartville', 'alliance', 'orrville', 'dover', 'new-philadelphia'] },
+  youngstown:  { name: 'Youngstown–Warren', towns: ['youngstown', 'warren', 'boardman', 'austintown', 'niles', 'girard', 'struthers', 'canfield', 'salem', 'columbiana'] },
+  findlaylima: { name: 'Findlay–Lima', towns: ['findlay', 'fostoria', 'tiffin', 'fremont', 'bluffton', 'ada', 'lima', 'wapakoneta', 'van-wert', 'upper-sandusky', 'north-baltimore', 'carey'] },
+  mansfield:   { name: 'Mansfield–North Central', towns: ['mansfield', 'ontario', 'ashland', 'bucyrus', 'galion', 'willard', 'marion', 'delaware'] },
+};
+
 Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature');
   const raw = await req.text();
@@ -127,20 +139,26 @@ Deno.serve(async (req) => {
       // Only allow safe link schemes — never javascript:/data: phishing.
       const link = /^(https:\/\/|tel:)/i.test(rawLink) ? clamp(rawLink, 300) : '';
       const town = field(s, 'town');
+      const metro = (field(s, 'metro') || '').toLowerCase();
       const subId = s.subscription || null;
       const custId = s.customer || null;
 
       // Resolve the town to a known city_id; never insert an orphan/empty one.
       const knownIds = await knownCityIds();
       const resolvedCity = town ? codeToCity(knownIds)[town.toLowerCase()] ?? null : null;
-      const cityIds = product === 'all_region' ? knownIds : (resolvedCity ? [resolvedCity] : []);
+      // Fan-out scope: all_region -> every town; metro_sponsor -> the metro's
+      // towns (intersected with live catalog); otherwise the single resolved town.
+      const cityIds =
+        product === 'all_region' ? knownIds
+        : product === 'metro_sponsor' ? (METRO_BUNDLES[metro]?.towns ?? []).filter((t) => knownIds.includes(t))
+        : (resolvedCity ? [resolvedCity] : []);
       if (cityIds.length === 0) {
         // The buyer WAS charged but we couldn't resolve a town, so no ad exists.
         // Never let that vanish silently. Alert the owner to place it by hand.
         console.error('stripe-webhook: unknown town, skipping', { town, session: s.id });
         await sendEmail(
           `ACTION: paid ad with unknown town from ${business}`,
-          `A ${product} ad was purchased but the town could not be matched, so NO ad was created.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown value received: ${town || '(blank)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FIX: contact the buyer to confirm their town, then add the ad from the Manage Sponsors screen.`,
+          `A ${product} ad was purchased but the town could not be matched, so NO ad was created.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown value: ${town || '(blank)'} · Metro value: ${metro || '(blank)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FIX: contact the buyer to confirm their town/metro, then add the ad from the Manage Sponsors screen.`,
         );
         return new Response(JSON.stringify({ received: true, skipped: 'unknown town' }), {
           headers: { 'Content-Type': 'application/json' },
@@ -188,7 +206,9 @@ Deno.serve(async (req) => {
 
       // Tell the OWNER an ad was just placed (Michael asked to be notified on
       // every ad + feature). Best-effort, after the ad is safely created.
-      const adWhere = product === 'all_region' ? `ALL ${cityIds.length} towns` : resolvedCity;
+      const adWhere = product === 'all_region' ? `ALL ${cityIds.length} towns`
+        : product === 'metro_sponsor' ? `${METRO_BUNDLES[metro]?.name ?? metro} (${cityIds.length} towns)`
+        : resolvedCity;
       await sendEmail(
         `New Local Loop ad: ${business} (${adWhere})`,
         `A ${product === 'all_region' ? 'region-wide' : 'town'} ad was just purchased and is now live.\n\n` +
@@ -203,6 +223,8 @@ Deno.serve(async (req) => {
       if (buyerEmail) {
         const where = product === 'all_region'
           ? 'every town Local Loop covers'
+          : product === 'metro_sponsor'
+          ? `the ${METRO_BUNDLES[metro]?.name ?? metro} area`
           : resolvedCity;
         await resendSend(
           buyerEmail,

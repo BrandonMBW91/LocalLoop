@@ -11,7 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { CITIES, REGION_ORDER } from '../src/data/cities.js';
 import { rateForUsers } from '../src/data/pricing.js';
-import { REGION_LINK, CHECKOUT_BY_TIER } from '../src/data/checkout.js';
+import { REGION_LINK, CHECKOUT_BY_TIER, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, CHECKOUT_ANNUAL_BY_TIER } from '../src/data/checkout.js';
 
 loadDotEnv();
 const here = dirname(fileURLToPath(import.meta.url));
@@ -86,7 +86,7 @@ for (const c of CITIES) {
   const users = mau[c.id] || 0;
   const r = rateForUsers(users);
   const l = CHECKOUT_BY_TIER[r.name] || null;
-  DATA[c.id] = { name: c.name, users, tier: r.name, sponsor: r.sponsor, featured30: r.featured30, townLink: l ? l.town : null, feat30Link: l ? l.featured30 : null, active: activeTowns.has(c.id) };
+  DATA[c.id] = { name: c.name, users, tier: r.name, sponsor: r.sponsor, featured30: r.featured30, townLink: l ? l.town : null, feat30Link: l ? l.featured30 : null, townAnnual: (CHECKOUT_ANNUAL_BY_TIER[r.name] && CHECKOUT_ANNUAL_BY_TIER[r.name].town) || null, active: activeTowns.has(c.id) };
 }
 const DEFAULT = DATA.findlay ? 'findlay' : CITIES[0].id;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -130,6 +130,7 @@ const html = `<!DOCTYPE html><html lang="en"><head>
     <div class="amt" id="sponsorAmt"></div>
     <ul><li>Your ad shown between listings in your town</li><li>Headline and a link to your site or phone</li><li>Ask us any time for your views and taps</li><li>Cancel anytime</li></ul>
     <a class="buy" id="sponsorBuy" href="#">Become a sponsor</a>
+    <p id="sponsorAnnual" style="text-align:center;margin:10px 0 0;font-size:13px;"></p>
   </div>
   <div class="price">
     <span class="tag">One-time</span><h3>Featured Listing</h3>
@@ -138,10 +139,18 @@ const html = `<!DOCTYPE html><html lang="en"><head>
     <a class="buy alt" id="featBuy" href="#">Feature my listing</a>
   </div>
   <div class="price">
+    <span class="tag">Regional</span><h3>Metro Bundle</h3>
+    <div class="amt">$39<span>/month</span><small>A whole metro: Toledo, Akron, Canton and more</small></div>
+    <ul><li>Your ad runs across a full metro cluster of towns</li><li>Pick your metro at checkout</li><li>For businesses that serve a region, not one town</li><li>Cancel anytime</li></ul>
+    <a class="buy" href="${METRO_LINK}">Sponsor a metro</a>
+    <p style="text-align:center;margin:10px 0 0;font-size:13px;"><a href="${METRO_ANNUAL_LINK}" style="color:var(--green);font-weight:600;">or $390/year (2 months free)</a></p>
+  </div>
+  <div class="price">
     <span class="tag">Best value</span><h3>All of Our Region</h3>
     <div class="amt">$79<span>/month</span><small>One flat rate for every town</small></div>
     <ul><li>Your ad runs in every town we cover</li><li>Maximum local reach across every Ohio town we cover</li><li>One price, no matter how each town grows</li><li>Cancel anytime</li></ul>
     <a class="buy" href="${REGION_LINK}">Sponsor the region</a>
+    <p style="text-align:center;margin:10px 0 0;font-size:13px;"><a href="${REGION_ANNUAL_LINK}" style="color:var(--green);font-weight:600;">or $790/year (2 months free)</a></p>
   </div>
   <div class="price">
     <span class="tag">Custom</span><h3>Something Different</h3>
@@ -183,6 +192,7 @@ function up(){
     _fb.href=MAIL;_fb.textContent='Email to pre-register';
     document.getElementById('rateNote').textContent=t.name+' is coming to Local Loop soon — email us to be first in line.';
     document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){r.classList.remove('now');var b=r.querySelector('.tier-badge');if(b)b.style.display='none';});
+    var _sa=document.getElementById('sponsorAnnual'); if(_sa)_sa.innerHTML='';
     return;
   }
   document.getElementById('sponsorAmt').innerHTML='$'+t.sponsor+'<span>/month</span><small>'+t.tier+' rate in '+t.name+'</small>';
@@ -190,6 +200,7 @@ function up(){
   var sb=document.getElementById('sponsorBuy'), fb=document.getElementById('featBuy');
   if(t.townLink){sb.href=t.townLink;sb.textContent='Become a sponsor';}else{sb.href=MAIL;sb.textContent='Email us to sponsor';}
   if(t.feat30Link){fb.href=t.feat30Link;fb.textContent='Feature my listing';}else{fb.href=MAIL;fb.textContent='Email us to feature';}
+  var sa=document.getElementById('sponsorAnnual'); if(sa){ sa.innerHTML=t.townAnnual?('<a href="'+t.townAnnual+'" style="color:var(--green);font-weight:600;">or $190/year (2 months free)</a>'):''; }
   document.getElementById('rateNote').textContent=t.name+' is at the '+t.tier+' rate ('+t.users+' active this month).';
   document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){
     var on=r.getAttribute('data-tier')===t.tier; r.classList.toggle('now',on);
