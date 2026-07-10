@@ -262,9 +262,12 @@ export default function MetricsScreen() {
               <View style={[styles.rank, { backgroundColor: KIND_COLOR[t.kind] }]}>
                 <ThemedText size="small" weight="bold" color={colors.textInverse}>{i + 1}</ThemedText>
               </View>
-              <ThemedText size="body" weight="semibold" style={{ flex: 1 }} numberOfLines={1}>
-                {t.title}
-              </ThemedText>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <ThemedText size="body" weight="semibold" numberOfLines={1}>{t.title}</ThemedText>
+                {CITY_NAME[t.cityId] ? (
+                  <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>{CITY_NAME[t.cityId]}</ThemedText>
+                ) : null}
+              </View>
               <ThemedText size="body" weight="bold" color={colors.primary}>{t.views}</ThemedText>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>

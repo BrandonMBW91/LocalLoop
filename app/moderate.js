@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { fetchPending, setPostStatus, fetchReported, dismissReports } from '../src/lib/db';
+import { CITIES } from '../src/data/cities';
 import { colors, spacing, radius } from '../src/theme/theme';
 import { formatShortDate } from '../src/utils/dates';
 
+const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
 const KIND_LABEL = { event: 'EVENT', garage_sale: 'GARAGE SALE', food_truck: 'FOOD TRUCK' };
 const KIND_COLOR = {
   event: colors.primary,
@@ -22,6 +24,7 @@ function itemFields(item) {
     detail: item.description || item.note || '',
     submittedBy: item.host || item.submitted_by || '',
     image: item.image_url || item.imageUrl || null,
+    town: CITY_NAME[item.cityId] || item.cityId || '',
   };
 }
 
@@ -37,6 +40,12 @@ function CardBody({ item, reported, onOpen }) {
         <View style={[styles.kindBadge, { backgroundColor: accent }]}>
           <ThemedText size="tiny" weight="bold" color={colors.textInverse}>{KIND_LABEL[item.kind]}</ThemedText>
         </View>
+        {f.town ? (
+          <View style={[styles.kindBadge, styles.townBadge]}>
+            <Ionicons name="location" size={11} color={colors.text} />
+            <ThemedText size="tiny" weight="bold" color={colors.text}>{f.town}</ThemedText>
+          </View>
+        ) : null}
         {reported ? (
           <View style={[styles.kindBadge, styles.flagBadge]}>
             <ThemedText size="tiny" weight="bold" color={colors.danger}>
@@ -308,8 +317,14 @@ function PreviewModal({ preview, busy, onClose, onApprove, onReject, onKeep, onR
             </View>
           ) : null}
 
-          {f.when ? (
+          {f.town ? (
             <View style={[styles.metaRow, { marginTop: spacing.sm }]}>
+              <Ionicons name="location" size={18} color={colors.primary} />
+              <ThemedText size="body" weight="semibold" color={colors.primary}>{f.town}</ThemedText>
+            </View>
+          ) : null}
+          {f.when ? (
+            <View style={[styles.metaRow, { marginTop: f.town ? 2 : spacing.sm }]}>
               <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
               <ThemedText size="body" color={colors.textMuted}>{formatShortDate(f.when)}</ThemedText>
             </View>
@@ -392,6 +407,7 @@ const styles = StyleSheet.create({
   reportedCard: { borderColor: colors.danger, borderWidth: 1.5 },
   kindRow: { flexDirection: 'row', marginBottom: 2, gap: 6, flexWrap: 'wrap' },
   kindBadge: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
+  townBadge: { backgroundColor: colors.surfaceAlt, flexDirection: 'row', alignItems: 'center', gap: 3 },
   flagBadge: { backgroundColor: colors.accentLight },
   bodyRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   thumb: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },

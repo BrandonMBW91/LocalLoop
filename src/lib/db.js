@@ -766,17 +766,17 @@ export async function fetchMetrics(cityId) {
   };
 
   const [evRows, gsRows, ftRows, spRows] = await Promise.all([
-    pull('events', 'id,title,view_count,featured'),
-    pull('garage_sales', 'id,title,view_count,featured'),
-    pull('food_trucks', 'id,name,view_count,featured'),
+    pull('events', 'id,title,view_count,featured,city_id'),
+    pull('garage_sales', 'id,title,view_count,featured,city_id'),
+    pull('food_trucks', 'id,name,view_count,featured,city_id'),
     pullSponsors(),
   ]);
   const sumViews = (rows) => rows.reduce((n, r) => n + (r.view_count || 0), 0);
 
   const top = [
-    ...evRows.map((r) => ({ kind: 'event', id: r.id, title: r.title, views: r.view_count || 0 })),
-    ...gsRows.map((r) => ({ kind: 'garage_sale', id: r.id, title: r.title, views: r.view_count || 0 })),
-    ...ftRows.map((r) => ({ kind: 'food_truck', id: r.id, title: r.name, views: r.view_count || 0 })),
+    ...evRows.map((r) => ({ kind: 'event', id: r.id, title: r.title, views: r.view_count || 0, cityId: r.city_id })),
+    ...gsRows.map((r) => ({ kind: 'garage_sale', id: r.id, title: r.title, views: r.view_count || 0, cityId: r.city_id })),
+    ...ftRows.map((r) => ({ kind: 'food_truck', id: r.id, title: r.name, views: r.view_count || 0, cityId: r.city_id })),
   ]
     .sort((a, b) => b.views - a.views)
     .slice(0, 8);
