@@ -46,6 +46,7 @@ export const CITIES = [
   { id: 'norwalk', name: "Norwalk", state: 'OH', region: NW, tagline: "Huron County hub" },
   { id: 'st-marys', name: "St. Marys", state: 'OH', region: NW, tagline: "Grand Lake east shore" },
   { id: 'celina', name: "Celina", state: 'OH', region: NW, tagline: "Grand Lake county seat" },
+  { id: 'paulding', name: "Paulding", state: 'OH', region: NW, tagline: "Paulding County seat" },
   // --- Central / West-Central Ohio ---
   { id: 'bellefontaine', name: 'Bellefontaine', state: 'OH', region: CENTRAL, pop: 13370, tagline: "Ohio's Highest Point" },
   { id: 'kenton', name: 'Kenton', state: 'OH', region: CENTRAL, pop: 8177, tagline: 'Cast-Iron Toy Capital' },
@@ -69,6 +70,8 @@ export const CITIES = [
   { id: 'willard', name: 'Willard', state: 'OH', region: CENTRAL, pop: 6194, tagline: 'The Blossom City' },
   { id: 'lakeview', name: "Lakeview", state: 'OH', region: CENTRAL, tagline: "Indian Lake west shore" },
   { id: 'russells-point', name: "Russells Point", state: 'OH', region: CENTRAL, tagline: "Indian Lake south shore" },
+  { id: 'mount-vernon', name: "Mount Vernon", state: 'OH', region: CENTRAL, tagline: "Knox County's historic seat" },
+  { id: 'fredericktown', name: "Fredericktown", state: 'OH', region: CENTRAL, tagline: "Home of the Tomato Show" },
   // --- Northeast Ohio (Akron & Canton metros) ---
   // All carry live content from the local-feed aggregator (libraries, city
   // calendars, universities, parks, downtowns) plus Ticketmaster.
@@ -103,6 +106,11 @@ export const CITIES = [
   { id: 'salem', name: "Salem", state: 'OH', region: NE, pop: 11915, tagline: "Historic Quaker town" },
   { id: 'columbiana', name: "Columbiana", state: 'OH', region: NE, pop: 6384, tagline: "Historic small-town square" },
   { id: 'wooster', name: "Wooster", state: 'OH', region: NE, tagline: "Heart of Wayne County" },
+  { id: 'ashtabula', name: "Ashtabula", state: 'OH', region: NE, tagline: "Harbor town of the covered-bridge county" },
+  { id: 'geneva', name: "Geneva", state: 'OH', region: NE, tagline: "Gateway to Geneva-on-the-Lake" },
+  { id: 'conneaut', name: "Conneaut", state: 'OH', region: NE, tagline: "Ohio's northeast corner on Lake Erie" },
+  { id: 'millersburg', name: "Millersburg", state: 'OH', region: NE, tagline: "Heart of Amish Country" },
+  { id: 'carrollton', name: "Carrollton", state: 'OH', region: NE, tagline: "Carroll County seat" },
   { id: 'zanesville', name: "Zanesville", state: 'OH', region: SE, tagline: "Y-Bridge city on the Muskingum" },
   { id: 'cambridge', name: "Cambridge", state: 'OH', region: SE, tagline: "Guernsey County's Dickens town" },
   { id: 'coshocton', name: "Coshocton", state: 'OH', region: SE, tagline: "Historic Roscoe Village" },

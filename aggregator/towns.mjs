@@ -142,6 +142,14 @@ export const NAMES = [
   ['peebles', "Peebles"],
   ['xenia', "Xenia"],
   ['beavercreek', "Beavercreek"],
+  ['ashtabula', "Ashtabula"],
+  ['geneva', "Geneva"],
+  ['conneaut', "Conneaut"],
+  ['millersburg', "Millersburg"],
+  ['mount-vernon', "Mount Vernon"],
+  ['fredericktown', "Fredericktown"],
+  ['carrollton', "Carrollton"],
+  ['paulding', "Paulding"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';

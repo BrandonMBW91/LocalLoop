@@ -47,6 +47,10 @@ export const ANCHORS = [
   // Center. r=12 keeps it off Dayton city; core-Dayton venues drop via the town
   // matcher (no served town to route to).
   { name: 'Dayton Ring / Greene', city: 'beavercreek', lat: 39.720, lng: -84.010, radius: 12 },
+  // --- 2026 statewide phase 3 (final gap counties) ---
+  { name: 'Ashtabula / Grand River Valley', city: 'ashtabula', lat: 41.865, lng: -80.790, radius: 20 }, // Ashtabula, Geneva(-on-the-Lake), Conneaut (Erie PA outside)
+  { name: 'Millersburg / Amish Country', city: 'millersburg', lat: 40.554, lng: -81.918, radius: 15 },  // Millersburg + unincorporated Berlin/Walnut Creek route here
+  { name: 'Mount Vernon / Knox', city: 'mount-vernon', lat: 40.393, lng: -82.486, radius: 15 },          // Mount Vernon, Fredericktown
 ];
 
 // Great-circle miles between two points (haversine).

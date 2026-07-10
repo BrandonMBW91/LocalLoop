@@ -58,6 +58,14 @@ const CATALOG_CITY_IDS = [
   'springfield', 'urbana', 'washington-court-house', 'hillsboro', 'greenfield',
   'wilmington', 'eaton', 'georgetown', 'ripley', 'west-union', 'peebles',
   'xenia', 'beavercreek',
+  'ashtabula', // added by add-city.mjs,
+  'geneva', // added by add-city.mjs,
+  'conneaut', // added by add-city.mjs,
+  'millersburg', // added by add-city.mjs,
+  'mount-vernon', // added by add-city.mjs,
+  'fredericktown', // added by add-city.mjs,
+  'carrollton', // added by add-city.mjs,
+  'paulding', // added by add-city.mjs
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);
