@@ -67,6 +67,7 @@ site/food-truck/
 site/garage-sale/
 site/embed.html
 site/partners.html
+site/manage-ad.html
 
 # Local Loop FB routine runtime state
 .fb-featured.json

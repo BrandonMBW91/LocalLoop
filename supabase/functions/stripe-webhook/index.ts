@@ -218,6 +218,9 @@ Deno.serve(async (req) => {
         });
       }
       const endsAt = null;
+      // Per-subscription token for the self-serve portal — SAME across the fanned-out
+      // town rows, so one edit updates every town the ad runs in. Unguessable (UUID).
+      const editToken = crypto.randomUUID();
 
       const rows = cityIds.map((city_id) => ({
         city_id,
@@ -230,6 +233,7 @@ Deno.serve(async (req) => {
         stripe_customer_id: custId,
         stripe_subscription_id: subId,
         stripe_session_id: s.id,
+        edit_token: editToken,
       }));
       // Idempotent against Stripe retries/replays (unique on session_id + city_id).
       const { error: upsertErr } = await supabase
@@ -262,7 +266,7 @@ Deno.serve(async (req) => {
         await resendSend(
           buyerEmail,
           'Your Local Loop ad is live',
-          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nWant to add a logo, or change your headline or link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself — set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${editToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
         );
       }
     } else if (event.type === 'customer.subscription.deleted') {

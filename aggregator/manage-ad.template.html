@@ -1,0 +1,133 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>Manage your ad | Local Loop</title>
+<!--
+  Self-serve advertiser portal. The "your ad is live" email links here with a
+  per-subscription token: /manage-ad.html?token=<uuid>. The token-gated RPCs
+  (get_sponsor_ad / update_sponsor_ad) let the advertiser set their clickable link,
+  headline and business name across every town their ad runs in — no login.
+-->
+<style>
+  :root{ --navy:#15315B; --red:#B22234; --ink:#1A1A1A; --muted:#5B5B5B; --line:#E4DED4; --bg:#FBF8F1; --surface:#fff; --ok:#197A41; }
+  *{box-sizing:border-box;} html,body{margin:0;}
+  body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  .wrap{ max-width:520px; margin:0 auto; padding:22px 16px 60px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; margin-bottom:18px; }
+  .brand svg{ width:34px; height:34px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:22px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  h1{ font-size:23px; margin:0 0 4px; }
+  .sub{ color:var(--muted); font-size:14.5px; margin:0 0 18px; }
+  .pill{ display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; padding:4px 11px; border-radius:999px; }
+  .pill.on{ color:var(--ok); background:#E7F3EC; } .pill.off{ color:var(--red); background:#FBE9EB; }
+  .towns{ font-size:13.5px; color:var(--muted); margin:10px 0 18px; }
+  label{ display:block; font-weight:700; font-size:14px; margin:16px 0 5px; }
+  label .opt{ font-weight:500; color:var(--muted); }
+  input{ width:100%; font-size:16px; padding:11px 13px; border:1px solid var(--line); border-radius:11px; background:#fff; color:var(--ink); }
+  input:focus{ outline:2px solid var(--navy); outline-offset:0; border-color:var(--navy); }
+  .hint{ font-size:12.5px; color:var(--muted); margin-top:5px; }
+  button{ width:100%; margin-top:22px; background:var(--red); color:#fff; font-weight:800; font-size:16px; border:0; border-radius:999px; padding:13px; cursor:pointer; }
+  button:disabled{ opacity:.55; cursor:default; }
+  .msg{ margin-top:14px; padding:12px 14px; border-radius:11px; font-size:14px; display:none; }
+  .msg.ok{ display:block; background:#E7F3EC; color:var(--ok); }
+  .msg.err{ display:block; background:#FBE9EB; color:var(--red); }
+  .state{ text-align:center; color:var(--muted); padding:26px 8px; font-size:15px; }
+  .foot{ text-align:center; margin-top:18px; font-size:12.5px; color:var(--muted); }
+  .foot a{ color:var(--navy); text-decoration:none; }
+</style></head>
+<body><div class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#15315B"/><path d="M512 300c-118 0-214 96-214 214 0 160 214 372 214 372s214-212 214-372c0-118-96-214-214-214zm0 300a86 86 0 1 1 0-172 86 86 0 0 1 0 172z" fill="#fff"/></svg>
+    Local Loop
+  </div>
+  <div class="card">
+    <div id="loading" class="state">Loading your ad…</div>
+
+    <div id="form" style="display:none">
+      <h1>Manage your ad</h1>
+      <p class="sub">Changes go live in the app right away.</p>
+      <div><span id="status" class="pill on">Active</span></div>
+      <div class="towns" id="towns"></div>
+
+      <label for="business">Business name</label>
+      <input id="business" maxlength="80" autocomplete="organization"/>
+
+      <label for="headline">Headline <span class="opt">— optional, shown under your name</span></label>
+      <input id="headline" maxlength="120" placeholder="e.g. 15% off for neighbors"/>
+
+      <label for="link">Link <span class="opt">— where a tap sends people</span></label>
+      <input id="link" inputmode="url" placeholder="yourbusiness.com"/>
+      <div class="hint">Your website, Facebook page, menu, booking link — anything.</div>
+
+      <button id="save">Save changes</button>
+      <div id="msg" class="msg"></div>
+    </div>
+
+    <div id="notoken" class="state" style="display:none">
+      This link is missing its access code.<br>Please open the exact link from your
+      &ldquo;your ad is live&rdquo; email.
+    </div>
+    <div id="badtoken" class="state" style="display:none">
+      We couldn&rsquo;t find an ad for this link.<br>It may have expired, or the link
+      is incomplete. Reply to your Local Loop email and we&rsquo;ll help.
+    </div>
+  </div>
+  <div class="foot">Questions? Email <a href="mailto:hello@localloop.io">hello@localloop.io</a> · <a href="https://localloop.io">localloop.io</a></div>
+</div>
+<script>
+(function(){
+  var API="__SUPABASE_URL__", KEY="__SUPABASE_ANON__";
+  var token=new URLSearchParams(location.search).get("token")||"";
+  var $=function(id){return document.getElementById(id);};
+  function show(id){ ["loading","form","notoken","badtoken"].forEach(function(x){ $(x).style.display = x===id ? "block" : "none"; }); }
+
+  if(!token || token.length<20){ show("notoken"); return; }
+
+  function rpc(fn, body){
+    return fetch(API+"/rest/v1/rpc/"+fn, {
+      method:"POST",
+      headers:{ apikey:KEY, Authorization:"Bearer "+KEY, "Content-Type":"application/json" },
+      body:JSON.stringify(body)
+    });
+  }
+  function title(s){ return s.split("-").map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(" "); }
+
+  rpc("get_sponsor_ad", { p_token: token })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      var ad = rows && rows[0];
+      if(!ad){ show("badtoken"); return; }
+      $("business").value = ad.business || "";
+      $("headline").value = ad.headline || "";
+      $("link").value = ad.link_url || "";
+      var st=$("status");
+      if(ad.active && ad.paused_reason!=="payment_failed"){ st.className="pill on"; st.textContent="Active"; }
+      else { st.className="pill off"; st.textContent = ad.paused_reason==="payment_failed" ? "Paused — payment" : "Paused"; }
+      var towns=(ad.towns||[]).map(title);
+      $("towns").textContent = towns.length ? ("Running in "+towns.join(", ")+(towns.length===1?", OH":"")) : "";
+      show("form");
+    })
+    .catch(function(){ show("badtoken"); });
+
+  $("save") && $("save").addEventListener("click", function(){
+    var btn=$("save"), msg=$("msg");
+    btn.disabled=true; btn.textContent="Saving…"; msg.className="msg"; msg.textContent="";
+    rpc("update_sponsor_ad", {
+      p_token: token,
+      p_business: $("business").value,
+      p_headline: $("headline").value,
+      p_link_url: $("link").value
+    })
+    .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+    .then(function(res){
+      btn.disabled=false; btn.textContent="Save changes";
+      if(res.ok && Number(res.d)>0){ msg.className="msg ok"; msg.textContent="Saved. Your ad is updated across every town it runs in."; }
+      else if(res.ok && Number(res.d)===0){ msg.className="msg err"; msg.textContent="We couldn't match this ad — try the link from your email again."; }
+      else { msg.className="msg err"; msg.textContent = (res.d && res.d.message==="invalid link") ? "That link doesn't look right. Include the full web address." : "Something went wrong. Please try again."; }
+    })
+    .catch(function(){ btn.disabled=false; btn.textContent="Save changes"; msg.className="msg err"; msg.textContent="Network error. Please try again."; });
+  });
+})();
+</script>
+</body></html>

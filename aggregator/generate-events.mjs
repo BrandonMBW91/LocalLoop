@@ -437,6 +437,11 @@ ${FOOT}`;
       .map((c) => `<option value="${c.id}"${c.id === 'findlay' ? ' selected' : ''}>${esc(c.name)}, OH</option>`)
       .join('');
     writeFileSync(join(here, '..', 'site', 'partners.html'), partnersPage(partnerOpts));
+    // Self-serve advertiser portal (the "manage your ad" link in the ad-is-live email).
+    const manageTpl = readFileSync(join(here, 'manage-ad.template.html'), 'utf8')
+      .replace(/__SUPABASE_URL__/g, SUPABASE_URL)
+      .replace(/__SUPABASE_ANON__/g, EMBED_ANON);
+    writeFileSync(join(here, '..', 'site', 'manage-ad.html'), manageTpl);
   }
 
   // Hub page — towns grouped by region and alphabetized, like the app's picker.
