@@ -39,10 +39,15 @@ if (options.length > 200) {
 
 // Updating a payment link REPLACES the whole custom_fields array, so every
 // field the webhook reads must be restated here, not just the dropdown.
-const text = (key, label) => ({ key, label: { type: 'custom', custom: label }, type: 'text' });
+const text = (key, label, optional = false) => ({ key, label: { type: 'custom', custom: label }, type: 'text', ...(optional ? { optional: true } : {}) });
 const TOWN_FIELDS = [
   text('businessname', 'Business name'),
   text('headline', 'Your ad headline'),
+  // Optional destination link so town/featured buyers get a CLICKABLE ad, same as
+  // the all-region tier. The webhook already reads field(s,'link') into link_url
+  // (https/tel sanitized). Without this, every $19-$35 town/featured ad rendered
+  // non-clickable. Takes effect on the next --apply run.
+  text('link', 'Link (website or phone, optional)', true),
   { key: 'town', label: { type: 'custom', custom: 'Your town' }, type: 'dropdown', dropdown: { options } },
 ];
 
