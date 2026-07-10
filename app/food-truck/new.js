@@ -17,6 +17,7 @@ import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { screenContent } from '../../src/utils/moderation';
 import { submitTruckCalendar } from '../../src/lib/db';
+import { townFromAddress } from '../../src/lib/townFromAddress';
 import { CUISINES, CUISINE_EMOJI } from '../../src/data/foodTrucks';
 import { formatTime, toDateString } from '../../src/utils/dates';
 import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
@@ -69,37 +70,57 @@ export default function NewFoodTruckScreen() {
       return;
     }
 
-    const truck = {
-      id: `usertruck-${Date.now()}`,
-      cityId: city.id,
-      name: name.trim(),
-      cuisine,
-      date: toDateString(dateValue),
-      startTime: startTimeValue ? formatTime(startTimeValue) : '11:00 AM',
-      endTime: endTimeValue ? formatTime(endTimeValue) : '2:00 PM',
-      locationName: locationName.trim(),
-      address: address.trim() || city.name + ', ' + city.state,
-      host: host.trim() || name.trim(),
-      pending: true,
-      note: note.trim() || '',
+    const post = async (cityId, cityName) => {
+      const truck = {
+        id: `usertruck-${Date.now()}`,
+        cityId,
+        name: name.trim(),
+        cuisine,
+        date: toDateString(dateValue),
+        startTime: startTimeValue ? formatTime(startTimeValue) : '11:00 AM',
+        endTime: endTimeValue ? formatTime(endTimeValue) : '2:00 PM',
+        locationName: locationName.trim(),
+        address: address.trim() || city.name + ', ' + city.state,
+        host: host.trim() || name.trim(),
+        pending: true,
+        note: note.trim() || '',
+      };
+      try {
+        setSubmitting(true);
+        await addSubmittedFoodTruck(truck);
+        Alert.alert(
+          'Thank you! 🚚',
+          `Your food truck stop has been submitted. It is reviewed, then shown to everyone in ${cityName}.`,
+          [{ text: 'View Food Trucks', onPress: () => router.replace('/food-trucks') }]
+        );
+      } catch (e) {
+        Alert.alert(
+          'Could not submit',
+          e?.message || 'Something went wrong. Please check your connection and try again.'
+        );
+      } finally {
+        setSubmitting(false);
+      }
     };
 
-    try {
-      setSubmitting(true);
-      await addSubmittedFoodTruck(truck);
+    // A stop belongs to the town the truck actually parks in. If the address
+    // resolves to a different served town than the picker, recommend the
+    // address's town — hungry users search by where the truck IS. Fail-open:
+    // no address / no match / offline just posts to the selected town.
+    setSubmitting(true);
+    const resolved = await townFromAddress(address, city.id).finally(() => setSubmitting(false));
+    if (resolved && resolved.cityId !== city.id) {
       Alert.alert(
-        'Thank you! 🚚',
-        `Your food truck stop has been submitted. It is reviewed, then shown to everyone in ${city.name}.`,
-        [{ text: 'View Food Trucks', onPress: () => router.replace('/food-trucks') }]
+        `That address is in ${resolved.cityName}`,
+        `Your stop's address is in ${resolved.cityName}, so that's where hungry locals will look for it. Post it there?`,
+        [
+          { text: `Post in ${resolved.cityName}`, onPress: () => post(resolved.cityId, resolved.cityName) },
+          { text: `Keep ${city.name}`, onPress: () => post(city.id, city.name) },
+        ]
       );
-    } catch (e) {
-      Alert.alert(
-        'Could not submit',
-        e?.message || 'Something went wrong. Please check your connection and try again.'
-      );
-    } finally {
-      setSubmitting(false);
+      return;
     }
+    await post(city.id, city.name);
   };
 
   // Self-serve calendar intake: register a Google/iCal link once, stops auto-appear.

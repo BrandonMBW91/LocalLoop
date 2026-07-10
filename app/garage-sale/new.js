@@ -19,6 +19,7 @@ import { useApp } from '../../src/context/AppContext';
 import { screenContent } from '../../src/utils/moderation';
 import { SALE_ITEMS, SALE_TYPES } from '../../src/data/garageSales';
 import { formatTime, toDateString } from '../../src/utils/dates';
+import { townFromAddress } from '../../src/lib/townFromAddress';
 import { colors, spacing, radius, baseFont } from '../../src/theme/theme';
 
 function Field({ label, hint, children, required }) {
@@ -78,40 +79,58 @@ export default function NewGarageSaleScreen() {
     }
 
     const startISO = toDateString(startDateValue);
-    const sale = {
-      id: `usersale-${Date.now()}`,
-      cityId: city.id,
-      title: title.trim(),
-      type,
-      start: startISO,
-      end: endDateValue ? toDateString(endDateValue) : startISO,
-      dailyStart: dailyStartValue ? formatTime(dailyStartValue) : '8:00 AM',
-      dailyEnd: dailyEndValue ? formatTime(dailyEndValue) : '2:00 PM',
-      address: address.trim(),
-      neighborhood: '',
-      items,
-      host: host.trim() || 'Community submission',
-      pending: true,
-      note: note.trim() || '',
-      _photos: photos,
+    const post = async (cityId, cityName) => {
+      const sale = {
+        id: `usersale-${Date.now()}`,
+        cityId,
+        title: title.trim(),
+        type,
+        start: startISO,
+        end: endDateValue ? toDateString(endDateValue) : startISO,
+        dailyStart: dailyStartValue ? formatTime(dailyStartValue) : '8:00 AM',
+        dailyEnd: dailyEndValue ? formatTime(dailyEndValue) : '2:00 PM',
+        address: address.trim(),
+        neighborhood: '',
+        items,
+        host: host.trim() || 'Community submission',
+        pending: true,
+        note: note.trim() || '',
+        _photos: photos,
+      };
+      try {
+        setSubmitting(true);
+        await addSubmittedGarageSale(sale);
+        Alert.alert(
+          'Thank you! 🪧',
+          `Your garage sale has been submitted. It is reviewed, then shown to everyone in ${cityName}.`,
+          [{ text: 'View Garage Sales', onPress: () => router.replace('/garage-sales') }]
+        );
+      } catch (e) {
+        Alert.alert(
+          'Could not submit',
+          e?.message || 'Something went wrong. Please check your connection and try again.'
+        );
+      } finally {
+        setSubmitting(false);
+      }
     };
 
-    try {
-      setSubmitting(true);
-      await addSubmittedGarageSale(sale);
+    // Same town-truth check as food trucks: a sale belongs where the address
+    // is, since shoppers browse by town. Fail-open on any doubt.
+    setSubmitting(true);
+    const resolved = await townFromAddress(address, city.id).finally(() => setSubmitting(false));
+    if (resolved && resolved.cityId !== city.id) {
       Alert.alert(
-        'Thank you! 🪧',
-        `Your garage sale has been submitted. It is reviewed, then shown to everyone in ${city.name}.`,
-        [{ text: 'View Garage Sales', onPress: () => router.replace('/garage-sales') }]
+        `That address is in ${resolved.cityName}`,
+        `Your sale's address is in ${resolved.cityName}, so that's where shoppers will look for it. Post it there?`,
+        [
+          { text: `Post in ${resolved.cityName}`, onPress: () => post(resolved.cityId, resolved.cityName) },
+          { text: `Keep ${city.name}`, onPress: () => post(city.id, city.name) },
+        ]
       );
-    } catch (e) {
-      Alert.alert(
-        'Could not submit',
-        e?.message || 'Something went wrong. Please check your connection and try again.'
-      );
-    } finally {
-      setSubmitting(false);
+      return;
     }
+    await post(city.id, city.name);
   };
 
   if (backendEnabled && !rulesAccepted) {
