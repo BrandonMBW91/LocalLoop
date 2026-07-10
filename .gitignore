@@ -63,3 +63,4 @@ play-service-account*.json
 .fb-featured.json
 local-refresh.log
 *.enc
+.asc-screenshots/
