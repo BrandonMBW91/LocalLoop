@@ -12,6 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.michaelwilliams.localloop",
+      "appStoreUrl": "https://apps.apple.com/app/id6780306721",
       "associatedDomains": [
         "applinks:localloop.io"
       ],
@@ -21,6 +22,7 @@
     },
     "android": {
       "package": "com.michaelwilliams.localloop",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.michaelwilliams.localloop",
       "adaptiveIcon": {
         "backgroundColor": "#15315B",
         "foregroundImage": "./assets/android-icon-foreground.png",
