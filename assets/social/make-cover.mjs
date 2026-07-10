@@ -36,10 +36,12 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 624">
 </g>
 
 <!-- wordmark + tagline -->
-<text x="562" y="322" font-family="Arial, Helvetica, sans-serif" font-weight="800"
-      font-size="132" letter-spacing="2" fill="#F7F2E7">LOCAL LOOP</text>
-<text x="566" y="388" font-family="Arial, Helvetica, sans-serif" font-weight="700"
-      font-size="33" letter-spacing="7" fill="#F7F2E7">NORTHWEST, CENTRAL &amp; NORTHEAST OHIO</text>
+<text x="562" y="288" font-family="Arial, Helvetica, sans-serif" font-weight="800"
+      font-size="128" letter-spacing="2" fill="#F7F2E7">LOCAL LOOP</text>
+<text x="566" y="352" font-family="Arial, Helvetica, sans-serif" font-weight="700"
+      font-size="34" letter-spacing="5" fill="#F7F2E7">EVENTS &#183; GARAGE SALES &#183; FOOD TRUCKS</text>
+<text x="566" y="404" font-family="Arial, Helvetica, sans-serif" font-weight="700"
+      font-size="27" letter-spacing="3" fill="#F7F2E7" opacity="0.82">100+ OHIO TOWNS &#183; FREE ON THE APP STORE</text>
 </svg>`;
 
 const png = new Resvg(svg, {
