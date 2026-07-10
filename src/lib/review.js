@@ -16,10 +16,14 @@ const KEY_OPENS = '@fe/reviewOpens';
 const KEY_DONE = '@fe/reviewDone';      // they tapped Rate — never ask again
 const KEY_NEXT = '@fe/reviewNextAt';    // epoch ms: earliest time to ask again after a skip
 const KEY_ASKS = '@fe/reviewAskCount';  // how many times we've shown the prompt
+const KEY_FIRST = '@fe/reviewFirstAt';  // epoch ms of the first open (a "used it a while" gate)
 
-const MIN_OPENS = 4;                            // opens before the first ask
-const REPROMPT_MS = 14 * 24 * 60 * 60 * 1000;   // 2 weeks between asks
-const MAX_ASKS = 3;                             // stop asking after this many skips
+// Deliberately gentle so the prompt never feels naggy — a rating is a bonus, not
+// something to badger people for.
+const MIN_OPENS = 8;                            // opens before the FIRST ask (was 4)
+const MIN_DAYS_INSTALLED = 4;                   // AND they've had the app at least this many days
+const REPROMPT_MS = 45 * 24 * 60 * 60 * 1000;   // ~6 weeks between asks (was 2 weeks)
+const MAX_ASKS = 2;                             // at most 2 asks ever, then stop for good (was 3)
 
 export function openReview() {
   if (Platform.OS === 'android') {
@@ -36,15 +40,21 @@ export async function maybePromptReview() {
   try {
     if ((await AsyncStorage.getItem(KEY_DONE)) === 'true') return; // already rated
 
+    // Stamp the first-open time once, so we can require they've had the app a few
+    // days — not just launched it 8 times in one sitting.
+    let firstAt = await num(KEY_FIRST);
+    if (!firstAt) { firstAt = Date.now(); await AsyncStorage.setItem(KEY_FIRST, String(firstAt)); }
+
     const opens = (await num(KEY_OPENS)) + 1;
     await AsyncStorage.setItem(KEY_OPENS, String(opens));
     if (opens < MIN_OPENS) return; // not engaged enough yet
+    if (Date.now() - firstAt < MIN_DAYS_INSTALLED * 24 * 60 * 60 * 1000) return; // give it a few days first
 
     const asks = await num(KEY_ASKS);
     if (asks >= MAX_ASKS) return; // asked enough times, stop nagging
 
     const nextAt = await num(KEY_NEXT);
-    if (nextAt && Date.now() < nextAt) return; // still inside the 2-week cooldown
+    if (nextAt && Date.now() < nextAt) return; // still inside the ~6-week cooldown
 
     // Record that we're asking now, and pre-set the next window in case they skip.
     await AsyncStorage.setItem(KEY_ASKS, String(asks + 1));
