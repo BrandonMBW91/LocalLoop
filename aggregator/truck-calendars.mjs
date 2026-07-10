@@ -127,7 +127,4 @@ if (!DRY) {
     .lt('date', todayET).not('source_uid', 'is', null);
   console.log(`Pruned ${count || 0} past aggregator stop(s).`);
 }
-// Surface self-serve submissions awaiting approval (in-app "Add my calendar").
-const { count: pending } = await sb.from('truck_calendars').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-if (pending) console.log(`⚠ ${pending} pending truck calendar submission(s) awaiting review — run: node approve-truck-calendars.mjs`);
 console.log(`Done. ${totalStops} upcoming truck stop(s) across ${cals.length} calendar(s).`);

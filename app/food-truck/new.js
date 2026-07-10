@@ -118,8 +118,8 @@ export default function NewFoodTruckScreen() {
       await submitTruckCalendar({ name: name.trim(), cityId: city.id, cuisine, icalUrl: url, contact: host.trim() });
       setCalUrl('');
       Alert.alert(
-        'Got it! 🚚',
-        `Thanks — we'll review your calendar, then your stops start showing in ${city.name} automatically. No need to post them one by one.`,
+        "You're all set! 🚚",
+        `Your stops will start showing in ${city.name} automatically from your calendar. No need to post them one by one.`,
         [{ text: 'Done', onPress: () => router.replace('/food-trucks') }]
       );
     } catch (e) {
@@ -220,7 +220,7 @@ export default function NewFoodTruckScreen() {
               </ThemedText>
             </Pressable>
             <ThemedText size="tiny" color={colors.textMuted} style={{ marginTop: 6, textAlign: 'center' }}>
-              We review new calendars before they go live.
+              Free, and your stops update themselves from your calendar.
             </ThemedText>
           </View>
         ) : null}

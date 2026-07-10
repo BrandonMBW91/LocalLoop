@@ -8,9 +8,11 @@
 alter table public.truck_calendars add column if not exists status text not null default 'approved';
 alter table public.truck_calendars add column if not exists submitted_contact text;
 
--- Public submit: creates a PENDING (enabled=false) calendar. Validated + de-duped.
--- Runs as the definer so it bypasses the table's revoke, but it can ONLY insert a
--- disabled/pending row — never enable one, never read others.
+-- Public submit: registers a calendar as ENABLED (auto-approved — the app has no
+-- review queue by product decision; a bad feed just yields 0 stops at ingest and
+-- can be pulled with manage-truck-calendars.mjs). Validated + de-duped. Runs as
+-- the definer so it bypasses the table's revoke, but it can ONLY insert its own
+-- row with controlled columns — never read or modify others.
 create or replace function public.submit_truck_calendar(
   p_name text, p_city text, p_cuisine text, p_ical_url text, p_contact text
 ) returns void
@@ -32,7 +34,7 @@ begin
     trim(p_ical_url),
     left(trim(p_name), 120),
     nullif(left(trim(p_contact), 200), ''),
-    false, 'pending'
+    true, 'approved'
   );
 end;
 $$;
