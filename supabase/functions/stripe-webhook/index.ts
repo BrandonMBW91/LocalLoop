@@ -167,6 +167,18 @@ Deno.serve(async (req) => {
       // Featured Listing is NOT a sponsor ad: it boosts one specific listing,
       // which only the owner can identify. Fulfill by emailing the owner.
       if (product === 'featured_30') {
+        // Idempotency: featured_30 writes no ad row, so a duplicate Stripe delivery
+        // would email the owner twice (risking a double manual feature). Dedup on
+        // stripe_session_id — only email when this session is seen for the first time.
+        const { data: firstSeen } = await supabase
+          .from('processed_featured')
+          .upsert({ stripe_session_id: s.id }, { onConflict: 'stripe_session_id', ignoreDuplicates: true })
+          .select('stripe_session_id');
+        if (!firstSeen || !firstSeen.length) {
+          return new Response(JSON.stringify({ received: true, fulfilled: 'featured_30 duplicate ignored' }), {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
         const paid = typeof s.amount_total === 'number' ? `$${(s.amount_total / 100).toFixed(0)}` : 'tier rate';
         await sendEmail(
           `ACTION: Featured Listing purchased by ${business} (${resolvedCity})`,
@@ -240,6 +252,18 @@ Deno.serve(async (req) => {
         .from('sponsors')
         .upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true });
       if (upsertErr) throw upsertErr;
+      // On a Stripe retry the rows already exist (ignoreDuplicates) and keep their
+      // ORIGINAL edit_token; read the persisted one back so the buyer's manage link
+      // always resolves to a real ad instead of this call's freshly-minted (unstored,
+      // dead) token.
+      const { data: tokenRow } = await supabase
+        .from('sponsors')
+        .select('edit_token')
+        .eq('stripe_session_id', s.id)
+        .not('edit_token', 'is', null)
+        .limit(1)
+        .maybeSingle();
+      const manageToken = tokenRow?.edit_token ?? editToken;
 
       // Tell the OWNER an ad was just placed (Michael asked to be notified on
       // every ad + feature). Best-effort, after the ad is safely created.
@@ -266,7 +290,7 @@ Deno.serve(async (req) => {
         await resendSend(
           buyerEmail,
           'Your Local Loop ad is live',
-          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself — set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${editToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
+          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself — set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${manageToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
         );
       }
     } else if (event.type === 'customer.subscription.deleted') {
@@ -283,12 +307,17 @@ Deno.serve(async (req) => {
       const obj = event.data.object;
       const subId = obj.subscription ?? obj.parent?.subscription_details?.subscription ?? null;
       if (subId) {
+        // Only pause rows that are currently ON, so an ad the owner deliberately
+        // switched off isn't relabeled 'payment_failed' and then resurrected by the
+        // next invoice.paid (which reactivates WHERE paused_reason='payment_failed').
         await supabase.from('sponsors')
           .update({ active: false, paused_reason: 'payment_failed' })
-          .eq('stripe_subscription_id', subId);
+          .eq('stripe_subscription_id', subId)
+          .eq('active', true);
         await supabase.from('deals')
           .update({ active: false, paused_reason: 'payment_failed' })
-          .eq('stripe_subscription_id', subId);
+          .eq('stripe_subscription_id', subId)
+          .eq('active', true);
       }
     } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_succeeded') {
       // A retry that succeeds turns the ad back on — but ONLY rows paused for
