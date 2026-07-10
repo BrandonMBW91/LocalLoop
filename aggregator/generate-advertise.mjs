@@ -162,7 +162,7 @@ const html = `<!DOCTYPE html><html lang="en"><head>
 
 <div class="steps"><h2>How it works</h2><ol>
   <li><strong>Pick your town</strong> above to see today's rate, then check out securely with Stripe (card or Apple/Google Pay). Prefer to talk first? Email us.</li>
-  <li><strong>Tell us about your ad</strong>: your business name, headline, link, and town.</li>
+  <li><strong>Tell us about your ad</strong> at checkout: your business name, headline, and town. Want a clickable link to your site or phone? Just reply to your confirmation email and we'll add it.</li>
   <li><strong>You go live</strong> in the app, with simple monthly billing.</li>
   <li><strong>Ask us for your numbers</strong> any time: views and taps, so you see the reach you're getting.</li>
 </ol></div>
