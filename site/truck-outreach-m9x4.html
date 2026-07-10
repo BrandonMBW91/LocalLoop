@@ -58,7 +58,7 @@
   <h1>Food truck outreach checklist</h1>
   <p class="sub">Check a truck off once you've grabbed its public email from Facebook (About section) or sent it a Messenger pitch. Progress saves on this device. Only take emails that are publicly listed.</p>
 </header>
-<div class="bar"><span class="count" id="prog"></span><button class="copybtn" id="copyem">Copy emails (0)</button><label><input type="checkbox" id="hidedone"> Hide checked</label></div>
+<div class="bar"><span class="count" id="prog"></span><button class="copybtn" id="copyem">Copy emails (0)</button><button class="copybtn" id="open10" style="background:var(--navy)">Open next 10</button><label><input type="checkbox" id="hidedone"> Hide checked</label></div>
 
 <h2>Toledo · Wood · Fulton <span class="n" data-n></span></h2>
 <div class="grp" data-g data-town-default="Toledo">
@@ -310,6 +310,21 @@
       ta.value = t; ta.focus(); ta.select();
       copyBtn.textContent='Select + Cmd+C below';
       setTimeout(updateCopy,3500);
+    }
+  });
+  // Bulk-open: the next 10 unchecked trucks' links, one tab each. Browsers
+  // block multi-open until the user allows popups for this site once.
+  const openBtn = document.getElementById('open10');
+  openBtn.addEventListener('click', ()=>{
+    const next = rows.filter(r=>{
+      const cb=r.querySelector('input[type="checkbox"]');
+      return cb && !cb.checked && r.querySelector('a.go');
+    }).slice(0,10);
+    let opened = 0;
+    next.forEach((r,i)=>{ if(window.open(r.querySelector('a.go').href,'llt'+Date.now()+i,'noopener')) opened++; });
+    if(opened < next.length){
+      openBtn.textContent = opened===0 ? 'Blocked — allow pop-ups for this site' : 'Some blocked — allow pop-ups';
+      setTimeout(()=>{openBtn.textContent='Open next 10';}, 4000);
     }
   });
   update(); updateCopy();
