@@ -265,7 +265,7 @@ export default function SettingsScreen() {
             <Pressable style={[styles.row, styles.rowBorder]} onPress={() => router.push('/editor-pick')}>
               <Ionicons name="star" size={24} color={colors.accent} />
               <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
-                This week's pick
+                This Week's Pick
               </ThemedText>
               <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
             </Pressable>

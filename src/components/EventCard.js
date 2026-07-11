@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   cardFeatured: {
     borderColor: colors.accent,
-    backgroundColor: colors.accentLight + '66',
+    backgroundColor: colors.featuredBg,
   },
   tappable: {
     flex: 1,

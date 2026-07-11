@@ -22,7 +22,7 @@ const CATEGORY_DARK = {
 
 const LIGHT = {
   primary: '#15315B', primaryDark: '#0E2444', primaryLight: '#E8EDF5',
-  accent: '#B22234', accentLight: '#FBE7E9',
+  accent: '#B22234', accentLight: '#FBE7E9', featuredBg: '#FBE7E9',
   background: '#FBF8F1', surface: '#FFFFFF', surfaceAlt: '#F3EFE6',
   text: '#1A1A1A', textMuted: '#5B5B5B', textInverse: '#FFFFFF',
   border: '#E4DED4', shadow: '#000000', skeleton: '#ECE9E2',
@@ -37,7 +37,7 @@ const DARK = {
   // icon/text color, so it's a mid navy that reads acceptably in both roles on
   // dark ground. accent likewise nudged lighter for the same dual use.
   primary: '#5B8AD1', primaryDark: '#3B5C94', primaryLight: '#1C2A44',
-  accent: '#E06A73', accentLight: '#3A1E22',
+  accent: '#E06A73', accentLight: '#3A1E22', featuredBg: '#2E2029',
   background: '#0F1729', surface: '#182238', surfaceAlt: '#202C46',
   // textInverse sits on the saturated primary/accent/garageSale/foodTruck fills
   // (which stay colored in both themes), so it stays white — NOT the dark ground.

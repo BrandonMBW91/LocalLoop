@@ -38,10 +38,10 @@ export default function PushPrimingModal() {
           </View>
           <ThemedText size="title" weight="bold" style={styles.title}>{c.title}</ThemedText>
           <ThemedText size="body" color={colors.textMuted} style={styles.body}>{c.body}</ThemedText>
-          <Pressable style={styles.primary} onPress={acceptPushPrime} accessibilityRole="button">
+          <Pressable style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]} onPress={acceptPushPrime} accessibilityRole="button">
             <ThemedText size="body" weight="bold" color={colors.textInverse}>Turn on notifications</ThemedText>
           </Pressable>
-          <Pressable style={styles.ghost} onPress={dismissPushPrime} accessibilityRole="button">
+          <Pressable style={({ pressed }) => [styles.ghost, pressed && { opacity: 0.6 }]} onPress={dismissPushPrime} accessibilityRole="button">
             <ThemedText size="body" weight="bold" color={colors.textMuted}>Not now</ThemedText>
           </Pressable>
         </View>
