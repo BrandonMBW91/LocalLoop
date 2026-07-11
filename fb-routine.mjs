@@ -11,6 +11,7 @@
 // anything is written. No em-dashes, no AI-tell phrasing. The App Store link rides
 // only on the weekend digest so the page never reads as spammy.
 import { readFileSync, writeFileSync } from 'node:fs';
+import { CITIES } from './src/data/cities.js';
 
 const DIR = new URL('.', import.meta.url);
 const read = (p) => { try { return readFileSync(new URL(p, DIR), 'utf8'); } catch { return ''; } };
@@ -34,7 +35,11 @@ const etParts = (iso) => {
   const h24 = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: '2-digit', hour12: false }).format(new Date(iso)));
   return { time: `${get('hour')}:${get('minute')} ${get('dayPeriod')}`.replace(':00 ', ' '), h24 };
 };
-const cap = (s) => (s || '').split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+// Canonical town display names (Put-in-Bay, McArthur, St. Marys, LaRue…) so the
+// naive hyphen title-case never mangles an irregular one; falls back to
+// title-casing the slug for anything not in the catalog.
+const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
+const cap = (s) => CITY_NAME[s] || (s || '').split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const joinCities = (arr) => {
   const u = [...new Set(arr)].map(cap).slice(0, 3);
   if (u.length <= 1) return u[0] || 'the area';
@@ -55,6 +60,7 @@ function cleanTitle(t) {
 function cleanVenue(v) {
   if (!v) return '';
   let s = String(v).split(',')[0].trim();          // drop street, city, state, zip, country
+  s = s.split('|')[0].trim();                       // drop "| City, ST" style venue suffixes
   s = s.replace(/\s*[-–—]\s*.*$/, '');             // drop " - Meeting Room A", "- 2nd Floor"
   s = s.replace(/\s*\([^)]*\)\s*/g, ' ').trim();   // drop "(Capacity : 75)"
   s = s.replace(/\s{2,}/g, ' ');
@@ -113,7 +119,16 @@ async function fetchEvents(daysAhead) {
     .filter((e) => !isUnsafe(e.title) && !isImplausibleTime(e.title, e._t.h24));
 }
 
-const venuePlace = (e) => { const v = cleanVenue(e.venue); return v ? `at ${v}, ${cap(e.city_id)}` : `in ${cap(e.city_id)}`; };
+const venuePlace = (e) => {
+  const v = cleanVenue(e.venue);
+  const vl = v.toLowerCase().replace(/…$/, '');
+  const t = (e.title || '').toLowerCase();
+  const city = cap(e.city_id).toLowerCase();
+  // Drop the venue when it just echoes the event title or IS the town name — else
+  // you get "Farmers Market at Farmers Market, Town".
+  const redundant = !vl || t.includes(vl) || vl.includes(t) || vl === city;
+  return redundant ? `in ${cap(e.city_id)}` : `at ${v}, ${cap(e.city_id)}`;
+};
 const timeTag = (e) => (e._t.h24 >= 8 ? ` (${e._t.time})` : '');
 
 // --- WEEKEND DIGEST (Thu, flagship, App Store link) ---
@@ -178,11 +193,18 @@ async function genTonight() {
   const later = (await fetchEvents(2))
     .filter((e) => e._d === today && new Date(e.start_at) > Date.now())
     .filter((e) => BIGDRAW.test(e.title) && !FILLER.test(e.title)); // only real draws for a public day-of nudge
-  const seenV = new Set();
-  const top = later.sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
-    .filter((e) => { const v = (e.venue || e.title).toLowerCase(); if (seenV.has(v)) return false; seenV.add(v); return true; })
+  // Choose the best 3 by score (priority towns + genuine marquee draws win) rather
+  // than whatever starts earliest, so the post leads with a real draw instead of
+  // the first farmers market of the morning. Dedupe by title signature + venue.
+  const seen = new Set();
+  const top = later
+    .map((e) => ({ ...e, score: scoreOf(e) }))
+    .sort((a, b) => b.score - a.score || new Date(a.start_at) - new Date(b.start_at))
+    .filter((e) => { const k = sig(e.title) + '|' + (cleanVenue(e.venue) || e.city_id).toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
     .slice(0, 3);
   if (!top.length) return { ...genEngagement(), fellBack: true };
+  // Display the chosen picks in start-time order.
+  top.sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
   const lead = top[0];
   const extra = top.slice(1);
   const second = extra.length
