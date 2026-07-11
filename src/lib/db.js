@@ -251,33 +251,45 @@ export async function clearEditorPick(cityId) {
 }
 
 export async function fetchGarageSales(cityId) {
-  const { data, error } = await supabase
-    .from('garage_sales')
-    .select('*')
-    .eq('city_id', cityId)
-    .eq('status', 'approved')
-    .order('featured', { ascending: false })
-    .order('start_date', { ascending: true });
-  if (error) throw error;
+  const rows = [];
+  for (let from = 0; ; from += 1000) { // paginate past PostgREST's 1000-row cap
+    const { data, error } = await supabase
+      .from('garage_sales')
+      .select('*')
+      .eq('city_id', cityId)
+      .eq('status', 'approved')
+      .order('featured', { ascending: false })
+      .order('start_date', { ascending: true })
+      .range(from, from + 999);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if ((data || []).length < 1000) break;
+  }
   // Drop sales that have already ended (no date filter exists in the query).
   const today = todayKeyET();
-  return (data || [])
+  return rows
     .filter((r) => (r.end_date || r.start_date || today) >= today)
     .map(rowToSale);
 }
 
 export async function fetchFoodTrucks(cityId) {
-  const { data, error } = await supabase
-    .from('food_trucks')
-    .select('*')
-    .eq('city_id', cityId)
-    .eq('status', 'approved')
-    .order('featured', { ascending: false })
-    .order('date', { ascending: true });
-  if (error) throw error;
+  const rows = [];
+  for (let from = 0; ; from += 1000) { // paginate past PostgREST's 1000-row cap
+    const { data, error } = await supabase
+      .from('food_trucks')
+      .select('*')
+      .eq('city_id', cityId)
+      .eq('status', 'approved')
+      .order('featured', { ascending: false })
+      .order('date', { ascending: true })
+      .range(from, from + 999);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if ((data || []).length < 1000) break;
+  }
   // Drop food trucks whose date has passed (no date filter exists in the query).
   const today = todayKeyET();
-  return (data || []).filter((r) => (r.date || today) >= today).map(rowToTruck);
+  return rows.filter((r) => (r.date || today) >= today).map(rowToTruck);
 }
 
 // ---- Writes (RLS forces status='pending' and stamps created_by) ----

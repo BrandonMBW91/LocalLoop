@@ -22,7 +22,9 @@ Deno.serve(async (req) => {
   const slug = (url.searchParams.get('s') || '').slice(0, 80).toLowerCase().replace(/[^a-z0-9-]/g, '');
   const ua = req.headers.get('user-agent') || '';
   const dest = HOME + (slug ? `?ref=${encodeURIComponent(slug)}` : '');
-  if (slug) {
+  // Skip logging for link prefetchers / scanners (they fire no human intent and a
+  // scripted flood would bloat outreach_events + egress) — still redirect them.
+  if (slug && !BOT_RE.test(ua)) {
     try {
       await supabase.from('outreach_events').insert({
         event: 'click',

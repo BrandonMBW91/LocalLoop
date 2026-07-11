@@ -164,6 +164,11 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error('outreach conversion log failed (non-fatal):', (e as Error).message);
       }
+      // Defense in depth: only fulfill a genuinely-paid session (harmless for cards;
+      // matters only if ACH/SEPA/Bacs are ever enabled on LIVE).
+      if (s.payment_status && s.payment_status !== 'paid' && s.payment_status !== 'no_payment_required') {
+        return new Response(JSON.stringify({ received: true, skipped: 'unpaid' }), { headers: { 'Content-Type': 'application/json' } });
+      }
       const product = s.metadata?.product || 'town_sponsor'; // town_sponsor | all_region | metro_sponsor | featured_30 | deal
       // Sanitize buyer-supplied checkout fields before they become a live ad.
       const clamp = (v: string, n: number) => (v || '').slice(0, n);

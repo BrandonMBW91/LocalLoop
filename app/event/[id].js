@@ -231,7 +231,7 @@ export default function EventDetailScreen() {
         {event.ticketUrl ? (
           <Pressable
             style={styles.ticketsBtn}
-            onPress={() => Linking.openURL(event.ticketUrl).catch(() => {})}
+            onPress={() => { const u = event.ticketUrl || ''; if (/^(https:\/\/|tel:)/i.test(u)) Linking.openURL(u).catch(() => {}); }}
             accessibilityRole="link"
             accessibilityLabel="Get tickets"
           >
