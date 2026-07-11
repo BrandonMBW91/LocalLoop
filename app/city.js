@@ -1,11 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { CITIES, REGION_ORDER } from '../src/data/cities';
+import { nearMeAvailable, suggestTownFromLocation } from '../src/lib/nearMe';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
+
+const CITY_NAME_SET = new Set(CITIES.map((c) => c.id));
 
 export default function CityPickerScreen() {
   const router = useRouter();
@@ -56,6 +59,27 @@ export default function CityPickerScreen() {
     }
   };
 
+  // #2 Near me — one tap picks the closest served town from GPS. Only shown when
+  // the native location module is present (new binary); OTA on an older binary
+  // simply hides it. Non-blocking: denial/no-fix just leaves the list.
+  const [locating, setLocating] = useState(false);
+  const useMyLocation = async () => {
+    setLocating(true);
+    try {
+      const hit = await suggestTownFromLocation();
+      if (hit && CITY_NAME_SET.has(hit.cityId)) {
+        choose(hit.cityId);
+      } else {
+        Alert.alert(
+          "Couldn't find a nearby town",
+          hit ? 'You seem to be outside our Ohio towns for now.' : 'Turn on location for Local Loop, or pick your town from the list.'
+        );
+      }
+    } finally {
+      setLocating(false);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <View style={styles.searchWrap}>
@@ -76,6 +100,15 @@ export default function CityPickerScreen() {
           </Pressable>
         )}
       </View>
+
+      {nearMeAvailable() && !query ? (
+        <Pressable style={styles.nearMe} onPress={useMyLocation} disabled={locating}>
+          <Ionicons name="location" size={20} color={colors.primary} />
+          <ThemedText size="body" weight="bold" color={colors.primary}>
+            {locating ? 'Finding your town…' : 'Use my location'}
+          </ThemedText>
+        </Pressable>
+      ) : null}
 
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }}>
         {sections.map((section) => (
@@ -135,6 +168,12 @@ export default function CityPickerScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  nearMe: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    marginHorizontal: spacing.md, marginBottom: spacing.sm,
+    borderWidth: 1.5, borderColor: colors.primary, borderRadius: radius.pill,
+    paddingVertical: spacing.sm, minHeight: 46,
+  },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

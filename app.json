@@ -6,7 +6,7 @@
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "primaryColor": "#15315B",
     "description": "Local events, garage sales, and food trucks across 100+ Ohio towns and growing, in all five regions of Ohio.",
     "ios": {
@@ -63,6 +63,12 @@
         {
           "icon": "./assets/android-icon-monochrome.png",
           "color": "#15315B"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Local Loop uses your location once to pick your nearby town. It is never stored or shared."
         }
       ]
     ],

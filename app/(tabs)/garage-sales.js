@@ -90,6 +90,14 @@ export default function GarageSalesScreen() {
 
       <FilterRow>
         <ToggleChip
+          icon="navigate"
+          label="Plan a route"
+          on={false}
+          onPress={() => router.push('/route')}
+          accent={colors.garageSale}
+          tintLight={colors.garageSaleLight}
+        />
+        <ToggleChip
           icon="sunny"
           label="This Week"
           on={thisWeekOnly}

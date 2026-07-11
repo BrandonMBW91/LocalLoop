@@ -1,55 +1,56 @@
 // Central design tokens. Tuned for an older audience: high contrast,
 // generous spacing, large default type, big tap targets.
+//
+// #6 DARK MODE: the palette is resolved ONCE at module load from the OS color
+// scheme (Appearance). Every screen does `import { colors }` and holds this same
+// object reference, so building `colors` here — before any component renders —
+// themes the whole app with no per-component refactor. It follows the OS setting
+// at launch (needs app.json ios.userInterfaceStyle:"automatic"); a live in-app
+// toggle would need a reload and is intentionally out of scope. Category hues are
+// shared (they read on both grounds); only surfaces/text/border invert.
+import { Appearance } from 'react-native';
 
-export const colors = {
-  // Brand: PATRIOTIC — refined red / white / blue (Jul 2026 seasonal).
-  // Navy primary, classic flag red accent, warm cream surfaces. Contrast checked
-  // for WCAG AA. To flip back to the original green civic palette, restore the
-  // values in the `REVERT:` comments (one commit).
-  primary: '#15315B', // deep navy  (REVERT: '#1F6F54')
-  primaryDark: '#0E2444', //          (REVERT: '#15503D')
-  primaryLight: '#E8EDF5', // light navy tint  (REVERT: '#E7F2EE')
-  accent: '#B22234', // classic flag red for CTAs. Clears WCAG AA as white-on-accent
-  // (buttons, ~6.6:1) and as accent text on accentLight (FEATURED pill, ~5.6:1).
-  // (REVERT: '#A0500F')
-  accentLight: '#FBE7E9', // light red tint  (REVERT: '#FBEBDD')
-
-  background: '#FBF8F1', // warm cream  (REVERT: '#FBFAF7')
-  surface: '#FFFFFF',
-  surfaceAlt: '#F3EFE6', //             (REVERT: '#F2F0EB')
-
-  text: '#1A1A1A',
-  textMuted: '#5B5B5B',
-  textInverse: '#FFFFFF',
-
-  border: '#E4DED4', //                 (REVERT: '#E2DED7')
-  shadow: '#000000',
-  skeleton: '#ECE9E2', // neutral list-loading placeholder (SkeletonCard)
-
-  success: '#256B29', // darkened so it clears WCAG AA on the light "when" chips
-  danger: '#C0392B',
-
-  // Garage sales get their own identity (distinct from event categories).
-  garageSale: '#9A4A18', // darkened for AA on garageSaleLight chip
-  garageSaleLight: '#FBEFE4',
-
-  // Food trucks — a warm, appetizing red.
-  foodTruck: '#B5363B',
-  foodTruckLight: '#FBE9EA',
-
-  // Category accent colors — darkened so the colored pill text clears WCAG AA
-  // (4.5:1) on its own faint tint background on every card.
-  category: {
-    Music: '#6A3FB0',
-    Family: '#1C6A9E',
-    Food: '#9E4E0F',
-    Sports: '#15723C',
-    Arts: '#A62E6B',
-    Community: '#1F6566',
-    Market: '#786017',
-    Education: '#34509E',
-  },
+const CATEGORY = {
+  Music: '#6A3FB0', Family: '#1C6A9E', Food: '#9E4E0F', Sports: '#15723C',
+  Arts: '#A62E6B', Community: '#1F6566', Market: '#786017', Education: '#34509E',
 };
+const CATEGORY_DARK = {
+  // Lightened for legible pill text on dark tints.
+  Music: '#B79BEA', Family: '#7FC0EC', Food: '#E0A26A', Sports: '#78C98A',
+  Arts: '#E58BC0', Community: '#6FC6C7', Market: '#D8C06A', Education: '#9DBBEE',
+};
+
+const LIGHT = {
+  primary: '#15315B', primaryDark: '#0E2444', primaryLight: '#E8EDF5',
+  accent: '#B22234', accentLight: '#FBE7E9',
+  background: '#FBF8F1', surface: '#FFFFFF', surfaceAlt: '#F3EFE6',
+  text: '#1A1A1A', textMuted: '#5B5B5B', textInverse: '#FFFFFF',
+  border: '#E4DED4', shadow: '#000000', skeleton: '#ECE9E2',
+  success: '#256B29', danger: '#C0392B',
+  garageSale: '#9A4A18', garageSaleLight: '#FBEFE4',
+  foodTruck: '#B5363B', foodTruckLight: '#FBE9EA',
+  category: CATEGORY,
+};
+
+const DARK = {
+  // primary is used BOTH as a button fill (white text on it) and as an on-surface
+  // icon/text color, so it's a mid navy that reads acceptably in both roles on
+  // dark ground. accent likewise nudged lighter for the same dual use.
+  primary: '#5B8AD1', primaryDark: '#3B5C94', primaryLight: '#1C2A44',
+  accent: '#E06A73', accentLight: '#3A1E22',
+  background: '#0F1729', surface: '#182238', surfaceAlt: '#202C46',
+  // textInverse sits on the saturated primary/accent/garageSale/foodTruck fills
+  // (which stay colored in both themes), so it stays white — NOT the dark ground.
+  text: '#E8ECF4', textMuted: '#98A4BA', textInverse: '#FFFFFF',
+  border: '#2A3650', shadow: '#000000', skeleton: '#20293C',
+  success: '#5BC98A', danger: '#E06A6A',
+  garageSale: '#D89A5A', garageSaleLight: '#2A2116',
+  foodTruck: '#E0787C', foodTruckLight: '#2E1A1C',
+  category: CATEGORY_DARK,
+};
+
+export const isDark = Appearance.getColorScheme() === 'dark';
+export const colors = isDark ? { ...DARK } : { ...LIGHT };
 
 // Layout spacing scale — use these tokens for gaps, padding, and margins so the
 // whole app shares one rhythm and can be retuned in one place. `xxs` is the tight
