@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, SectionList, RefreshControl, StyleSheet } from 'react-native';
+import { View, SectionList, RefreshControl, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
 import AdBanner from './AdBanner';
@@ -41,6 +41,10 @@ export default function ListBody({
         <SectionHeader title={section.title} count={section.count} accent={accent} unit={sectionUnit} />
       )}
       stickySectionHeadersEnabled
+      removeClippedSubviews={Platform.OS === 'android'}
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      windowSize={11}
       contentContainerStyle={{ paddingBottom: spacing.xxl }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[accent]} tintColor={accent} />
@@ -56,7 +60,9 @@ export default function ListBody({
             </View>
           ) : null}
           {headerExtras}
-          {loadingData ? null : (
+          {sections.length === 0 ? null : (
+            // Drive off having data, not loadingData, so the count doesn't blink
+            // out on every pull-to-refresh (which flips loadingData true).
             <ThemedText size="small" color={colors.textMuted} style={styles.countLabel}>
               {countLabel}
             </ThemedText>

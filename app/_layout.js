@@ -75,11 +75,11 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="claim"
-              options={{ title: 'Claim your business', headerBackTitle: 'Back' }}
+              options={{ title: 'Claim Your Business', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
               name="route"
-              options={{ title: 'Plan a sale route', headerBackTitle: 'Back' }}
+              options={{ title: 'Plan a Sale Route', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
               name="moderate"

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Pressable, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
@@ -14,6 +14,19 @@ function EventCard({ event }) {
   const { savedIds, toggleSaved, scale } = useApp();
   const saved = savedIds.includes(event.id);
   const accent = categoryColor(event.category);
+  const thumbSize = Math.round(64 * Math.min(scale, 1.2)); // scale with Text Size like the date chip
+  // Pop the heart on save (the app's most-repeated delight moment).
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const prevSaved = useRef(saved);
+  useEffect(() => {
+    if (saved && !prevSaved.current) {
+      Animated.sequence([
+        Animated.timing(heartScale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
+        Animated.spring(heartScale, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
+    }
+    prevSaved.current = saved;
+  }, [saved, heartScale]);
 
   return (
     <View style={[styles.card, event.featured && styles.cardFeatured]}>
@@ -24,7 +37,7 @@ function EventCard({ event }) {
         accessibilityLabel={`${event.title}, ${relativeDay(event.start)}, at ${event.venue}`}
       >
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={styles.thumb} resizeMode="cover" />
+          <Image source={{ uri: event.imageUrl }} style={[styles.thumb, { width: thumbSize, height: thumbSize }]} resizeMode="cover" />
         ) : (
           <DateChip date={event.start} accent={accent} scale={scale} />
         )}
@@ -59,15 +72,17 @@ function EventCard({ event }) {
       <Pressable
         onPress={() => toggleSaved(event.id, event)}
         hitSlop={12}
-        style={styles.saveBtn}
+        style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.6 }]}
         accessibilityRole="button"
         accessibilityLabel={saved ? 'Remove from saved' : 'Save event'}
       >
-        <Ionicons
-          name={saved ? 'heart' : 'heart-outline'}
-          size={26 * Math.min(scale, 1.3)}
-          color={saved ? colors.danger : colors.textMuted}
-        />
+        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+          <Ionicons
+            name={saved ? 'heart' : 'heart-outline'}
+            size={26 * Math.min(scale, 1.3)}
+            color={saved ? colors.danger : colors.textMuted}
+          />
+        </Animated.View>
       </Pressable>
     </View>
   );
