@@ -78,7 +78,7 @@ export default function EventDetailScreen() {
         <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
           This event may have ended or been taken down.
         </ThemedText>
-        <Pressable style={styles.primaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
           <ThemedText size="body" weight="bold" color={colors.textInverse}>Go Back</ThemedText>
         </Pressable>
       </View>
@@ -196,7 +196,7 @@ export default function EventDetailScreen() {
         {/* Action buttons */}
         <View style={styles.actions}>
           <Pressable
-            style={[styles.actionBtn, saved && { backgroundColor: colors.danger }]}
+            style={({ pressed }) => [styles.actionBtn, saved && { backgroundColor: colors.danger }, pressed && { opacity: 0.85 }]}
             onPress={() => toggleSaved(event.id, event)}
           >
             <Ionicons
@@ -208,7 +208,7 @@ export default function EventDetailScreen() {
               {saved ? 'Saved' : 'Save'}
             </ThemedText>
           </Pressable>
-          <Pressable style={styles.actionBtn} onPress={onShare}>
+          <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={onShare}>
             <Ionicons name="share-outline" size={22} color={colors.primary} />
             <ThemedText size="body" weight="bold" color={colors.primary}>
               Share
@@ -222,7 +222,7 @@ export default function EventDetailScreen() {
         {/* "I'm going" — social proof + a reason for organizers to point people here */}
         {backendEnabled && !isAdmin ? (
           <Pressable
-            style={[styles.rsvpBtn, rsvp.mine && { backgroundColor: colors.success, borderColor: colors.success }]}
+            style={({ pressed }) => [styles.rsvpBtn, rsvp.mine && { backgroundColor: colors.success, borderColor: colors.success }, pressed && { opacity: 0.85 }]}
             onPress={onRsvp}
             accessibilityRole="button"
             accessibilityLabel={rsvp.mine ? "You're going. Tap to undo." : "Mark that you're going"}
@@ -247,7 +247,7 @@ export default function EventDetailScreen() {
 
         {event.ticketUrl ? (
           <Pressable
-            style={styles.ticketsBtn}
+            style={({ pressed }) => [styles.ticketsBtn, pressed && { opacity: 0.85 }]}
             onPress={() => { const u = event.ticketUrl || ''; if (/^(https:\/\/|tel:)/i.test(u)) Linking.openURL(u).catch(() => {}); }}
             accessibilityRole="link"
             accessibilityLabel="Get tickets"
@@ -260,7 +260,7 @@ export default function EventDetailScreen() {
           </Pressable>
         ) : null}
 
-        <Pressable style={styles.calendarBtn} onPress={onAddToCalendar}>
+        <Pressable style={({ pressed }) => [styles.calendarBtn, pressed && { opacity: 0.85 }]} onPress={onAddToCalendar}>
           <Ionicons name="calendar-outline" size={22} color={colors.textInverse} />
           <ThemedText size="body" weight="bold" color={colors.textInverse}>
             Add to my Calendar
@@ -290,7 +290,7 @@ export default function EventDetailScreen() {
         {/* Follow this venue — surfaces its events under the "Following" filter */}
         {event.venue ? (
           <Pressable
-            style={[styles.followBtn, following && styles.followingBtn]}
+            style={({ pressed }) => [styles.followBtn, following && styles.followingBtn, pressed && { opacity: 0.85 }]}
             onPress={() => toggleFollow(event.venue)}
             accessibilityRole="button"
             accessibilityLabel={following ? `Unfollow ${event.venue}` : `Follow ${event.venue}`}

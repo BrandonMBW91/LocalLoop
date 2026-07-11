@@ -66,7 +66,7 @@ export default function GarageSaleDetailScreen() {
         <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
           This sale may have ended or been taken down.
         </ThemedText>
-        <Pressable style={styles.primaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
           <ThemedText size="body" weight="bold" color={colors.textInverse}>Go Back</ThemedText>
         </Pressable>
       </View>
@@ -135,20 +135,20 @@ export default function GarageSaleDetailScreen() {
         ) : null}
 
         {/* Big primary directions button — the main action for a garage sale */}
-        <Pressable style={styles.directionsBtn} onPress={openMaps}>
+        <Pressable style={({ pressed }) => [styles.directionsBtn, pressed && { opacity: 0.85 }]} onPress={openMaps}>
           <Ionicons name="navigate" size={24} color={colors.textInverse} />
           <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
             Get Directions
           </ThemedText>
         </Pressable>
-        <Pressable style={styles.shareBtn} onPress={onShare}>
+        <Pressable style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.85 }]} onPress={onShare}>
           <Ionicons name="share-outline" size={22} color={colors.garageSale} />
           <ThemedText size="body" weight="bold" color={colors.garageSale}>
             Share this sale
           </ThemedText>
         </Pressable>
         <Pressable
-          style={[styles.shareBtn, saved && styles.saveBtnActive]}
+          style={({ pressed }) => [styles.shareBtn, saved && styles.saveBtnActive, pressed && { opacity: 0.85 }]}
           onPress={() => toggleSavedSale(sale.id, sale)}
           accessibilityRole="button"
           accessibilityLabel={saved ? 'Saved, we will remind you before it starts' : 'Save this sale and get a reminder'}

@@ -66,7 +66,7 @@ export default function FoodTruckDetailScreen() {
         <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
           This stop may have ended or been taken down.
         </ThemedText>
-        <Pressable style={styles.primaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
           <ThemedText size="body" weight="bold" color={colors.textInverse}>Go Back</ThemedText>
         </Pressable>
       </View>
@@ -120,20 +120,20 @@ export default function FoodTruckDetailScreen() {
           </View>
         ) : null}
 
-        <Pressable style={styles.directionsBtn} onPress={openMaps}>
+        <Pressable style={({ pressed }) => [styles.directionsBtn, pressed && { opacity: 0.85 }]} onPress={openMaps}>
           <Ionicons name="navigate" size={24} color={colors.textInverse} />
           <ThemedText size="subtitle" weight="bold" color={colors.textInverse}>
             Get Directions
           </ThemedText>
         </Pressable>
-        <Pressable style={styles.shareBtn} onPress={onShare}>
+        <Pressable style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.85 }]} onPress={onShare}>
           <Ionicons name="share-outline" size={22} color={colors.foodTruck} />
           <ThemedText size="body" weight="bold" color={colors.foodTruck}>
             Share this truck
           </ThemedText>
         </Pressable>
         <Pressable
-          style={[styles.shareBtn, following && styles.followBtnActive]}
+          style={({ pressed }) => [styles.shareBtn, following && styles.followBtnActive, pressed && { opacity: 0.85 }]}
           onPress={() => toggleFollow(truck.name)}
           accessibilityRole="button"
           accessibilityLabel={following ? `Following ${truck.name}` : `Follow ${truck.name} for new stops`}
@@ -181,7 +181,7 @@ export default function FoodTruckDetailScreen() {
 
       {/* Owner path — claim the truck, opens the claim form prefilled */}
       <Pressable
-        style={styles.claimBtn}
+        style={({ pressed }) => [styles.claimBtn, pressed && { opacity: 0.85 }]}
         onPress={() => router.push({ pathname: '/claim', params: { name: truck.name, kind: 'food_truck' } })}
         accessibilityRole="button"
       >

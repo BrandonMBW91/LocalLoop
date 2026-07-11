@@ -102,7 +102,7 @@ export default function CityPickerScreen() {
       </View>
 
       {nearMeAvailable() && !query ? (
-        <Pressable style={styles.nearMe} onPress={useMyLocation} disabled={locating}>
+        <Pressable style={({ pressed }) => [styles.nearMe, pressed && { opacity: 0.6 }]} onPress={useMyLocation} disabled={locating}>
           <Ionicons name="location" size={20} color={colors.primary} />
           <ThemedText size="body" weight="bold" color={colors.primary}>
             {locating ? 'Finding your town…' : 'Use my location'}
@@ -127,7 +127,7 @@ export default function CityPickerScreen() {
                 <Pressable
                   key={c.id}
                   onPress={() => choose(c.id)}
-                  style={[styles.row, i > 0 && styles.rowBorder, selected && styles.rowSelected]}
+                  style={({ pressed }) => [styles.row, i > 0 && styles.rowBorder, selected && styles.rowSelected, pressed && { opacity: 0.6 }]}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
                 >

@@ -34,7 +34,7 @@ export default function CityHeaderControl({
           <>
             <Pressable
               onPress={() => { logEvent('open_calendar'); router.push('/calendar'); }}
-              style={styles.iconBtn}
+              style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
               accessibilityRole="button"
               accessibilityLabel="Calendar view"
             >
@@ -42,7 +42,7 @@ export default function CityHeaderControl({
             </Pressable>
             <Pressable
               onPress={() => { logEvent('open_map'); router.push('/map'); }}
-              style={styles.iconBtn}
+              style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
               accessibilityRole="button"
               accessibilityLabel="Map view"
             >
@@ -55,7 +55,7 @@ export default function CityHeaderControl({
 
         <Pressable
           onPress={() => router.push('/city')}
-          style={styles.changeCity}
+          style={({ pressed }) => [styles.changeCity, pressed && { opacity: 0.6 }]}
           accessibilityRole="button"
           accessibilityLabel="Change city"
         >

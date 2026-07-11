@@ -21,7 +21,7 @@ export default function EmptyState({ icon, title, body, actionLabel, onAction, a
         </ThemedText>
       ) : null}
       {actionLabel && onAction ? (
-        <Pressable style={[styles.btn, { backgroundColor: accent }]} onPress={onAction}>
+        <Pressable style={({ pressed }) => [styles.btn, { backgroundColor: accent }, pressed && { opacity: 0.85 }]} onPress={onAction}>
           <Ionicons name="add-circle" size={22} color={colors.textInverse} />
           <ThemedText size="body" weight="bold" color={colors.textInverse}>
             {actionLabel}

@@ -45,7 +45,7 @@ export default function AdBanner({ index = 0 }) {
         <Pressable
           onPress={open}
           disabled={!sponsor.linkUrl}
-          style={styles.sponsor}
+          style={({ pressed }) => [styles.sponsor, pressed && sponsor.linkUrl && { opacity: 0.85 }]}
           accessibilityRole={sponsor.linkUrl ? 'link' : 'text'}
           accessibilityLabel={
             cta
