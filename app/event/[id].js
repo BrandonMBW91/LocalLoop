@@ -7,7 +7,7 @@ import AdBanner from '../../src/components/AdBanner';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
-import { recordView, fetchOneById } from '../../src/lib/db';
+import { recordView, fetchOneById, toggleRsvp, fetchRsvpCounts } from '../../src/lib/db';
 import { colors, spacing, radius, categoryColor, categoryIcon } from '../../src/theme/theme';
 import { formatLongDate, timeRange } from '../../src/utils/dates';
 import { addToCalendarUrl } from '../../src/utils/calendar';
@@ -37,7 +37,7 @@ export default function EventDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, logEvent } = useApp();
+  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, logEvent, deviceId } = useApp();
   const cached = findEventById(id);
   // Deep link (localloop.io/event/<id>) may reference an event outside the
   // loaded city — fetch it directly when the cache misses.
@@ -76,6 +76,30 @@ export default function EventDetailScreen() {
   const accent = categoryColor(event.category);
   const saved = savedIds.includes(event.id);
   const following = isFollowing(event.venue);
+
+  // "I'm going" RSVP — public count as social proof, one tap to toggle. The
+  // count loads from the backend; taps update optimistically and reconcile with
+  // the server's returned total. Fails soft (button just won't change on error).
+  const [rsvp, setRsvp] = useState({ n: 0, mine: false, loaded: false });
+  useEffect(() => {
+    let ok = true;
+    if (backendEnabled && event?.id && !isAdmin) {
+      fetchRsvpCounts('event', [event.id], deviceId).then((map) => {
+        if (!ok) return;
+        const r = map[event.id];
+        setRsvp({ n: r?.n || 0, mine: Boolean(r?.mine), loaded: true });
+      });
+    }
+    return () => { ok = false; };
+  }, [backendEnabled, event?.id, isAdmin, deviceId]);
+  const onRsvp = async () => {
+    if (!deviceId || !event?.id) return;
+    const optimistic = { n: rsvp.n + (rsvp.mine ? -1 : 1), mine: !rsvp.mine, loaded: true };
+    setRsvp(optimistic);
+    logEvent(optimistic.mine ? 'rsvp_going' : 'rsvp_undo', {});
+    const total = await toggleRsvp('event', event.id, deviceId);
+    if (typeof total === 'number') setRsvp((cur) => ({ ...cur, n: total }));
+  };
 
   const openMaps = () => {
     const loc = (event.address || event.venue || '').trim();
@@ -174,6 +198,32 @@ export default function EventDetailScreen() {
             </ThemedText>
           </Pressable>
         </View>
+
+        {/* "I'm going" — social proof + a reason for organizers to point people here */}
+        {backendEnabled && !isAdmin ? (
+          <Pressable
+            style={[styles.rsvpBtn, rsvp.mine && { backgroundColor: colors.success, borderColor: colors.success }]}
+            onPress={onRsvp}
+            accessibilityRole="button"
+            accessibilityLabel={rsvp.mine ? "You're going. Tap to undo." : "Mark that you're going"}
+          >
+            <Ionicons
+              name={rsvp.mine ? 'checkmark-circle' : 'checkmark-circle-outline'}
+              size={22}
+              color={rsvp.mine ? colors.textInverse : colors.success}
+            />
+            <ThemedText size="body" weight="bold" color={rsvp.mine ? colors.textInverse : colors.success}>
+              {rsvp.mine ? "You're going" : "I'm going"}
+            </ThemedText>
+            {rsvp.n > 0 ? (
+              <View style={[styles.rsvpCount, rsvp.mine && { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+                <ThemedText size="small" weight="bold" color={rsvp.mine ? colors.textInverse : colors.success}>
+                  {rsvp.n}
+                </ThemedText>
+              </View>
+            ) : null}
+          </Pressable>
+        ) : null}
 
         {event.ticketUrl ? (
           <Pressable
@@ -352,6 +402,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     minHeight: 52,
+  },
+  rsvpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.success,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.md,
+    minHeight: 52,
+    marginTop: spacing.sm,
+  },
+  rsvpCount: {
+    backgroundColor: colors.successBg || 'rgba(30,122,70,0.12)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 1,
+    minWidth: 24,
+    alignItems: 'center',
   },
   infoCard: {
     backgroundColor: colors.surface,

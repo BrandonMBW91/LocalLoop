@@ -869,3 +869,65 @@ export async function fetchMetrics(cityId) {
     top,
   };
 }
+
+// ============ Social layer (follows / RSVP / claims) — Jul 2026 ============
+// All device-scoped writes go through the SECURITY DEFINER RPCs in
+// supabase/social_layer_2026_07.sql. Every call fails soft (returns a neutral
+// value) so a network blip never breaks a tap.
+
+// #1 Follow a truck by name. Returns the new state (true = now following).
+export async function toggleTruckFollow(deviceId, truckName, cityId, pushToken) {
+  try {
+    const { data, error } = await supabase.rpc('toggle_truck_follow', {
+      p_device: deviceId, p_name: truckName, p_city: cityId || null, p_token: pushToken || null,
+    });
+    if (error) throw error;
+    return Boolean(data);
+  } catch { return null; }
+}
+
+export async function fetchMyTruckFollows(deviceId) {
+  try {
+    const { data, error } = await supabase.rpc('my_truck_follows', { p_device: deviceId });
+    if (error) throw error;
+    return (data || []).map((r) => r.truck_name);
+  } catch { return []; }
+}
+
+export async function fetchTruckFollowerCount(name, cityId) {
+  try {
+    const { data, error } = await supabase.rpc('truck_follower_count', { p_name: name, p_city: cityId || null });
+    if (error) throw error;
+    return data || 0;
+  } catch { return 0; }
+}
+
+// #4 RSVP toggle — returns the fresh count, or null on failure.
+export async function toggleRsvp(kind, listingId, deviceId) {
+  try {
+    const { data, error } = await supabase.rpc('toggle_rsvp', { p_kind: kind, p_id: listingId, p_device: deviceId });
+    if (error) throw error;
+    return typeof data === 'number' ? data : null;
+  } catch { return null; }
+}
+
+// Batch: {id: {n, mine}} for a feed's worth of listings.
+export async function fetchRsvpCounts(kind, ids, deviceId) {
+  try {
+    if (!ids?.length) return {};
+    const { data, error } = await supabase.rpc('rsvp_counts', { p_kind: kind, p_ids: ids, p_device: deviceId || null });
+    if (error) throw error;
+    return Object.fromEntries((data || []).map((r) => [r.listing_id, { n: r.n, mine: r.mine }]));
+  } catch { return {}; }
+}
+
+// #7 Submit a business/listing claim. Returns the claim id or throws (the form
+// surfaces the message).
+export async function submitBusinessClaim({ name, cityId, kind, contactName, email, phone, note, deviceId }) {
+  const { data, error } = await supabase.rpc('submit_business_claim', {
+    p_name: name, p_city: cityId || null, p_kind: kind || null, p_contact_name: contactName || null,
+    p_email: email, p_phone: phone || null, p_note: note || null, p_device: deviceId || null,
+  });
+  if (error) throw new Error(error.message || 'Could not submit your claim.');
+  return data;
+}
