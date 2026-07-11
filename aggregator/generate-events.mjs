@@ -106,8 +106,16 @@ const PIN_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentCo
 const CLOCK_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
 const LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#15315B"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" transform="translate(176 176) scale(28)" fill="#fff"/><rect x="468" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="540" y="376" width="16" height="34" rx="7" fill="#fff"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#B22234"/><rect x="448" y="452" width="128" height="8" fill="#fff"/><g fill="#fff"><rect x="462" y="474" width="20" height="20" rx="4"/><rect x="502" y="474" width="20" height="20" rx="4"/><rect x="542" y="474" width="20" height="20" rx="4"/><rect x="462" y="506" width="20" height="20" rx="4"/><rect x="502" y="506" width="20" height="20" rx="4"/></g></svg>`;
 
+// Inline SVG favicon (navy tile + white location pin) so tabs and Google results
+// carry the brand instead of a blank globe. Single-quoted SVG with %23 for the
+// hex hash keeps it valid as a bare data URI in every modern browser.
+const FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2315315B'/><path d='M50 20c-11 0-20 9-20 20 0 15 20 35 20 35s20-20 20-35c0-11-9-20-20-20zm0 28a8 8 0 110-16 8 8 0 010 16z' fill='white'/></svg>";
+
 const HEAD = (title, desc, path, noindex = false) => `<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="icon" href="${FAVICON}"/>
+<meta name="theme-color" content="#FBF8F1" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#0F1729" media="(prefers-color-scheme: dark)"/>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}"/>${noindex ? '\n<meta name="robots" content="noindex,follow"/>' : ''}
 <link rel="canonical" href="${SITE}${esc(path)}"/>
@@ -157,6 +165,14 @@ nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;f
 footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 footer a{color:var(--green);text-decoration:none;}
 @media(max-width:480px){.town-hero h1{font-size:28px;}.ev{padding:12px;}}
+/* Dark mode: mirror the app's dark palette. --green/--orange stay saturated
+   (they carry white text on the hero/buttons and read on both grounds); only
+   the page ground, surfaces, text, and borders invert. */
+@media(prefers-color-scheme:dark){
+:root{--green-l:#1C2A44;--bg:#0F1729;--surface:#182238;--ink:#E8ECF4;--muted:#98A4BA;--line:#2A3650;}
+.ev{box-shadow:0 3px 8px rgba(0,0,0,.35);}
+.ev:hover{box-shadow:0 7px 18px rgba(0,0,0,.55);}
+}
 </style></head><body><div class="wrap">
 <header><a class="brand" href="/">${LOGO_SVG} Local Loop</a>
 <nav><a href="/events/">All towns</a><a href="/advertise.html">For businesses</a></nav></header>`;

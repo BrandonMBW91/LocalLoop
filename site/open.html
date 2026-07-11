@@ -2,6 +2,9 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <meta name="robots" content="noindex,nofollow"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2315315B'/><path d='M50 20c-11 0-20 9-20 20 0 15 20 35 20 35s20-20 20-35c0-11-9-20-20-20zm0 28a8 8 0 110-16 8 8 0 010 16z' fill='white'/></svg>"/>
+<meta name="theme-color" content="#FBF8F1" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#0F1729" media="(prefers-color-scheme: dark)"/>
 <title>Open in Local Loop</title>
 <style>
 :root{--navy:#15315B;--red:#B22234;--bg:#FBF8F1;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E4DED4;}
@@ -20,6 +23,11 @@ p{color:var(--muted);font-size:15px;margin:0 auto 20px;max-width:320px;}
 .note{font-size:13px;color:var(--muted);margin-top:16px;}
 a.plain{color:var(--navy);font-weight:600;}
 .hidden{display:none;}
+@media(prefers-color-scheme:dark){
+:root{--bg:#0F1729;--ink:#E8ECF4;--muted:#98A4BA;--line:#2A3650;--navy:#5B8AD1;}
+.card{background:#182238;box-shadow:0 8px 30px rgba(0,0,0,.45);}
+.btn.ghost{background:#182238;}
+}
 </style></head><body>
 <div class="card">
   <svg class="logo" viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="232" fill="#15315B"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" transform="translate(176 176) scale(28)" fill="#fff"/><rect x="432" y="392" width="160" height="150" rx="18" fill="#B22234"/></svg>
