@@ -65,6 +65,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node truck-calendars.mjs
+      - name: Notify truck followers (DRY RUN — logs only until device-verified)
+        working-directory: aggregator
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        # No --send: prints who it WOULD push so we can confirm the match logic on
+        # real data before enabling delivery. Flip to `... --send` after verifying a
+        # push arrives on a device (follow a truck, post a new stop for it).
+        run: node notify-truck-followers.mjs
       - name: Retention (drop aggregator events older than 60 days)
         working-directory: aggregator
         continue-on-error: true

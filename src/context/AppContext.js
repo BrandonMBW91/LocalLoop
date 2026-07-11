@@ -36,6 +36,7 @@ import {
   recordDeviceActivity,
   fetchActiveCities,
   deleteAccountRpc,
+  toggleTruckFollow,
 } from '../lib/db';
 import { trackEvent } from '../lib/analytics';
 import { maybePromptReview } from '../lib/review';
@@ -379,8 +380,11 @@ export function AppProvider({ children }) {
     AsyncStorage.setItem(STORAGE_KEYS.interests, JSON.stringify(next)).catch(() => {});
   };
 
-  // Follow / unfollow a venue by name. Followed venues power the "Following"
-  // filter so regulars can jump straight to their favorite spots.
+  // Follow / unfollow a truck or venue by name. The local list powers the
+  // "Following" filter; the server sync (best-effort) records the follow with a
+  // push token so a followed TRUCK can ping its followers when it posts a new
+  // stop. Passing the town + token is what turns this from a local bookmark into
+  // the notify flywheel.
   const isFollowing = useCallback((venue) => follows.includes(venue), [follows]);
   const toggleFollow = (venue) => {
     if (!venue) return;
@@ -391,6 +395,16 @@ export function AppProvider({ children }) {
       logEvent(has ? 'unfollow_venue' : 'follow_venue', { venue: venue.slice(0, 40) });
       return next;
     });
+    // Server sync (fire-and-forget). On a NEW follow, attach the push token so
+    // notifications can reach this device; toggling is idempotent server-side.
+    if (isSupabaseEnabled && deviceId && Platform.OS !== 'web' && !isAdmin) {
+      const wasFollowing = follows.includes(venue);
+      (async () => {
+        let token = null;
+        if (!wasFollowing && (await hasPermission())) token = await getPushToken();
+        toggleTruckFollow(deviceId, venue, cityId, token);
+      })();
+    }
   };
 
   // Replay the first-launch welcome (e.g. from Settings). Clears the flag so the
