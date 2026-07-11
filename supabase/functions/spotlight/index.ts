@@ -69,6 +69,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Event-level guard (applies EVEN with force): never re-push the same title
+  // within 14 days, so a duplicate can't slip past the audience cooldown or force.
+  {
+    const since14 = new Date(Date.now() - 14 * 86400000).toISOString();
+    const { count: dupe } = await supabase.from('spotlight_log')
+      .select('id', { count: 'exact', head: true })
+      .gte('sent_at', since14)
+      .eq('title', title);
+    if ((dupe || 0) > 0) {
+      return new Response(JSON.stringify({ sent: 0, blocked: 'duplicate-event', note: 'this title was already spotlighted in the last 14 days' }), {
+        status: 429, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
   // Paginate past PostgREST's 1000-row cap (token count tracks installs since #3
   // registers every device), so a large audience isn't silently truncated to 1000.
   const tokens: any[] = [];

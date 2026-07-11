@@ -53,9 +53,15 @@ function cleanTitle(t) {
   let s = (t || '').replace(/\s*\|\s*.*$/, '')
     .replace(/\s+[-–—]\s+[^-–—]*\b(OH|Ohio)\b.*$/i, '')
     .replace(/\s+(tickets?|presented by).*$/i, '')
+    .replace(/\s+[-–—]\s+.*?\b(\d+(?:st|nd|rd|th)?\s+of\s+\d+|market date|outdoor season|week\s+\d+|day\s+\d+|session\s+\d+)\b.*$/i, '') // strip admin subtitle cruft after " - " (e.g. "3rd of 6 ... Date")
     .replace(/,\s+[A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2}\s*$/, '') // drop a trailing ", Town" that collides with city_id
     .replace(/\s{2,}/g, ' ').trim();
-  if (s.length > 58) { s = s.slice(0, 55); const sp = s.lastIndexOf(' '); if (sp > 30) s = s.slice(0, sp); s = s.replace(/["'(,\s–-]+$/, '') + '…'; }
+  if (s.length > 58) {
+    s = s.slice(0, 55); const sp = s.lastIndexOf(' '); if (sp > 30) s = s.slice(0, sp);
+    s = s.replace(/["'(,\s–-]+$/, '');
+    if ((s.match(/"/g) || []).length % 2) s = s.replace(/\s*"(?=[^"]*$)/, ''); // drop a dangling open quote left by the cut
+    s = s + '…';
+  }
   return s;
 }
 // Venue field is often a full mailing address or a room path; keep just the place name.
@@ -118,18 +124,23 @@ async function fetchEvents(daysAhead) {
   const raw = await q(`events?status=eq.approved&start_at=gte.${enc(lo)}&start_at=lt.${enc(hi)}&select=title,category,city_id,venue,start_at&order=start_at.asc&limit=2000`);
   return raw
     .map((e) => ({ ...e, title: cleanTitle(e.title), _t: etParts(e.start_at), _d: etDay(e.start_at) }))
+    .filter((e) => CITY_NAME[e.city_id]) // never post an off-catalog town (would render as a raw slug)
     .filter((e) => e.title && e.title.length >= 4)
     .filter((e) => !isUnsafe(e.title) && !isImplausibleTime(e.title, e._t.h24));
 }
 
+// Normalize for a fuzzy title/venue compare: drop possessives, plurals, and
+// punctuation so "Haymakers Farmers' Market" (title) still suppresses the near-
+// identical "Haymaker Farmers' Market" (venue).
+const normName = (x) => (x || '').toLowerCase().replace(/['’]s\b/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\b(\w+?)s\b/g, '$1').replace(/\s+/g, ' ').trim();
 const venuePlace = (e) => {
   const v = cleanVenue(e.venue);
   const vl = v.toLowerCase().replace(/…$/, '');
-  const t = (e.title || '').toLowerCase();
   const city = cap(e.city_id).toLowerCase();
-  // Drop the venue when it just echoes the event title or IS the town name — else
+  const nt = normName(e.title), nv = normName(vl);
+  // Drop the venue when it echoes the title (fuzzily) or IS the town name — else
   // you get "Farmers Market at Farmers Market, Town".
-  const redundant = !vl || t.includes(vl) || vl.includes(t) || vl === city;
+  const redundant = !vl || (nv && (nt.includes(nv) || nv.includes(nt))) || vl === city;
   return redundant ? `in ${cap(e.city_id)}` : `at ${v}, ${cap(e.city_id)}`;
 };
 const timeTag = (e) => (e._t.h24 >= 8 ? ` (${e._t.time})` : '');
@@ -154,11 +165,15 @@ async function genWeekend() {
   const topRegion = scored.length ? CITY_REGION[scored[0].city_id] : null;
   const eligible = topRegion ? scored.filter((e) => CITY_REGION[e.city_id] === topRegion) : scored;
   const picks = [];
-  const uT = {}, uC = {};
+  const uT = {}, uC = {}, uA = {};
+  // Collapse near-duplicate activity types so a digest isn't "3 boat cruises and 2
+  // farmers markets" — cap each activity keyword at 2 across the whole digest.
+  const activityOf = (title) => ((title || '').toLowerCase().match(/\b(cruise|farmers?.?market|market|festival|fair|concert|parade|fireworks|car show|craft|5k|tournament|comedy|theat(?:er|re)|movie|paint|trivia|food truck)\b/) || [])[1] || '';
   for (const e of eligible.sort((a, b) => b.score - a.score)) {
     if (picks.length >= 6) break;
-    if ((uT[e.city_id] || 0) >= 2 || (uC[e.category] || 0) >= 2) continue;
-    picks.push(e); uT[e.city_id] = (uT[e.city_id] || 0) + 1; uC[e.category] = (uC[e.category] || 0) + 1;
+    const act = activityOf(e.title);
+    if ((uT[e.city_id] || 0) >= 2 || (uC[e.category] || 0) >= 2 || (act && (uA[act] || 0) >= 2)) continue;
+    picks.push(e); uT[e.city_id] = (uT[e.city_id] || 0) + 1; uC[e.category] = (uC[e.category] || 0) + 1; if (act) uA[act] = (uA[act] || 0) + 1;
   }
   const weak = picks.length < 4 || picks.filter((e) => MARQUEE.test(e.title)).length < 2 || new Set(picks.map((e) => e.city_id)).size < 2;
   const order = ['Friday', 'Saturday', 'Sunday'];

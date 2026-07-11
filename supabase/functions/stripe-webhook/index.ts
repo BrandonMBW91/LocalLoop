@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       // cityIds emptiness check above already alerted on an unresolvable town).
       if (product === 'deal') {
         const dealoffer = clamp(field(s, 'dealoffer'), 120);
-        const { error: dealErr } = await supabase.from('deals').upsert({
+        const { data: dealRows, error: dealErr } = await supabase.from('deals').upsert({
           city_id: resolvedCity,
           business_name: business,
           title: dealoffer || 'Local deal',
@@ -245,19 +245,23 @@ Deno.serve(async (req) => {
           stripe_customer_id: custId,
           stripe_subscription_id: subId,
           stripe_session_id: s.id,
-        }, { onConflict: 'stripe_session_id', ignoreDuplicates: true });
+        }, { onConflict: 'stripe_session_id', ignoreDuplicates: true }).select('stripe_session_id');
         if (dealErr) throw dealErr;
-        await sendEmail(
-          `New Local Deal: ${business} (${cityName(resolvedCity)})`,
-          `A Local Deal was just purchased and is live.\n\nBusiness: ${business}\nDeal: ${dealoffer || '(none)'}\nTown: ${cityName(resolvedCity)}\nLink: ${link || '(none)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nManage it in the app: Settings -> MODERATOR -> Manage Deals.`,
-        );
-        const dealBuyer = s.customer_details?.email;
-        if (dealBuyer) {
-          await resendSend(
-            dealBuyer,
-            'Your Local Loop deal is live',
-            `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer || 'Local deal'}" is now showing in ${cityName(resolvedCity)} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+        // Email only on the FIRST delivery — a Stripe retry/replay upserts nothing
+        // (ignoreDuplicates) and returns no rows, so buyer + owner aren't double-emailed.
+        if (dealRows && dealRows.length) {
+          await sendEmail(
+            `New Local Deal: ${business} (${cityName(resolvedCity)})`,
+            `A Local Deal was just purchased and is live.\n\nBusiness: ${business}\nDeal: ${dealoffer || '(none)'}\nTown: ${cityName(resolvedCity)}\nLink: ${link || '(none)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nManage it in the app: Settings -> MODERATOR -> Manage Deals.`,
           );
+          const dealBuyer = s.customer_details?.email;
+          if (dealBuyer) {
+            await resendSend(
+              dealBuyer,
+              'Your Local Loop deal is live',
+              `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer || 'Local deal'}" is now showing in ${cityName(resolvedCity)} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+            );
+          }
         }
         return new Response(JSON.stringify({ received: true, fulfilled: 'deal created' }), {
           headers: { 'Content-Type': 'application/json' },
@@ -282,10 +286,14 @@ Deno.serve(async (req) => {
         edit_token: editToken,
       }));
       // Idempotent against Stripe retries/replays (unique on session_id + city_id).
-      const { error: upsertErr } = await supabase
+      const { data: insertedRows, error: upsertErr } = await supabase
         .from('sponsors')
-        .upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true });
+        .upsert(rows, { onConflict: 'stripe_session_id,city_id', ignoreDuplicates: true })
+        .select('city_id');
       if (upsertErr) throw upsertErr;
+      // First delivery only: a Stripe retry/replay inserts nothing, so skip the
+      // owner + buyer emails below (the ad already exists).
+      const firstDelivery = Array.isArray(insertedRows) && insertedRows.length > 0;
       // On a Stripe retry the rows already exist (ignoreDuplicates) and keep their
       // ORIGINAL edit_token; read the persisted one back so the buyer's manage link
       // always resolves to a real ad instead of this call's freshly-minted (unstored,
@@ -304,7 +312,7 @@ Deno.serve(async (req) => {
       const adWhere = product === 'all_region' ? `ALL ${cityIds.length} towns`
         : product === 'metro_sponsor' ? `${METRO_BUNDLES[metro]?.name ?? metro} (${cityIds.length} towns)`
         : cityName(resolvedCity);
-      await sendEmail(
+      if (firstDelivery) await sendEmail(
         `New Local Loop ad: ${business} (${adWhere})`,
         `A ${product === 'all_region' ? 'region-wide' : 'town'} ad was just purchased and is now live.\n\n` +
           `Business: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\n` +
@@ -315,7 +323,7 @@ Deno.serve(async (req) => {
       // Tell the buyer their ad is live so they don't panic (or dispute the charge)
       // after landing on Stripe's bare receipt page. Best-effort, never blocks.
       const buyerEmail = s.customer_details?.email;
-      if (buyerEmail) {
+      if (firstDelivery && buyerEmail) {
         const where = product === 'all_region'
           ? 'every town Local Loop covers'
           : product === 'metro_sponsor'
@@ -324,7 +332,7 @@ Deno.serve(async (req) => {
         await resendSend(
           buyerEmail,
           'Your Local Loop ad is live',
-          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself — set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${manageToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
+          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself. Set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${manageToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
         );
       }
     } else if (event.type === 'customer.subscription.deleted') {
