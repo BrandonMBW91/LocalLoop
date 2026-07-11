@@ -28,10 +28,13 @@ async function main() {
   // Which stops have we already notified about? (source_uid for calendar stops;
   // id for user posts, which have no source_uid.)
   const keys = stops.map((s) => s.source_uid || s.id);
-  const { data: done } = await sb
+  const { data: done, error: dedupeErr } = await sb
     .from('notified_followers')
     .select('stop_key')
     .in('stop_key', keys);
+  // If the dedupe query fails, ABORT — proceeding with an empty "already" set would
+  // treat every stop as new and re-notify the whole 2-day window on every run.
+  if (dedupeErr) { console.error('notify-followers: dedupe query failed, aborting to avoid mass re-notify:', dedupeErr.message); return; }
   const already = new Set((done || []).map((r) => r.stop_key));
 
   let notified = 0, wouldPush = 0;
@@ -39,11 +42,14 @@ async function main() {
     const key = s.source_uid || s.id;
     if (already.has(key)) continue;
 
-    // Followers of this truck name (case-insensitive) with a push token.
+    // Followers of this truck name (case-insensitive) with a push token. Escape
+    // %/_/\ so a name like "50% Off Tacos" is matched LITERALLY, not as an ILIKE
+    // wildcard that would notify unrelated trucks' followers.
+    const nameEsc = String(s.name || '').replace(/([\\%_])/g, '\\$1');
     const { data: followers } = await sb
       .from('truck_follows')
       .select('push_token')
-      .ilike('truck_name', s.name)
+      .ilike('truck_name', nameEsc)
       .not('push_token', 'is', null);
     const tokens = [...new Set((followers || []).map((f) => f.push_token).filter(Boolean))];
 
@@ -69,7 +75,11 @@ async function main() {
     // Mark handled either way (in dry run too? no — only when actually sent, so a
     // real run still fires. In dry run we DON'T record, so the first --send run
     // notifies the backlog once.)
-    if (!DRY) await sb.from('notified_followers').insert({ stop_key: key }).then(() => {}, () => {});
+    if (!DRY) {
+      const { error: insErr } = await sb.from('notified_followers')
+        .upsert({ stop_key: key }, { onConflict: 'stop_key', ignoreDuplicates: true });
+      if (insErr) console.error(`notify-followers: failed to record ${key} (may re-notify next run):`, insErr.message);
+    }
   }
   console.log(`notify-followers: ${DRY ? 'DRY RUN — ' : ''}${notified} truck(s) with followers, ${wouldPush} push(es) ${DRY ? 'would be ' : ''}sent.`);
 }
