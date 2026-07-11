@@ -34,7 +34,7 @@ export default function GarageSaleDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findGarageSaleById, backendEnabled, isAdmin } = useApp();
+  const { findGarageSaleById, backendEnabled, isAdmin, toggleSavedSale, isSaleSaved } = useApp();
   const cached = findGarageSaleById(id);
   const [fetched, setFetched] = useState(null);
   useEffect(() => {
@@ -79,6 +79,8 @@ export default function GarageSaleDetailScreen() {
       message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart}–${sale.dailyEnd}\n${sale.address}${shareFooter(shareUrl('garage-sale', sale.id))}`,
     }).catch(() => {});
   };
+
+  const saved = isSaleSaved(sale.id);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
@@ -134,6 +136,20 @@ export default function GarageSaleDetailScreen() {
             Share this sale
           </ThemedText>
         </Pressable>
+        <Pressable
+          style={[styles.shareBtn, saved && styles.saveBtnActive]}
+          onPress={() => toggleSavedSale(sale.id, sale)}
+          accessibilityRole="button"
+          accessibilityLabel={saved ? 'Saved, we will remind you before it starts' : 'Save this sale and get a reminder'}
+        >
+          <Ionicons name={saved ? 'heart' : 'heart-outline'} size={22} color={saved ? colors.textInverse : colors.garageSale} />
+          <ThemedText size="body" weight="bold" color={saved ? colors.textInverse : colors.garageSale}>
+            {saved ? 'Saved' : 'Save & remind me'}
+          </ThemedText>
+        </Pressable>
+        <ThemedText size="small" color={colors.textMuted} style={{ textAlign: 'center', marginTop: spacing.xs }}>
+          {saved ? "We'll remind you before it starts." : 'Save it and get a reminder before it starts.'}
+        </ThemedText>
 
         <View style={styles.infoCard}>
           <InfoRow
@@ -241,6 +257,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     minHeight: 52,
   },
+  saveBtnActive: { backgroundColor: colors.garageSale, borderColor: colors.garageSale },
   infoCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

@@ -198,6 +198,9 @@ export default function EventDetailScreen() {
             </ThemedText>
           </Pressable>
         </View>
+        <ThemedText size="small" color={colors.textMuted} style={{ textAlign: 'center', marginTop: spacing.xs }}>
+          {saved ? "Saved. We'll remind you before it starts." : "Save it and we'll remind you before it starts."}
+        </ThemedText>
 
         {/* "I'm going" — social proof + a reason for organizers to point people here */}
         {backendEnabled && !isAdmin ? (

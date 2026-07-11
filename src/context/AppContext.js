@@ -62,6 +62,7 @@ const STORAGE_KEYS = {
   onboarded: '@fe/onboarded',
   interests: '@fe/interests',
   follows: '@fe/follows',
+  savedSales: '@fe/savedSales',
 };
 
 // A stable, anonymous per-install id (no personal data) for active-user counts.
@@ -73,6 +74,7 @@ export function AppProvider({ children }) {
   const [cityId, setCityId] = useState('findlay');
   const [textScaleKey, setTextScaleKey] = useState('normal');
   const [savedIds, setSavedIds] = useState([]); // event ids the user bookmarked
+  const [savedSaleIds, setSavedSaleIds] = useState([]); // garage-sale ids the user saved
   const [submittedEvents, setSubmittedEvents] = useState([]); // local fallback (no backend)
   const [submittedSales, setSubmittedSales] = useState([]); // local fallback (no backend)
   const [submittedTrucks, setSubmittedTrucks] = useState([]); // local fallback (no backend)
@@ -107,6 +109,7 @@ export function AppProvider({ children }) {
         if (map[STORAGE_KEYS.city]) setCityId(map[STORAGE_KEYS.city]);
         if (map[STORAGE_KEYS.textScale]) setTextScaleKey(map[STORAGE_KEYS.textScale]);
         if (map[STORAGE_KEYS.saved]) setSavedIds(JSON.parse(map[STORAGE_KEYS.saved]));
+        if (map[STORAGE_KEYS.savedSales]) setSavedSaleIds(JSON.parse(map[STORAGE_KEYS.savedSales]));
         if (map[STORAGE_KEYS.submitted]) setSubmittedEvents(JSON.parse(map[STORAGE_KEYS.submitted]));
         if (map[STORAGE_KEYS.submittedSales]) setSubmittedSales(JSON.parse(map[STORAGE_KEYS.submittedSales]));
         if (map[STORAGE_KEYS.submittedTrucks]) setSubmittedTrucks(JSON.parse(map[STORAGE_KEYS.submittedTrucks]));
@@ -458,6 +461,26 @@ export function AppProvider({ children }) {
     setPushPrime(null);
     primePendingRef.current = false;
   }, []);
+
+  // Save a garage sale (own list, separate from event saves) + set a local reminder
+  // before it starts. Saving is high intent, so it also primes push.
+  const isSaleSaved = useCallback((saleId) => savedSaleIds.includes(saleId), [savedSaleIds]);
+  const toggleSavedSale = (saleId, saleObj) => {
+    if (!saleId) return;
+    setSavedSaleIds((prev) => {
+      const has = prev.includes(saleId);
+      const next = has ? prev.filter((s) => s !== saleId) : [...prev, saleId];
+      AsyncStorage.setItem(STORAGE_KEYS.savedSales, JSON.stringify(next)).catch(() => {});
+      if (has) {
+        cancelEventReminder(saleId);
+      } else {
+        if (saleObj) scheduleEventReminder({ id: saleObj.id, start: saleObj.start, title: saleObj.title, venue: saleObj.address });
+        maybePrimePush('save');
+        logEvent('save_sale', { id: saleId });
+      }
+      return next;
+    });
+  };
   const findGarageSaleById = useCallback(
     (id) => garageSales.find((s) => s.id === id) || getGarageSaleById(id, submittedSales),
     [garageSales, submittedSales]
@@ -536,6 +559,9 @@ export function AppProvider({ children }) {
     scale,
     savedIds,
     toggleSaved,
+    savedSaleIds,
+    toggleSavedSale,
+    isSaleSaved,
     pushPrime,
     acceptPushPrime,
     dismissPushPrime,

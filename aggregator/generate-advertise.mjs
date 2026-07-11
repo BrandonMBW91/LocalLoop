@@ -208,7 +208,7 @@ function up(){
     var _sb=document.getElementById('sponsorBuy'),_fb=document.getElementById('featBuy');
     _sb.href=MAIL;_sb.textContent='Email to pre-register';
     _fb.href=MAIL;_fb.textContent='Email to pre-register';
-    document.getElementById('rateNote').textContent=t.name+' is coming to Local Loop soon — email us to be first in line.';
+    document.getElementById('rateNote').textContent=t.name+' is coming to Local Loop soon. Email us to be first in line.';
     document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){r.classList.remove('now');var b=r.querySelector('.tier-badge');if(b)b.style.display='none';});
     var _sa=document.getElementById('sponsorAnnual'); if(_sa)_sa.innerHTML='';
     return;
@@ -219,7 +219,12 @@ function up(){
   if(t.townLink){sb.href=t.townLink;sb.textContent='Become a sponsor';}else{sb.href=MAIL;sb.textContent='Email us to sponsor';}
   if(t.feat30Link){fb.href=t.feat30Link;fb.textContent='Feature my listing';}else{fb.href=MAIL;fb.textContent='Email us to feature';}
   var sa=document.getElementById('sponsorAnnual'); if(sa){ sa.innerHTML=t.townAnnual?('<a href="'+t.townAnnual+'" style="color:var(--green);font-weight:600;">or $190/year (2 months free)</a>'):''; }
-  document.getElementById('rateNote').textContent=t.name+' is at the '+t.tier+' rate ('+t.users+' active this month).';
+  // Only surface a live usage count once it's credible (>=30 MAU). Below that,
+  // broadcasting "(0 active this month)" kills the sale — lead with the Founding
+  // rate instead, which is the honest early-stage value.
+  document.getElementById('rateNote').textContent = t.users >= 30
+    ? t.name+' is at the '+t.tier+' rate. '+t.users+' neighbors used Local Loop here this month.'
+    : t.name+' is at the Founding rate, the lowest we offer, locked in for your first year.';
   document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){
     var on=r.getAttribute('data-tier')===t.tier; r.classList.toggle('now',on);
     var b=r.querySelector('.tier-badge'); if(b)b.style.display=on?'':'none';
