@@ -3,7 +3,7 @@
     "name": "Local Loop",
     "slug": "local-loop",
     "scheme": "localloop",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -78,7 +78,7 @@
         "projectId": "4b1bddaa-1419-4967-94d0-5a3c9a966582"
       }
     },
-    "runtimeVersion": "1aa93c124d4d733bb3fda5af4ba407af11ccab78",
+    "runtimeVersion": "1.0.4",
     "updates": {
       "url": "https://u.expo.dev/4b1bddaa-1419-4967-94d0-5a3c9a966582",
       "fallbackToCacheTimeout": 8000

@@ -3,10 +3,10 @@
 // App Store / Play binary build number. BUMP `BUILD` on every release (each OTA
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
-export const APP_VERSION = '1.0.3';
-export const BUILD = 102;
+export const APP_VERSION = '1.0.4';
+export const BUILD = 103;
 
 // One-line "what's new" shown once in a dismissible banner after an update (see
 // WhatsNewBanner). Update it alongside BUILD each release so returning users get a
 // gentle heads-up about what changed. Keep it short and user-facing.
-export const WHATS_NEW = "New: RSVP \"I'm going\" to events, follow your favorite food trucks, and plan a route for garage-sale day.";
+export const WHATS_NEW = "New: dark mode, plus \"near me\" to find events and food trucks happening around you.";
