@@ -14,6 +14,12 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Event titles come from auto-approved third-party feeds, so screen each one
+// before it lands in a push to every device: adult/profanity, embedded links, and
+// obviously-garbled titles ('null', mojibake) are dropped from the digest body.
+const UNSAFE_TITLE = /\b(f+u+c+k+\w*|sh[i1]t+\w*|b[i1]tch\w*|cunt|asshole|n[i1]gg\w*|fagg?ot|slut|whore|burlesque|strip(?:per|tease)?|lingerie|21\s*\+|18\s*\+|escort|\bxxx\b|porn)\b|https?:\/\/|www\.|\bnull\b|[�]|Ã.|â€/i;
+const titleSafe = (t: string) => !!t && t.trim().length >= 4 && !UNSAFE_TITLE.test(t);
+
 // Constant-time string compare so the gate can't be probed by timing.
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -132,6 +138,7 @@ Deno.serve(async (req) => {
       for (const e of ranked) {
         const t = (e.title || '').trim();
         if (!t || seenTitle.has(t.toLowerCase())) continue;
+        if (!titleSafe(t)) continue; // never push an adult/profane/garbled title to every device
         seenTitle.add(t.toLowerCase());
         distinct.push(t);
         if (distinct.length >= 3) break; // 2 shown + 1 to know there's "more"

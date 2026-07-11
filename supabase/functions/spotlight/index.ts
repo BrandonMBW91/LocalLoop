@@ -37,6 +37,23 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'title and body required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
+  // Content backstop — this pushes to EVERY user, so never trust the caller's copy
+  // alone (the daily judging model composes it). Fail SAFE: reject adult/filler
+  // categories and garbled copy at the code level; the caller can rephrase or pick
+  // a better event. Better to skip a good push than send a bad one to everyone.
+  const hay = `${title}\n${body}`;
+  const DENY = /\b(burlesque|strip(?:per|tease)?|lingerie|21\s*\+|18\s*\+|drag\s+(?:show|brunch|bingo)|casino|hookah|nightclub|bar\s*crawl|pub\s*crawl|happy\s*hour|storytime|story\s*time|farmers?[\s'’-]*market|playgroup|toddler|book\s*club|support\s*group|blood\s*drive|\bbingo\b|dungeons?\s*&\s*dragons|\bxxx\b|escort)\b/i;
+  const m = hay.match(DENY);
+  if (m) {
+    return new Response(JSON.stringify({ blocked: 'denylist', match: m[0] }), { status: 422, headers: { 'Content-Type': 'application/json' } });
+  }
+  if (/[—–]/.test(hay) || /\bnull\b/i.test(hay) || /,\s*$/.test(title) || /,\s*$/.test(body) || /,\s{0,2},/.test(hay)) {
+    return new Response(JSON.stringify({ blocked: 'copy-lint', note: 'dash / null / trailing-or-double comma in title or body' }), { status: 422, headers: { 'Content-Type': 'application/json' } });
+  }
+  if (title.length < 4 || body.length < 6) {
+    return new Response(JSON.stringify({ blocked: 'too-short' }), { status: 422, headers: { 'Content-Type': 'application/json' } });
+  }
+
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
   // Cooldown: no spotlight to this audience in the last N days.

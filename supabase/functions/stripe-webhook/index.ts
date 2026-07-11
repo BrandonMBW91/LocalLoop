@@ -81,6 +81,17 @@ async function knownCityIds(): Promise<string[]> {
 const codeToCity = (ids: string[]): Record<string, string> =>
   Object.fromEntries(ids.map((id) => [id.replace(/-/g, ''), id]));
 
+// Turn a city_id slug into a human display name for BUYER-facing email copy, so a
+// paying advertiser never reads "your ad is running in bowling-green". Irregular
+// names are overridden; everything else is de-hyphenated + title-cased.
+const CITY_DISPLAY: Record<string, string> = {
+  'mcarthur': 'McArthur', 'mcconnelsville': 'McConnelsville', 'larue': 'LaRue',
+  'st-marys': 'St. Marys', 'st-clairsville': 'St. Clairsville', 'put-in-bay': 'Put-in-Bay',
+  'washington-court-house': 'Washington Court House',
+};
+const cityName = (slug: string): string =>
+  CITY_DISPLAY[slug] || String(slug || '').split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
 function field(session: any, key: string): string {
   const f = (session.custom_fields || []).find((c: any) => c.key === key);
   return (f?.text?.value || f?.dropdown?.value || '').trim();
@@ -118,10 +129,10 @@ const sendEmail = async (subject: string, text: string) => {
 const METRO_BUNDLES: Record<string, { name: string; towns: string[] }> = {
   toledo:      { name: 'Greater Toledo', towns: ['toledo', 'perrysburg', 'sylvania', 'bowling-green', 'waterville'] },
   akron:       { name: 'Akron Metro', towns: ['akron', 'cuyahoga-falls', 'kent', 'stow', 'hudson', 'tallmadge', 'barberton', 'wadsworth', 'medina', 'ravenna', 'streetsboro', 'portage-lakes'] },
-  canton:      { name: 'Canton–Massillon', towns: ['canton', 'massillon', 'north-canton', 'hartville', 'alliance', 'orrville', 'dover', 'new-philadelphia'] },
-  youngstown:  { name: 'Youngstown–Warren', towns: ['youngstown', 'warren', 'boardman', 'austintown', 'niles', 'girard', 'struthers', 'canfield', 'salem', 'columbiana'] },
-  findlaylima: { name: 'Findlay–Lima', towns: ['findlay', 'fostoria', 'tiffin', 'fremont', 'bluffton', 'ada', 'lima', 'wapakoneta', 'van-wert', 'upper-sandusky', 'north-baltimore', 'carey'] },
-  mansfield:   { name: 'Mansfield–North Central', towns: ['mansfield', 'ontario', 'ashland', 'bucyrus', 'galion', 'willard', 'marion', 'delaware'] },
+  canton:      { name: 'Canton-Massillon', towns: ['canton', 'massillon', 'north-canton', 'hartville', 'alliance', 'orrville', 'dover', 'new-philadelphia'] },
+  youngstown:  { name: 'Youngstown-Warren', towns: ['youngstown', 'warren', 'boardman', 'austintown', 'niles', 'girard', 'struthers', 'canfield', 'salem', 'columbiana'] },
+  findlaylima: { name: 'Findlay-Lima', towns: ['findlay', 'fostoria', 'tiffin', 'fremont', 'bluffton', 'ada', 'lima', 'wapakoneta', 'van-wert', 'upper-sandusky', 'north-baltimore', 'carey'] },
+  mansfield:   { name: 'Mansfield-North Central', towns: ['mansfield', 'ontario', 'ashland', 'bucyrus', 'galion', 'willard', 'marion', 'delaware'] },
 };
 
 Deno.serve(async (req) => {
@@ -204,15 +215,15 @@ Deno.serve(async (req) => {
         }
         const paid = typeof s.amount_total === 'number' ? `$${(s.amount_total / 100).toFixed(0)}` : 'tier rate';
         await sendEmail(
-          `ACTION: Featured Listing purchased by ${business} (${resolvedCity})`,
-          `A Featured Listing (30 days, ${paid}) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${resolvedCity}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
+          `ACTION: Featured Listing purchased by ${business} (${cityName(resolvedCity)})`,
+          `A Featured Listing (30 days, ${paid}) was just purchased.\n\nBusiness: ${business}\nHeadline: ${headline || '(none)'}\nLink: ${link || '(none)'}\nTown: ${cityName(resolvedCity)}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nTO FULFILL: find their listing in the app and use the moderator Feature button (30 days). If you can't tell which listing, reply to the buyer to ask.`,
         );
         const buyerEmail = s.customer_details?.email;
         if (buyerEmail) {
           await resendSend(
             buyerEmail,
             'Your Local Loop featured listing is on its way',
-            `Thanks for supporting Local Loop.\n\nWe got your Featured Listing for ${resolvedCity} (30 days). We'll feature your listing in the app shortly. If we can't tell which listing is yours, we'll reply to this email to ask.\n\nQuestions? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
+            `Thanks for supporting Local Loop.\n\nWe got your Featured Listing for ${cityName(resolvedCity)} (30 days). We'll feature your listing in the app shortly. If we can't tell which listing is yours, we'll reply to this email to ask.\n\nQuestions? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
           );
         }
         return new Response(JSON.stringify({ received: true, fulfilled: 'featured_30 email sent' }), {
@@ -237,15 +248,15 @@ Deno.serve(async (req) => {
         }, { onConflict: 'stripe_session_id', ignoreDuplicates: true });
         if (dealErr) throw dealErr;
         await sendEmail(
-          `New Local Deal: ${business} (${resolvedCity})`,
-          `A Local Deal was just purchased and is live.\n\nBusiness: ${business}\nDeal: ${dealoffer || '(none)'}\nTown: ${resolvedCity}\nLink: ${link || '(none)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nManage it in the app: Settings -> MODERATOR -> Manage Deals.`,
+          `New Local Deal: ${business} (${cityName(resolvedCity)})`,
+          `A Local Deal was just purchased and is live.\n\nBusiness: ${business}\nDeal: ${dealoffer || '(none)'}\nTown: ${cityName(resolvedCity)}\nLink: ${link || '(none)'}\nBuyer email: ${s.customer_details?.email || 'unknown'}\nStripe session: ${s.id}\n\nManage it in the app: Settings -> MODERATOR -> Manage Deals.`,
         );
         const dealBuyer = s.customer_details?.email;
         if (dealBuyer) {
           await resendSend(
             dealBuyer,
             'Your Local Loop deal is live',
-            `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer || 'Local deal'}" is now showing in ${resolvedCity} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+            `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer || 'Local deal'}" is now showing in ${cityName(resolvedCity)} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
           );
         }
         return new Response(JSON.stringify({ received: true, fulfilled: 'deal created' }), {
@@ -292,7 +303,7 @@ Deno.serve(async (req) => {
       // every ad + feature). Best-effort, after the ad is safely created.
       const adWhere = product === 'all_region' ? `ALL ${cityIds.length} towns`
         : product === 'metro_sponsor' ? `${METRO_BUNDLES[metro]?.name ?? metro} (${cityIds.length} towns)`
-        : resolvedCity;
+        : cityName(resolvedCity);
       await sendEmail(
         `New Local Loop ad: ${business} (${adWhere})`,
         `A ${product === 'all_region' ? 'region-wide' : 'town'} ad was just purchased and is now live.\n\n` +
@@ -309,7 +320,7 @@ Deno.serve(async (req) => {
           ? 'every town Local Loop covers'
           : product === 'metro_sponsor'
           ? `the ${METRO_BUNDLES[metro]?.name ?? metro} area`
-          : resolvedCity;
+          : cityName(resolvedCity);
         await resendSend(
           buyerEmail,
           'Your Local Loop ad is live',

@@ -187,6 +187,16 @@ function saneEnd(start, end, allDay) {
   return (rolled - start) < 864e5 ? rolled : null;
 }
 
+// Third-party feed rows are auto-approved and publish unreviewed to the public
+// site, the app, and the push digests — so drop clear profanity and explicitly
+// adult/sexual content at ingestion (family-app bar). Checked against the TITLE
+// only: descriptions carry age-restriction boilerplate ("adults only") and plot
+// summaries (e.g. a library screening of "The Full Monty") that false-positive.
+// Softer 21+ nightlife (bar crawls, happy hour) stays in the listing but is
+// filtered from mass pushes/posts by the spotlight + fb-routine guards. In-app
+// user submissions get screenContent separately.
+const UNSAFE_RE = /\b(f+u+c+k+\w*|sh[i1]t+\w*|b[i1]tch\w*|c+u+n+t+|assholes?|\bwhore|\bslut\b|f+a+g+g?ot|n[i1]gg\w*|burlesque|stripper|striptease|strip\s*club|gentlemen'?s\s*club|escort\s*service|\bxxx\b|\bporn\w*|\bbdsm\b|fetish|wet\s*t.?shirt)\b/i;
+
 function makeRow(ev, source, start, end) {
   const { venue: rawVenue, address: rawAddress } = deriveVenue(ev.location, source.name);
   const venue = cleanLocation(rawVenue);
@@ -197,6 +207,7 @@ function makeRow(ev, source, start, end) {
   if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
   if (ACADEMIC_RE.test(title)) return null; // skip academic-calendar admin (add/drop, tuition due, deadlines)
   const description = cleanDescription(ev.description) || `From ${source.name}.`;
+  if (UNSAFE_RE.test(title)) return null; // drop profane/adult feed content (title only) before it auto-publishes
   // Not an event people attend, even though the title reads like a holiday.
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
   // Assign to the town in the event's location, not the feed's host town.
