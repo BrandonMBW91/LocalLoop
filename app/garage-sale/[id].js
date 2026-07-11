@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
 import AdBanner from '../../src/components/AdBanner';
+import DetailSkeleton from '../../src/components/DetailSkeleton';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
@@ -37,12 +38,17 @@ export default function GarageSaleDetailScreen() {
   const { findGarageSaleById, backendEnabled, isAdmin, toggleSavedSale, isSaleSaved } = useApp();
   const cached = findGarageSaleById(id);
   const [fetched, setFetched] = useState(null);
+  const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
   useEffect(() => {
     if (!cached && backendEnabled && id) {
       let ok = true;
-      fetchOneById('garage_sale', id).then((s) => { if (ok) setFetched(s); }).catch(() => {});
+      setFetching(true);
+      fetchOneById('garage_sale', id)
+        .then((s) => { if (ok) { setFetched(s); setFetching(false); } })
+        .catch(() => { if (ok) setFetching(false); });
       return () => { ok = false; };
     }
+    setFetching(false);
   }, [cached, backendEnabled, id]);
   const sale = cached || fetched;
 
@@ -52,10 +58,14 @@ export default function GarageSaleDetailScreen() {
   }, [id, backendEnabled, isAdmin]);
 
   if (!sale) {
+    if (fetching) return <DetailSkeleton tint={colors.garageSaleLight} />;
     return (
       <View style={styles.notFound}>
         <ThemedText size="title" weight="bold">Sale not found</ThemedText>
-        <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+        <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
+          This sale may have ended or been taken down.
+        </ThemedText>
+        <Pressable style={styles.primaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
           <ThemedText size="body" weight="bold" color={colors.textInverse}>Go Back</ThemedText>
         </Pressable>
       </View>

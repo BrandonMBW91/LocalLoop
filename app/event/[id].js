@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
 import AdBanner from '../../src/components/AdBanner';
+import DetailSkeleton from '../../src/components/DetailSkeleton';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
@@ -42,12 +43,17 @@ export default function EventDetailScreen() {
   // Deep link (localloop.io/event/<id>) may reference an event outside the
   // loaded city — fetch it directly when the cache misses.
   const [fetched, setFetched] = useState(null);
+  const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
   useEffect(() => {
     if (!cached && backendEnabled && id) {
       let ok = true;
-      fetchOneById('event', id).then((e) => { if (ok) setFetched(e); }).catch(() => {});
+      setFetching(true);
+      fetchOneById('event', id)
+        .then((e) => { if (ok) { setFetched(e); setFetching(false); } })
+        .catch(() => { if (ok) setFetching(false); });
       return () => { ok = false; };
     }
+    setFetching(false);
   }, [cached, backendEnabled, id]);
   const event = cached || fetched;
 
@@ -63,10 +69,14 @@ export default function EventDetailScreen() {
   }, [id, backendEnabled, event, isAdmin, recordView, logEvent]);
 
   if (!event) {
+    if (fetching) return <DetailSkeleton tint={colors.primaryLight} />;
     return (
       <View style={styles.notFound}>
         <ThemedText size="title" weight="bold">Event not found</ThemedText>
-        <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+        <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
+          This event may have ended or been taken down.
+        </ThemedText>
+        <Pressable style={styles.primaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
           <ThemedText size="body" weight="bold" color={colors.textInverse}>Go Back</ThemedText>
         </Pressable>
       </View>

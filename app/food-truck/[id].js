@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
 import AdBanner from '../../src/components/AdBanner';
+import DetailSkeleton from '../../src/components/DetailSkeleton';
 import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
@@ -38,12 +39,17 @@ export default function FoodTruckDetailScreen() {
   const { findFoodTruckById, backendEnabled, isAdmin, toggleFollow, isFollowing } = useApp();
   const cached = findFoodTruckById(id);
   const [fetched, setFetched] = useState(null);
+  const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
   useEffect(() => {
     if (!cached && backendEnabled && id) {
       let ok = true;
-      fetchOneById('food_truck', id).then((t) => { if (ok) setFetched(t); }).catch(() => {});
+      setFetching(true);
+      fetchOneById('food_truck', id)
+        .then((t) => { if (ok) { setFetched(t); setFetching(false); } })
+        .catch(() => { if (ok) setFetching(false); });
       return () => { ok = false; };
     }
+    setFetching(false);
   }, [cached, backendEnabled, id]);
   const truck = cached || fetched;
 
@@ -53,10 +59,14 @@ export default function FoodTruckDetailScreen() {
   }, [id, backendEnabled, isAdmin]);
 
   if (!truck) {
+    if (fetching) return <DetailSkeleton tint={colors.foodTruckLight} />;
     return (
       <View style={styles.notFound}>
         <ThemedText size="title" weight="bold">Food truck not found</ThemedText>
-        <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+        <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
+          This stop may have ended or been taken down.
+        </ThemedText>
+        <Pressable style={styles.primaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
           <ThemedText size="body" weight="bold" color={colors.textInverse}>Go Back</ThemedText>
         </Pressable>
       </View>
