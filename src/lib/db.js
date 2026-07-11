@@ -653,6 +653,23 @@ export async function fetchActiveCities() {
   }
 }
 
+// App-wide runtime config — currently the cross-platform update-prompt version gate
+// ({ ios:{latest,min,url}, android:{...} }). Public row; returns null on any error so
+// the update prompt simply stays quiet rather than surfacing a failure.
+export async function fetchVersionGate() {
+  try {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'version')
+      .maybeSingle();
+    if (error) throw error;
+    return data?.value || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Distinct devices per platform (ios / android / unknown) over the last 30 days,
 // for the admin metrics screen. p_city null = all towns. Reads via a SECURITY
 // DEFINER RPC so device_activity stays private. See supabase/device_platform.sql.
