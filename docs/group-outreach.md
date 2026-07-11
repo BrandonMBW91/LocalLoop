@@ -2,7 +2,7 @@
 
 Which local FB groups Local Loop has been posted in, and which are joined but not
 yet posted. Posts are made from the Local Loop Page as of Jul 9, 2026 (originally
-from Brandon Williams' personal account, when groups didn't allow Pages).
+from Michael Williams' personal account, when groups didn't allow Pages).
 
 **Cadence: posting rounds every 2 weeks.** Jul 9 round done; next round ~Jul 23,
 2026 (Thursday = fresh weekend data). 73 groups joined total.
@@ -48,7 +48,7 @@ Last updated: Jul 9, 2026
 | New Philadelphia, Ohio | New Philadelphia | ⚠ No ads/self-promotion — ZERO-pitch events post only |
 | Mansfield/Ashland sales | Mansfield | No rules; garage-sale angle |
 | Mansfield Ohio Community Corner | Mansfield | News/events group |
-| Marysville, Ohio Networking | Marysville | B2B — personal intro required; post as BRANDON, not the Page |
+| Marysville, Ohio Networking | Marysville | B2B - personal intro required; post as Michael, not the Page |
 | Bellefontaine In The Know | Bellefontaine | ⚠ No standalone biz posts — comment in their WEEKLY BUSINESS THREAD only |
 
 ## 📋 Joined — not yet posted (candidates for the ~Jul 23 round)

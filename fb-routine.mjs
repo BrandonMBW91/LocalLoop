@@ -39,6 +39,7 @@ const etParts = (iso) => {
 // naive hyphen title-case never mangles an irregular one; falls back to
 // title-casing the slug for anything not in the catalog.
 const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
+const CITY_REGION = Object.fromEntries(CITIES.map((c) => [c.id, c.region]));
 const cap = (s) => CITY_NAME[s] || (s || '').split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const joinCities = (arr) => {
   const u = [...new Set(arr)].map(cap).slice(0, 3);
@@ -52,6 +53,7 @@ function cleanTitle(t) {
   let s = (t || '').replace(/\s*\|\s*.*$/, '')
     .replace(/\s+[-–—]\s+[^-–—]*\b(OH|Ohio)\b.*$/i, '')
     .replace(/\s+(tickets?|presented by).*$/i, '')
+    .replace(/,\s+[A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2}\s*$/, '') // drop a trailing ", Town" that collides with city_id
     .replace(/\s{2,}/g, ' ').trim();
   if (s.length > 58) { s = s.slice(0, 55); const sp = s.lastIndexOf(' '); if (sp > 30) s = s.slice(0, sp); s = s.replace(/["'(,\s–-]+$/, '') + '…'; }
   return s;
@@ -64,6 +66,7 @@ function cleanVenue(v) {
   s = s.replace(/\s*[-–—]\s*.*$/, '');             // drop " - Meeting Room A", "- 2nd Floor"
   s = s.replace(/\s*\([^)]*\)\s*/g, ' ').trim();   // drop "(Capacity : 75)"
   s = s.replace(/\s{2,}/g, ' ');
+  if (/\bcalendars?\b|\blistings?\b|\bcvb\b|visitors bureau|chamber of commerce/i.test(s)) return ''; // a feed/org name, not a place you go
   if (s.length > 42) s = s.slice(0, 40).trim() + '…';
   return s;
 }
@@ -89,7 +92,7 @@ const isGarbage = (t) => {
   if (/(.)\1{4,}/.test(s)) return true;
   return false;
 };
-const EVENING_TYPE = /\b(comedy|concert|live music|band|party|festival|fest|nightlife|dance|dj|karaoke|trivia|open mic)\b/i;
+const EVENING_TYPE = /\b(comedy|concert|live music|band|party|festival|fest|nightlife|dance|dj|karaoke|trivia|open mic|fireworks|celebration|carnival)\b/i;
 const isImplausibleTime = (title, h24) => EVENING_TYPE.test(title) && h24 >= 1 && h24 < 11;
 const isUnsafe = (t) => ADULT.test(t) || PROFANITY.test(t) || MASKED.test(t) || isGarbage(t);
 const scoreOf = (e) => {
@@ -144,7 +147,12 @@ async function genWeekend() {
   const all = (await fetchEvents(9)).filter((e) => new Set(wk).has(e._d));
   const bySig = new Map();
   for (const e of all) { const s = { ...e, score: scoreOf(e) }; const k = sig(e.title); const c = bySig.get(k); if (!c || s.score > c.score) bySig.set(k, s); }
-  const eligible = [...bySig.values()].filter((e) => MARQUEE.test(e.title) || e.score > 0);
+  // Cluster the whole digest to ONE region (the strongest event's) so we never
+  // headline "around here" over towns 2+ hours apart. A thin coherent digest beats
+  // a statewide grab-bag (the weak-check below still warns if it's too thin).
+  const scored = [...bySig.values()].filter((e) => MARQUEE.test(e.title) || e.score > 0).sort((a, b) => b.score - a.score);
+  const topRegion = scored.length ? CITY_REGION[scored[0].city_id] : null;
+  const eligible = topRegion ? scored.filter((e) => CITY_REGION[e.city_id] === topRegion) : scored;
   const picks = [];
   const uT = {}, uC = {};
   for (const e of eligible.sort((a, b) => b.score - a.score)) {
