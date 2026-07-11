@@ -58,6 +58,11 @@ const DRY = Boolean(args['dry-run']);
 const FORCE = Boolean(args.force) || process.env.SEND_ANYTIME === '1';
 const GRACE_MS = 3 * 60 * 1000; // wait for immediate bounces before topping up
 const TOPUP_ROUNDS = 2;
+// Gap between individual sends. Widened from the old 45-120s burst (a day's whole
+// batch fired inside ~13 min, which reads machine-like) to spread sends across the
+// window. Actual gap is SEND_GAP_MS + up to SEND_GAP_MS jitter (default 2.5-5 min).
+// Lower OUTREACH_SEND_GAP_MS if a scheduled run risks timing out.
+const SEND_GAP_MS = Math.max(0, Number(process.env.OUTREACH_SEND_GAP_MS || g('OUTREACH_SEND_GAP_MS') || 150000));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const OUTREACH = join(ROOT, 'outreach');
@@ -238,7 +243,7 @@ const OPTOUT_RE = /\b(unsubscribe|no thanks|no thank you|remove me|take me off|p
 // Scan INBOX for genuine replies from people we emailed. Opt-outs -> suppress.txt
 // (+ draft removed). Everything else is surfaced for a human to read. Returns
 // { newlySuppressed, replies }.
-async function sweepReplies(knownRecipients) {
+async function sweepReplies(knownRecipients, ourMsgIds = new Set(), msgIdMap = {}) {
   const imap = freshImap();
   const newlySuppressed = [];
   const newReplied = [];
@@ -253,9 +258,16 @@ async function sweepReplies(knownRecipients) {
         const d = msg.envelope?.date ? new Date(msg.envelope.date) : null;
         if (d && d < since) continue;
         const from = ((msg.envelope?.from?.[0]?.address) || '').toLowerCase();
-        if (!from || !knownRecipients.has(from)) continue;
+        const inReplyTo = (msg.envelope?.inReplyTo || '').trim();
+        // A message counts as a reply if it's FROM a lead we mailed, OR it threads
+        // to one of our sends via In-Reply-To (catches owners replying from a
+        // personal address). The latter is resolved back to the mailed lead.
+        const known = from && knownRecipients.has(from);
+        const threaded = inReplyTo && ourMsgIds.has(inReplyTo);
+        if (!known && !threaded) continue;
         if (/mailer-daemon|postmaster|maildelivery|no-?reply/i.test(from)) continue;
-        cand.push({ uid: msg.uid, from, subject: msg.envelope?.subject || '' });
+        const recipient = known ? from : (msgIdMap[inReplyTo] || from);
+        cand.push({ uid: msg.uid, from, recipient, subject: msg.envelope?.subject || '' });
       }
       for (const c of cand.slice(0, 100)) {
         let text = '';
@@ -264,10 +276,10 @@ async function sweepReplies(knownRecipients) {
           for await (const chunk of content) { text += chunk.toString('utf8'); if (text.length > 100000) break; }
         } catch { /* subject-only classification */ }
         if (OPTOUT_RE.test(`${c.subject}\n${text}`)) {
-          if (!suppressed.has(c.from)) { suppressed.add(c.from); newlySuppressed.push(c.from); }
+          if (!suppressed.has(c.recipient)) { suppressed.add(c.recipient); newlySuppressed.push(c.recipient); }
         } else {
           replies.push({ from: c.from, subject: c.subject });
-          if (!replied.has(c.from)) { replied.add(c.from); newReplied.push(c.from); }
+          if (!replied.has(c.recipient)) { replied.add(c.recipient); newReplied.push(c.recipient); }
         }
       }
     } finally { lock.release(); }
@@ -313,6 +325,22 @@ const goodAllTime = logEntries.filter((e) => !bounced.has(e.to)).length;
 const goodToday = logEntries.filter((e) => e.ts === today && !bounced.has(e.to)).length;
 const loggedTos = new Set(logEntries.map((e) => e.to).filter(Boolean));
 
+// Map each Message-ID we sent -> the lead we mailed, so a reply arriving from a
+// DIFFERENT address (an owner's personal Gmail, not the info@ we hit) can still be
+// tied back to that lead via its In-Reply-To header. Without this, the reply sweep
+// only matched an exact From and silently dropped personal-address replies —
+// inflating the "0 replies" count. Message-ID is the last whitespace token logged.
+const msgIdToRecipient = {};
+for (const p of [LOG, FOLLOWUP_LOG]) {
+  for (const line of readLines(p)) {
+    const parts = line.split(/\s+/);
+    const to = (parts[1] || '').toLowerCase();
+    const mid = (parts[parts.length - 1] || '').trim();
+    if (to && /^<.+>$/.test(mid)) msgIdToRecipient[mid] = to;
+  }
+}
+const ourMsgIds = new Set(Object.keys(msgIdToRecipient));
+
 // Follow-ups auto-activate once the domain is warmed up — at FOLLOWUP_ACTIVATE_AT
 // good sends (default 40, the same point the daily ramp reaches its ceiling) —
 // using a 6-day delay. An explicit OUTREACH_FOLLOWUP_DAYS overrides in either
@@ -335,7 +363,7 @@ const dueCut = new Date(Date.now() - FOLLOWUP_DAYS * 86400000).toLocaleDateStrin
 // not the whole Zoho Sent folder — the latter also holds one-off mail like the
 // public-records requests, whose office replies would otherwise clutter the
 // "REPLY — review" list (they're handled by check-rosters.mjs instead).
-const { newlySuppressed, replies } = await sweepReplies(loggedTos);
+const { newlySuppressed, replies } = await sweepReplies(loggedTos, ourMsgIds, msgIdToRecipient);
 
 // email -> town, so the queue can be interleaved ACROSS towns by priority
 // (population + current users; see aggregator/town-priority.mjs) — one lead per
@@ -434,7 +462,16 @@ async function buildBatch(n) {
 async function sendOne(d) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      return await smtp.sendMail({ from: `Local Loop <${USER}>`, to: d.to, subject: d.subject, text: d.body });
+      return await smtp.sendMail({
+        from: `Local Loop <${USER}>`,
+        to: d.to,
+        subject: d.subject,
+        text: d.body,
+        // A List-Unsubscribe header is a free trust signal to Gmail/Yahoo and lets
+        // their UI offer one-click unsubscribe; the mailto reply ("unsubscribe")
+        // is caught by OPTOUT_RE on the next sweep and suppressed.
+        headers: { 'List-Unsubscribe': `<mailto:${USER}?subject=unsubscribe>` },
+      });
     } catch (e) {
       console.error(`send failed (attempt ${attempt}/2) ${d.to}: ${e.message}`);
       if (attempt < 2) await sleep(5000);
@@ -455,7 +492,7 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
     appendFileSync(d.kind === 'followup' ? FOLLOWUP_LOG : LOG, `${new Date().toISOString()}  ${d.to}  ${d.subject}  ${info.messageId}\n`);
     sentTos.add(d.to); skipRun.add(d.to); sentThisRun.push((d.kind === 'followup' ? 'followup ' : '') + d.to);
     console.log((d.kind === 'followup' ? 'sent follow-up:' : 'sent:'), d.subject, '->', d.to);
-    if (i < batch.length - 1) await sleep(45000 + Math.floor(Math.random() * 75000));
+    if (i < batch.length - 1) await sleep(SEND_GAP_MS + Math.floor(Math.random() * SEND_GAP_MS));
   }
   await sleep(GRACE_MS);
   const newly = await sweepBounces(new Set(batch.map((d) => d.to)));
