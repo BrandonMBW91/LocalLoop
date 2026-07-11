@@ -70,6 +70,10 @@ export default function RootLayout() {
               options={{ title: 'Advertise', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="claim"
+              options={{ title: 'Claim your business', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="moderate"
               options={{ title: 'Review Submissions', headerBackTitle: 'Back' }}
             />

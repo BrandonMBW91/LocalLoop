@@ -151,6 +151,17 @@ export default function FoodTruckDetailScreen() {
       </View>
 
       <FeatureButton kind="food_truck" id={truck.id} featured={truck.featured} featuredUntil={truck.featuredUntil} />
+
+      {/* Owner path — claim the truck, opens the claim form prefilled */}
+      <Pressable
+        style={styles.claimBtn}
+        onPress={() => router.push({ pathname: '/claim', params: { name: truck.name, kind: 'food_truck' } })}
+        accessibilityRole="button"
+      >
+        <Ionicons name="ribbon-outline" size={18} color={colors.textMuted} />
+        <ThemedText size="small" weight="bold" color={colors.textMuted}>Is this your truck? Claim it</ThemedText>
+      </Pressable>
+
       <ReportButton kind="food_truck" id={truck.id} />
       <AdBanner />
     </ScrollView>
@@ -158,6 +169,10 @@ export default function FoodTruckDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  claimBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    paddingVertical: spacing.md, marginTop: spacing.xs,
+  },
   screen: { flex: 1, backgroundColor: colors.background },
   hero: {
     alignItems: 'center',

@@ -4,4 +4,4 @@
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
 export const APP_VERSION = '1.0.3';
-export const BUILD = 99;
+export const BUILD = 100;
