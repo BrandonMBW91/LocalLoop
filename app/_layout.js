@@ -6,10 +6,12 @@ import { Stack } from 'expo-router';
 import { AppProvider } from '../src/context/AppContext';
 import HeaderBack from '../src/components/HeaderBack';
 import { useOtaUpdates } from '../src/hooks/useOtaUpdates';
+import { useStoreUpdatePrompt } from '../src/hooks/useStoreUpdatePrompt';
 import { colors } from '../src/theme/theme';
 
 export default function RootLayout() {
-  useOtaUpdates();
+  useOtaUpdates();          // JS updates: download + apply silently in the background
+  useStoreUpdatePrompt();   // native store build: prompt to update from the App Store
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
