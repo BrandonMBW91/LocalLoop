@@ -104,20 +104,44 @@ function sameDay(a, b) {
 
 // Fetch the raw iCal text ourselves so we can send browser-like headers
 // (some calendars sit behind a WAF that 403s bare requests).
+//
+// Retry on 5xx and transient network errors only: flaky CivicPlus/iCalendar.aspx
+// modules (e.g. Canton) intermittently 500 under load and recover on the next hit,
+// so a single-shot pull kept stamping healthy feeds DEAD. 4xx (403/406 WAF blocks,
+// 404) fail fast — a retry won't change the answer.
 async function fetchICS(url) {
-  const res = await fetch(url, {
-    headers: {
-      // Full browser UA: several feeds' WAFs (PrestoSports, mod_security) 403/406
-      // the honest bot UA but allow a browser string.
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-      Accept: 'text/calendar, text/plain, */*',
-      Referer: new URL(url).origin + '/',
-    },
-    redirect: 'follow',
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
+  const RETRIES = 2; // total attempts = RETRIES + 1
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let lastErr;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    if (attempt > 0) await sleep(1500 * attempt); // 1.5s, then 3s
+    try {
+      const res = await fetch(url, {
+        headers: {
+          // Full browser UA: several feeds' WAFs (PrestoSports, mod_security) 403/406
+          // the honest bot UA but allow a browser string.
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          Accept: 'text/calendar, text/plain, */*',
+          Referer: new URL(url).origin + '/',
+        },
+        redirect: 'follow',
+      });
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status}`);
+        if (res.status >= 500 && res.status < 600 && attempt < RETRIES) { lastErr = err; continue; }
+        throw err;
+      }
+      return res.text();
+    } catch (e) {
+      // Network-level failure (DNS, reset, timeout) — retry; a definite HTTP 4xx
+      // (thrown above) has no retries left by the time it reaches here.
+      lastErr = e;
+      if (attempt < RETRIES && !/^HTTP [4]\d\d/.test(e.message)) continue;
+      throw e;
+    }
+  }
+  throw lastErr;
 }
 
 // ---- near-duplicate guard -------------------------------------------------
