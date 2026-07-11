@@ -48,7 +48,7 @@ export async function pull(source, { floor, cutoff }) {
       description: clean(e.description),
       location,
       url: /^https:\/\//.test(e.url || '') ? e.url : null,
-      image: null,
+      image: /^https:\/\//.test(e.image || '') ? e.image : null,
       start: startD,
       end: e.end_date ? localToDate(e.end_date, e.timezone) : null,
     });

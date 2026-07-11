@@ -163,7 +163,7 @@ footer a{color:var(--green);text-decoration:none;}
 
 const FOOT = `<div class="banner"><h2>Get the free app</h2>
 <p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Ohio, free.</p>
-<a class="get" href="${APP_STORE_URL}">Download Local Loop</a></div>
+<a class="get" href="/open.html">Download Local Loop</a></div>
 <footer><div>© 2026 Local Loop · Serving all five regions of Ohio</div>
 <div><a href="/">Home</a> · <a href="/advertise.html">Advertise</a> · <a href="/privacy.html">Privacy</a></div></footer>
 <script>
@@ -195,7 +195,7 @@ function eventCard(e) {
   const p = etParts(e.start_at);
   const venue = cleanLocation([e.venue, e.address].filter(Boolean)[0] || '');
   const title = cleanText(e.title) || 'Untitled event';
-  const href = e.id ? `/event/${e.id}` : APP_STORE_URL;
+  const href = e.id ? `/event/${e.id}` : '/open.html';
   return `<a class="ev" data-end="${effectiveEndMs(e.start_at, e.end_at, e.title, e.category)}" href="${esc(href)}">
 <div class="chip" style="background:${tint}"><div class="dow" style="background:${color}">${esc(p.dow.toUpperCase())}</div><div class="day" style="color:${color}">${esc(p.day)}</div><div class="mon" style="color:${color}">${esc(p.mon)}</div></div>
 <div class="body"><span class="pill" style="color:${color};background:${tint}">${esc(e.category || 'Community')}</span>
@@ -249,7 +249,7 @@ function eventPage(e, cityName, cityId) {
 <h1>${esc(title)}</h1>
 <div class="tag">${CLOCK_SVG}<span>${esc(when)}</span></div>
 ${venue ? `<div class="tag">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}
-<a class="get" href="${APP_STORE_URL}">Get directions in the app</a></section>
+<a class="get" href="/open.html">Get directions in the app</a></section>
 ${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description.slice(0, 1500))}</p>` : ''}
 <a class="town" href="/events/${cityId}.html"><span><b>See everything in ${esc(cityName)}, OH</b><span class="tg">More events, garage sales &amp; food trucks</span></span><span class="n">Browse</span></a>
 </article>
@@ -273,7 +273,7 @@ function sharePage(kind, item, cityName, cityId) {
 <h1>${esc(title)}</h1>
 ${when ? `<div class="tag">${CLOCK_SVG}<span>${esc(when)}</span></div>` : ''}
 ${venue ? `<div class="tag">${PIN_SVG}<span>${esc(venue)}</span></div>` : ''}
-<a class="get" href="${APP_STORE_URL}">Open in the app</a></section>
+<a class="get" href="/open.html">Open in the app</a></section>
 ${description ? `<p style="font-size:16px;line-height:1.65;margin:16px 4px 22px;white-space:pre-line;">${esc(description.slice(0, 1200))}</p>` : ''}
 <a class="town" href="/events/${cityId}.html"><span><b>See everything in ${esc(cityName)}, OH</b><span class="tg">Events, garage sales &amp; food trucks</span></span><span class="n">Browse</span></a>
 </article>
@@ -394,7 +394,7 @@ ${g.items.map(eventCard).join('\n')}</section>`).join('\n')
 <section class="town-hero"><div class="kicker">Things to do in</div>
 <h1>${esc(name)}, OH</h1>
 ${tagline ? `<div class="tag">${PIN_SVG}<span>${esc(tagline)}</span></div>` : ''}
-<a class="get" href="${APP_STORE_URL}">Get the free app</a></section>
+<a class="get" href="/open.html">Get the free app</a></section>
 ${body}
 ${FOOT}`;
     writeFileSync(join(OUT, `${id}.html`), html);
@@ -475,7 +475,7 @@ ${FOOT}`;
 <section class="town-hero"><div class="kicker">Local events across</div>
 <h1>Local Events Across Ohio</h1>
 <div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events across ${activeCount} Ohio towns</span></div>
-<a class="get" href="${APP_STORE_URL}">Get the free app</a></section>
+<a class="get" href="/open.html">Get the free app</a></section>
 ${regionSections}
 ${FOOT}`;
   writeFileSync(join(OUT, 'index.html'), hub);

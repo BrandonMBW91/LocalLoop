@@ -35,7 +35,7 @@ export default function FoodTruckDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findFoodTruckById, backendEnabled, isAdmin } = useApp();
+  const { findFoodTruckById, backendEnabled, isAdmin, toggleFollow, isFollowing } = useApp();
   const cached = findFoodTruckById(id);
   const [fetched, setFetched] = useState(null);
   useEffect(() => {
@@ -81,6 +81,8 @@ export default function FoodTruckDetailScreen() {
     }).catch(() => {});
   };
 
+  const following = isFollowing(truck.name);
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
       <View style={styles.hero}>
@@ -118,6 +120,21 @@ export default function FoodTruckDetailScreen() {
           <Ionicons name="share-outline" size={22} color={colors.foodTruck} />
           <ThemedText size="body" weight="bold" color={colors.foodTruck}>
             Share this truck
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={[styles.shareBtn, following && styles.followBtnActive]}
+          onPress={() => toggleFollow(truck.name)}
+          accessibilityRole="button"
+          accessibilityLabel={following ? `Following ${truck.name}` : `Follow ${truck.name} for new stops`}
+        >
+          <Ionicons
+            name={following ? 'notifications' : 'notifications-outline'}
+            size={22}
+            color={following ? colors.textInverse : colors.foodTruck}
+          />
+          <ThemedText size="body" weight="bold" color={following ? colors.textInverse : colors.foodTruck}>
+            {following ? 'Following' : 'Follow for new stops'}
           </ThemedText>
         </Pressable>
 
@@ -218,6 +235,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     minHeight: 52,
   },
+  followBtnActive: { backgroundColor: colors.foodTruck, borderColor: colors.foodTruck },
   infoCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

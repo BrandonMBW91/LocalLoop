@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,6 +28,18 @@ export default function EventsScreen() {
     activeFilter: activeCat, setActiveFilter: setActiveCat,
     refreshing, onRefresh, isFiltering, clearFilters,
   } = useListState({ refresh });
+
+  // Once interests hydrate from storage, default the feed to "For You" so the
+  // personalization 71% of users set up isn't thrown away on the one screen
+  // everyone sees. Only auto-applies while the filter is untouched (still 'All'),
+  // so it never overrides a manual choice.
+  const autoForYou = useRef(false);
+  useEffect(() => {
+    if (!autoForYou.current && interests.length > 0 && activeCat === 'All') {
+      autoForYou.current = true;
+      setActiveCat('For You');
+    }
+  }, [interests, activeCat, setActiveCat]);
 
   const goPost = (path) => {
     if (backendEnabled && !signedIn) router.push({ pathname: '/sign-in', params: { next: path } });
@@ -117,6 +129,20 @@ export default function EventsScreen() {
                 <Ionicons name="chevron-forward" size={20} color={colors.accent} />
               </Pressable>
             ) : null}
+            {sponsors.length === 0 ? (
+              <Pressable
+                style={styles.houseAd}
+                onPress={() => router.push('/promote')}
+                accessibilityRole="link"
+                accessibilityLabel={`Advertise your ${city.name} business on Local Loop`}
+              >
+                <Ionicons name="megaphone-outline" size={20} color={colors.primary} />
+                <ThemedText size="small" weight="bold" color={colors.primary} style={{ flex: 1 }}>
+                  Reach {city.name}. Put your business here from $19/mo.
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+              </Pressable>
+            ) : null}
           </>
         }
         isFiltering={isFiltering}
@@ -145,6 +171,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.accentLight,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    minHeight: 52,
+  },
+  houseAd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
