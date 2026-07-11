@@ -8,6 +8,7 @@ import HeaderBack from '../src/components/HeaderBack';
 import { useOtaUpdates } from '../src/hooks/useOtaUpdates';
 import { useStoreUpdatePrompt } from '../src/hooks/useStoreUpdatePrompt';
 import WhatsNewBanner from '../src/components/WhatsNewBanner';
+import PushPrimingModal from '../src/components/PushPrimingModal';
 import { colors } from '../src/theme/theme';
 
 export default function RootLayout() {
@@ -126,6 +127,7 @@ export default function RootLayout() {
             />
           </Stack>
           <WhatsNewBanner />
+          <PushPrimingModal />
         </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -56,7 +56,10 @@ export async function scheduleEventReminder(event) {
     if (!event?.start || !event?.id) return;
     const fireAt = new Date(event.start).getTime() - HOURS_BEFORE * 3600 * 1000;
     if (fireAt < Date.now() + 60 * 1000) return; // too soon or already passed
-    if (!(await ensurePermission())) return;
+    // Silent: schedule ONLY if already granted. The priming modal owns the ask, so
+    // saving an event never fires a cold OS prompt here. Reminders for events saved
+    // before granting get set when permission is granted (see AppContext).
+    if (!(await hasPermission())) return;
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: event.title,

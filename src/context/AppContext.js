@@ -248,13 +248,13 @@ export function AppProvider({ children }) {
       if (wasSaved) {
         cancelEventReminder(eventId);
       } else {
-        // Saving an event sets a local reminder a few hours before it starts,
-        // and (if they allow notifications) registers this device for the
-        // weekend digest.
+        // Saving an event sets a local reminder a few hours before it starts (only
+        // if notifications are already granted), and at this high-intent moment
+        // either registers the device silently or shows the priming modal.
         const ev = eventObj || findEventById(eventId);
         if (ev) {
-          scheduleEventReminder(ev);
-          if (isSupabaseEnabled) getPushToken().then((t) => t && savePushToken(t, cityId, Platform.OS, interests));
+          scheduleEventReminder(ev); // silent: schedules only if already granted
+          maybePrimePush('save');    // registers if granted, else primes (bounded)
         }
         logEvent('save_event', { id: eventId });
       }
@@ -267,28 +267,13 @@ export function AppProvider({ children }) {
   // onboarding so EVERY device is reachable (not just those who saved an event) —
   // the big lever on push reach. We never re-prompt (a stored flag guards it), and
   // the digest is opt-out-able by ignoring it.
-  const pushAskedRef = useRef(false);
   useEffect(() => {
-    // Wait for hydration: before it, interests is still the empty default, and
-    // registering then would send null and clobber the device's stored interests
-    // until the effect re-ran. Gating on `hydrated` also collapses the pre-hydration
-    // duplicate fire, so a returning granted user registers once with real interests.
-    if (!isSupabaseEnabled || !hydrated || isAdmin || Platform.OS === 'web' || !cityId) return;
-    (async () => {
-      if (await hasPermission()) {
-        const t = await getPushToken();
-        if (t) savePushToken(t, cityId, Platform.OS, interests);
-        return;
-      }
-      if (onboarded && !pushAskedRef.current) {
-        pushAskedRef.current = true;
-        const already = await AsyncStorage.getItem('@fe/pushAsked');
-        if (already) return;
-        await AsyncStorage.setItem('@fe/pushAsked', '1');
-        const t = await getPushToken(); // ensurePermission() prompts inside
-        if (t) savePushToken(t, cityId, Platform.OS, interests);
-      }
-    })();
+    // Wait for hydration (interests is the empty default before it). Once onboarded,
+    // maybePrimePush refreshes the token silently if already granted, or shows the
+    // value-priming modal instead of the old cold OS prompt (which, once declined,
+    // was never re-asked — the root of the ~9% push reach).
+    if (!hydrated || !onboarded) return;
+    maybePrimePush('onboarding');
   }, [hydrated, cityId, onboarded, interests]);
 
   // Record this device as active in the current town (anonymous) — powers
@@ -419,6 +404,60 @@ export function AppProvider({ children }) {
     (id) => events.find((e) => e.id === id) || getEventById(id, submittedEvents),
     [events, submittedEvents]
   );
+
+  // ---- push-permission priming (the keystone) --------------------------------
+  // Show a value-priming modal BEFORE the OS prompt so a not-ready user taps
+  // "Not now" here (which never burns the one-shot OS prompt) instead of hard-
+  // declining the cold dialog. Only "Turn on" fires the real OS prompt.
+  const [pushPrime, setPushPrime] = useState(null); // null | 'onboarding' | 'save' | 'general'
+  const primePendingRef = useRef(false);
+  const PRIME_KEY = '@fe/pushPrimeState'; // { shows, lastTs, granted, osDenied }
+
+  // If already granted, refresh the token silently; else show the priming modal,
+  // bounded: max 3 shows, 2-day cooldown, never after an OS grant/deny (the OS
+  // won't re-prompt anyway once decided).
+  const maybePrimePush = useCallback(async (reason) => {
+    if (!isSupabaseEnabled || isAdmin || Platform.OS === 'web' || !cityId) return;
+    if (await hasPermission()) {
+      const t = await getPushToken();
+      if (t) savePushToken(t, cityId, Platform.OS, interests);
+      return;
+    }
+    if (primePendingRef.current) return;
+    let st = {};
+    try { st = JSON.parse(await AsyncStorage.getItem(PRIME_KEY)) || {}; } catch { st = {}; }
+    if (st.granted || st.osDenied) return;
+    if ((st.shows || 0) >= 3) return;
+    if (st.lastTs && Date.now() - st.lastTs < 2 * 86400000) return;
+    st.shows = (st.shows || 0) + 1;
+    st.lastTs = Date.now();
+    try { await AsyncStorage.setItem(PRIME_KEY, JSON.stringify(st)); } catch {}
+    primePendingRef.current = true;
+    setPushPrime(reason || 'general');
+  }, [cityId, interests, isAdmin]);
+
+  // User tapped "Turn on" — NOW fire the OS prompt, then register or record the
+  // decline. On grant, back-fill reminders for events saved before permission.
+  const acceptPushPrime = useCallback(async () => {
+    setPushPrime(null);
+    primePendingRef.current = false;
+    let st = {};
+    try { st = JSON.parse(await AsyncStorage.getItem(PRIME_KEY)) || {}; } catch { st = {}; }
+    const t = await getPushToken(); // ensurePermission() fires the OS prompt inside
+    if (t) {
+      st.granted = true;
+      savePushToken(t, cityId, Platform.OS, interests);
+      savedIds.forEach((id) => { const ev = findEventById(id); if (ev) scheduleEventReminder(ev); });
+    } else {
+      st.osDenied = true; // OS-level decline: the OS won't prompt again
+    }
+    try { await AsyncStorage.setItem(PRIME_KEY, JSON.stringify(st)); } catch {}
+  }, [cityId, interests, savedIds, findEventById]);
+
+  const dismissPushPrime = useCallback(() => {
+    setPushPrime(null);
+    primePendingRef.current = false;
+  }, []);
   const findGarageSaleById = useCallback(
     (id) => garageSales.find((s) => s.id === id) || getGarageSaleById(id, submittedSales),
     [garageSales, submittedSales]
@@ -497,6 +536,9 @@ export function AppProvider({ children }) {
     scale,
     savedIds,
     toggleSaved,
+    pushPrime,
+    acceptPushPrime,
+    dismissPushPrime,
     logEvent,
 
     // Data
