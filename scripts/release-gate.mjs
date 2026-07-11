@@ -10,7 +10,7 @@
 //   node release-gate.mjs --platform android   # (only once it's on Play PRODUCTION)
 import { readFileSync } from 'node:fs';
 import { createSign } from 'node:crypto';
-import { APP_VERSION } from '../src/version.js';
+import { APP_VERSION, WHATS_NEW } from '../src/version.js';
 
 const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
 const g = (k) => (env.match(new RegExp('^' + k + '=(.*)$', 'm')) || [])[1]?.trim();
@@ -60,6 +60,22 @@ const cur = (await sql(`select value->'${PLATFORM}'->>'latest' as latest from pu
 if (cur === VERSION) { console.log(`[${stamp}] ${PLATFORM}.latest already ${VERSION} — prompt already armed. Done.`); process.exit(0); }
 if (DRY) { console.log(`[${stamp}] [dry] would flip ${PLATFORM}.latest ${cur} -> ${VERSION}.`); process.exit(0); }
 const res = await sql(`update public.app_config set value=jsonb_set(value,'{${PLATFORM},latest}','"${VERSION}"'), updated_at=now() where key='version';`);
-console.log(Array.isArray(res)
-  ? `[${stamp}] ✔ Flipped ${PLATFORM}.latest ${cur} -> ${VERSION}. Users below ${VERSION} now get the "Update available" prompt.`
-  : `[${stamp}] flip FAILED: ${JSON.stringify(res).slice(0, 200)}`);
+if (!Array.isArray(res)) { console.log(`[${stamp}] flip FAILED: ${JSON.stringify(res).slice(0, 200)}`); process.exit(1); }
+console.log(`[${stamp}] ✔ Flipped ${PLATFORM}.latest ${cur} -> ${VERSION}. Users below ${VERSION} now get the in-app "Update available" prompt.`);
+
+// One-time broadcast push so users are told to update even without opening the app.
+// Runs ONLY on the flip (the check above is idempotent), and ONLY to this platform's
+// tokens — the other store may not have the release yet. Best-effort.
+const store = PLATFORM === 'android' ? 'Play Store' : 'App Store';
+const rows = await sql(`select token from public.push_tokens where platform='${PLATFORM}' and token is not null;`);
+const tokens = Array.isArray(rows) ? rows.map((r) => r.token) : [];
+const body = `${WHATS_NEW} Update now in the ${store}.`;
+let sent = 0;
+for (let i = 0; i < tokens.length; i += 100) {
+  const batch = tokens.slice(i, i + 100).map((to) => ({ to, title: 'Update available', body, sound: 'default' }));
+  try {
+    const pr = await fetch('https://exp.host/--/api/v2/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(batch) });
+    if (pr.ok) sent += batch.length;
+  } catch { /* best-effort broadcast */ }
+}
+console.log(`[${stamp}] update push sent to ${sent}/${tokens.length} ${PLATFORM} device(s).`);
