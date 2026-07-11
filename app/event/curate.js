@@ -139,7 +139,7 @@ export default function CurateEventScreen() {
         <View style={styles.intro}>
           <ThemedText size="title" weight="bold">Add an event</ThemedText>
           <ThemedText size="body" color={colors.textMuted}>
-            Moderator quick-add — publishes instantly, any city.
+            Moderator quick-add. Publishes instantly, any city.
           </ThemedText>
         </View>
 
@@ -258,7 +258,7 @@ export default function CurateEventScreen() {
           />
         </Field>
 
-        <Field label="Address" hint="Start typing — pick from suggestions">
+        <Field label="Address" hint="Start typing to pick from suggestions">
           <AddressAutocomplete
             value={address}
             onChangeText={setAddress}

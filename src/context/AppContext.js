@@ -159,9 +159,16 @@ export function AppProvider({ children }) {
   const loadSeqRef = useRef(0);
   // Guard so we log a single app_open per launch (not on every city switch).
   const openLoggedRef = useRef(false);
+  const lastLoadedCityRef = useRef(null);
   const loadData = useCallback(async () => {
     if (!hydrated) return;
     const seq = ++loadSeqRef.current; // ignore results from superseded loads
+    // On a TOWN CHANGE (not a same-town refresh), clear the lists so the skeleton
+    // shows during the swap instead of the previous town's cards under the new name.
+    if (lastLoadedCityRef.current && lastLoadedCityRef.current !== cityId) {
+      setEvents([]); setGarageSales([]); setFoodTrucks([]); setSponsors([]); setDeals([]); setEditorPick(null);
+    }
+    lastLoadedCityRef.current = cityId;
     setLoadingData(true);
     setLoadError(false);
     try {
@@ -275,9 +282,9 @@ export function AppProvider({ children }) {
     // maybePrimePush refreshes the token silently if already granted, or shows the
     // value-priming modal instead of the old cold OS prompt (which, once declined,
     // was never re-asked — the root of the ~9% push reach).
-    if (!hydrated || !onboarded) return;
+    if (!hydrated || !onboarded || loadingData) return; // show content first, not a permission ask on empty cards
     maybePrimePush('onboarding');
-  }, [hydrated, cityId, onboarded, interests]);
+  }, [hydrated, cityId, onboarded, interests, loadingData]);
 
   // Record this device as active in the current town (anonymous) — powers
   // user-based ad pricing.

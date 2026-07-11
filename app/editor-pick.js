@@ -79,7 +79,7 @@ export default function EditorPickScreen() {
       <Field label="The pick" hint="e.g. Balloonfest is back this weekend" value={title} onChange={setTitle} placeholder="What shouldn't they miss?" fs={fs} />
       <Field label="Your note" hint="A short, personal tip" value={note} onChange={setNote} multiline placeholder="Get there early Saturday for the morning launch…" fs={fs} />
       <Field label="When / where" hint="Optional" value={detail} onChange={setDetail} placeholder="Sat–Sun · Riverside Park · Free" fs={fs} />
-      <Field label="Link" hint="Optional — tickets or more info (https://…)" value={linkUrl} onChange={setLinkUrl} placeholder="https://…" fs={fs} />
+      <Field label="Link" hint="Optional. Tickets or more info (https://…)" value={linkUrl} onChange={setLinkUrl} placeholder="https://…" fs={fs} />
 
       <Pressable style={[styles.btn, busy && { opacity: 0.6 }]} onPress={save} disabled={busy}>
         {busy ? <ActivityIndicator color={colors.textInverse} /> : (

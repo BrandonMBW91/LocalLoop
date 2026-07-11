@@ -77,7 +77,7 @@ export default function FoodTruckDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime}–${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('food-truck', truck.id))}`,
+      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime} to ${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('food-truck', truck.id))}`,
     }).catch(() => {});
   };
 
@@ -142,7 +142,7 @@ export default function FoodTruckDetailScreen() {
           <InfoRow
             icon="calendar"
             label="When"
-            value={`${formatLongDate(truck.date)}\n${truck.startTime} – ${truck.endTime}`}
+            value={`${formatLongDate(truck.date)}\n${truck.startTime} to ${truck.endTime}`}
           />
           <View style={styles.divider} />
           <InfoRow

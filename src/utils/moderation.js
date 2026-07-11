@@ -39,7 +39,7 @@ export function screenContent(parts = []) {
       ok: false,
       reason: 'profanity',
       message:
-        'Please keep it family-friendly — your post contains language we can’t allow. Edit it and try again.',
+        'Please keep it family-friendly. Your post contains language we cannot allow. Edit it and try again.',
     };
   }
 

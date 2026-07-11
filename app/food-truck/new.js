@@ -131,7 +131,7 @@ export default function NewFoodTruckScreen() {
     }
     const url = calUrl.trim();
     if (!/^https?:\/\//i.test(url)) {
-      Alert.alert('Check the link', 'Paste your calendar link — it should start with http (a Google Calendar or website .ics link).');
+      Alert.alert('Check the link', 'Paste your calendar link. It should start with http (a Google Calendar or website .ics link).');
       return;
     }
     try {

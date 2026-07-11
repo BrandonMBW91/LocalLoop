@@ -26,7 +26,7 @@ const LIGHT = {
   background: '#FBF8F1', surface: '#FFFFFF', surfaceAlt: '#F3EFE6',
   text: '#1A1A1A', textMuted: '#5B5B5B', textInverse: '#FFFFFF',
   border: '#E4DED4', shadow: '#000000', skeleton: '#ECE9E2',
-  success: '#256B29', danger: '#C0392B',
+  success: '#256B29', successBg: '#E7F1E8', danger: '#C0392B',
   garageSale: '#9A4A18', garageSaleLight: '#FBEFE4',
   foodTruck: '#B5363B', foodTruckLight: '#FBE9EA',
   category: CATEGORY,
@@ -43,7 +43,7 @@ const DARK = {
   // (which stay colored in both themes), so it stays white — NOT the dark ground.
   text: '#E8ECF4', textMuted: '#98A4BA', textInverse: '#FFFFFF',
   border: '#2A3650', shadow: '#000000', skeleton: '#20293C',
-  success: '#5BC98A', danger: '#E06A6A',
+  success: '#5BC98A', successBg: '#18301F', danger: '#E06A6A',
   garageSale: '#D89A5A', garageSaleLight: '#2A2116',
   foodTruck: '#E0787C', foodTruckLight: '#2E1A1C',
   category: CATEGORY_DARK,

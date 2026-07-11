@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   rsvpCount: {
-    backgroundColor: colors.successBg || 'rgba(30,122,70,0.12)',
+    backgroundColor: colors.successBg,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 1,

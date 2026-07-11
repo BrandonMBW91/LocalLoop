@@ -76,7 +76,7 @@ export default function GarageSaleDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart}–${sale.dailyEnd}\n${sale.address}${shareFooter(shareUrl('garage-sale', sale.id))}`,
+      message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart} to ${sale.dailyEnd}\n${sale.address}${shareFooter(shareUrl('garage-sale', sale.id))}`,
     }).catch(() => {});
   };
 
@@ -155,7 +155,7 @@ export default function GarageSaleDetailScreen() {
           <InfoRow
             icon="calendar"
             label="When"
-            value={`${dateRangeLabel(sale.start, sale.end)}\n${sale.dailyStart} – ${sale.dailyEnd}`}
+            value={`${dateRangeLabel(sale.start, sale.end)}\n${sale.dailyStart} to ${sale.dailyEnd}`}
           />
           <View style={styles.divider} />
           <InfoRow

@@ -120,7 +120,7 @@ export default function EventsScreen() {
         headerExtras={
           <>
             <EditorPickBanner pick={editorPick} />
-            {deals.length > 0 ? (
+            {!loadingData && deals.length > 0 ? (
               <Pressable style={styles.dealsBanner} onPress={() => router.push('/deals')}>
                 <Ionicons name="pricetags" size={20} color={colors.accent} />
                 <ThemedText size="body" weight="bold" color={colors.accent} style={{ flex: 1 }}>
@@ -129,7 +129,7 @@ export default function EventsScreen() {
                 <Ionicons name="chevron-forward" size={20} color={colors.accent} />
               </Pressable>
             ) : null}
-            {sponsors.length === 0 ? (
+            {!loadingData && sponsors.length === 0 ? (
               <Pressable
                 style={styles.houseAd}
                 onPress={() => router.push('/promote')}

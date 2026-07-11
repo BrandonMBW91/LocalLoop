@@ -81,13 +81,13 @@ export function calendarBits(value) {
 
 export function timeRange(start, end) {
   if (!end) return formatTime(start);
-  return `${formatTime(start)} – ${formatTime(end)}`;
+  return `${formatTime(start)} to ${formatTime(end)}`;
 }
 
 // "Sat, Jun 20" for one day, or "Fri, Jun 19 – Sat, Jun 20" for a range.
 export function dateRangeLabel(start, end) {
   if (!end || toDateString(start) === toDateString(end)) return formatShortDate(start);
-  return `${formatShortDate(start)} – ${formatShortDate(end)}`;
+  return `${formatShortDate(start)} to ${formatShortDate(end)}`;
 }
 
 // Format a Date as a local "YYYY-MM-DD" string (for date-only storage).

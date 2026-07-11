@@ -189,7 +189,7 @@ export default function AdsScreen() {
           </View>
         </ScrollView>
 
-        <Field label="Business name / headline" value={title} onChangeText={setTitle} placeholder="Joe's Pizza — 2 for 1 Tuesdays" autoCapitalize="sentences" />
+        <Field label="Business name / headline" value={title} onChangeText={setTitle} placeholder="Joe's Pizza: 2 for 1 Tuesdays" autoCapitalize="sentences" />
         <Field label="Short description (optional)" value={body} onChangeText={setBody} placeholder="Downtown Findlay's favorite slice" autoCapitalize="sentences" />
         <Field label="Link when tapped (optional)" value={linkUrl} onChangeText={setLinkUrl} placeholder="https://joespizza.com" keyboardType="url" />
         <Field label="Image URL (optional)" value={imageUrl} onChangeText={setImageUrl} placeholder="https://…/logo.jpg" keyboardType="url" />
