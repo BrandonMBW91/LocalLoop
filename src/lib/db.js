@@ -179,20 +179,29 @@ export async function fetchEvents(cityId) {
   // shouldn't vanish on day two. Ongoing events bucket into "Today" in the UI.
   const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
   const nowIso = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('city_id', cityId)
-    .eq('status', 'approved')
-    .or(`start_at.gte.${cutoff},end_at.gte.${nowIso}`)
-    .order('featured', { ascending: false })
-    .order('start_at', { ascending: true });
-  if (error) throw error;
+  // Paginate past PostgREST's 1000-row cap — a busy town (Akron already has 1000+
+  // upcoming) was silently dropping its furthest-future events from the list,
+  // calendar, and map with no error.
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('city_id', cityId)
+      .eq('status', 'approved')
+      .or(`start_at.gte.${cutoff},end_at.gte.${nowIso}`)
+      .order('featured', { ascending: false })
+      .order('start_at', { ascending: true })
+      .range(from, from + 999);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if ((data || []).length < 1000) break;
+  }
   // Drop events that have already ended — by their real end time, or an estimate
   // for the ~6% of feeds that omit one — so a noon event doesn't sit on "today"
   // until midnight. Upcoming and still-running events are kept.
   const now = Date.now();
-  return (data || [])
+  return rows
     .map(rowToEvent)
     .filter((e) => effectiveEndMs(e.start, e.end, e.title, e.category) >= now);
 }

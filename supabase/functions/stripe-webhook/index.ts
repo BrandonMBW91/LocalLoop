@@ -204,10 +204,11 @@ Deno.serve(async (req) => {
         // Idempotency: featured_30 writes no ad row, so a duplicate Stripe delivery
         // would email the owner twice (risking a double manual feature). Dedup on
         // stripe_session_id — only email when this session is seen for the first time.
-        const { data: firstSeen } = await supabase
+        const { data: firstSeen, error: seenErr } = await supabase
           .from('processed_featured')
           .upsert({ stripe_session_id: s.id }, { onConflict: 'stripe_session_id', ignoreDuplicates: true })
           .select('stripe_session_id');
+        if (seenErr) throw seenErr; // never 200 on a DB error — let Stripe retry, or a paid Featured Listing is lost silently
         if (!firstSeen || !firstSeen.length) {
           return new Response(JSON.stringify({ received: true, fulfilled: 'featured_30 duplicate ignored' }), {
             headers: { 'Content-Type': 'application/json' },
