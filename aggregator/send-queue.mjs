@@ -39,6 +39,7 @@ import { dirname, join } from 'node:path';
 import { resolveMx, resolve4 } from 'node:dns/promises';
 import { execFileSync } from 'node:child_process';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { ImapFlow } from 'imapflow';
 import { orderPending } from './town-order.mjs';
@@ -69,6 +70,20 @@ const OUTREACH = join(ROOT, 'outreach');
 const LOG = join(OUTREACH, 'sent-log.txt');
 const BOUNCED = join(OUTREACH, 'bounced.txt');
 const SUPPRESS = join(OUTREACH, 'suppress.txt');
+const SEED_LOG = join(OUTREACH, 'seed-log.txt');
+const SLUG_MAP = join(OUTREACH, 'click-slugs.json');
+// Seed-inbox deliverability test: on each real send run we also send a copy of a
+// representative draft to mailboxes WE own (a Gmail, an Outlook, a Yahoo) so we can
+// eyeball inbox vs spam placement — the one thing a pixel/link can't answer (a
+// spam-foldered message never fires a beacon). These never count toward the
+// quota/ramp and are logged separately (seed-log.txt) from real leads.
+const SEED_INBOXES = (process.env.OUTREACH_SEED_INBOXES || g('OUTREACH_SEED_INBOXES') || '')
+  .split(',').map((s) => s.trim().toLowerCase()).filter((s) => /@/.test(s));
+// Tracked links: rewrite the signature localloop.io -> localloop.io/for/<slug> so a
+// click gets logged (see the outreach-click edge function). OFF by default — the
+// clean first-touch reads like a neighbor, not a tracked blast. Turn on
+// (OUTREACH_TRACK_LINKS=1) only for cohorts/touches where a link is acceptable.
+const TRACK_LINKS = (process.env.OUTREACH_TRACK_LINKS || g('OUTREACH_TRACK_LINKS')) === '1';
 
 // CAN-SPAM guard: refuse to send until a real physical postal address is set
 // (15 USC 7704(a)(5) requires one in every commercial email). Blocks the whole
@@ -400,13 +415,14 @@ const pendingList = () => [...orderFollowups(), ...orderFirst()];
 const sentThisRun = [];
 const skippedNoMx = new Set();
 const sendErrors = [];
+let seedsSent = 0;
 function writeReport(status) {
   if (DRY) return;
   try {
     writeFileSync(join(OUTREACH, 'last-run.json'), JSON.stringify({
       generated_at: new Date().toISOString(), status, et: `${etDay} ${etHour}:00`, inWindow,
       quota, goodToday, goodAllTime, followupDays: FOLLOWUP_DAYS, followupsToday, followupsDue: orderFollowups().length,
-      bouncedTotal: bounced.size, suppressedTotal: suppressed.size, repliedTotal: replied.size,
+      bouncedTotal: bounced.size, suppressedTotal: suppressed.size, repliedTotal: replied.size, seedsSent,
       pending: pendingList().length, sentThisRun, skippedNoMx: [...skippedNoMx], sendErrors,
       newlySuppressed, replies,
     }, null, 2) + '\n');
@@ -458,15 +474,53 @@ async function buildBatch(n) {
   return chosen;
 }
 
+// --- seed-inbox probe + tracked links ------------------------------------
+let slugMap = {};
+try { slugMap = JSON.parse(readFileSync(SLUG_MAP, 'utf8')); } catch { slugMap = {}; }
+const townSlug = (t) => (t || 'ohio').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// Per-lead tracked-link slug: <town>-<8 hex of email>, deterministic so a lead
+// always maps to the same slug. Persisted to click-slugs.json so the funnel can
+// resolve a logged click back to the business + town.
+function linkFor(email, town) {
+  const slug = `${townSlug(town)}-${createHash('sha1').update(email).digest('hex').slice(0, 8)}`;
+  if (!slugMap[slug]) {
+    slugMap[slug] = { email, town, created: new Date().toISOString() };
+    try { writeFileSync(SLUG_MAP, JSON.stringify(slugMap, null, 2)); } catch { /* non-fatal */ }
+  }
+  return `https://localloop.io/for/${slug}`;
+}
+
+// Send a representative draft to our own seed mailboxes so we can see inbox-vs-spam
+// placement. Not counted toward quota/ramp; logged to seed-log.txt only.
+async function sendSeeds(sample) {
+  if (!SEED_INBOXES.length || !sample) return 0;
+  let n = 0;
+  for (const to of SEED_INBOXES) {
+    try {
+      await smtp.sendMail({
+        from: `Local Loop <${USER}>`, to, subject: sample.subject, text: sample.body,
+        headers: { 'List-Unsubscribe': `<mailto:${USER}?subject=unsubscribe>` },
+      });
+      appendFileSync(SEED_LOG, `${new Date().toISOString()}  SEED  ${to}  ${sample.subject}\n`);
+      console.log(`seed -> ${to} (check inbox vs spam): "${sample.subject}"`);
+      n++;
+    } catch (e) { console.error(`seed send failed ${to}: ${e.message}`); }
+  }
+  return n;
+}
+
 // Send one message with a single retry on transient failure.
 async function sendOne(d) {
+  // Optional tracked link (OFF by default): rewrite the signature localloop.io to
+  // the branded /for/<slug> tracker so a click is logged.
+  const body = TRACK_LINKS ? d.body.replace(/^localloop\.io$/m, linkFor(d.to, townOf(d.to))) : d.body;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       return await smtp.sendMail({
         from: `Local Loop <${USER}>`,
         to: d.to,
         subject: d.subject,
-        text: d.body,
+        text: body,
         // A List-Unsubscribe header is a free trust signal to Gmail/Yahoo and lets
         // their UI offer one-click unsubscribe; the mailto reply ("unsubscribe")
         // is caught by OPTOUT_RE on the next sweep and suppressed.
@@ -479,6 +533,10 @@ async function sendOne(d) {
   }
   return null;
 }
+
+// Seed-inbox deliverability probe (own mailboxes; never counted toward quota).
+const seedSample = orderFirst()[0] || pendingList()[0];
+seedsSent = await sendSeeds(seedSample);
 
 let round = 0;
 while (need > 0 && round <= TOPUP_ROUNDS) {

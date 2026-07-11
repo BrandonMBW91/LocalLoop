@@ -195,6 +195,11 @@ const html = `<!DOCTYPE html><html lang="en"><head>
 <script>
 var DATA=${JSON.stringify(DATA)},MAIL=${JSON.stringify(MAIL)};
 var sel=document.getElementById('townPick');
+// Outreach attribution: a /for/<slug> click lands here with ?ref=<slug>; carry it
+// onto the Stripe links as client_reference_id so the webhook can tie a purchase
+// back to the outreach that drove it. searchParams.set keeps it idempotent.
+var REF=(new URLSearchParams(location.search).get('ref')||new URLSearchParams(location.search).get('client_reference_id')||'').slice(0,120).replace(/[^a-zA-Z0-9_-]/g,'');
+function applyRef(){ if(!REF)return; document.querySelectorAll('a[href*="buy.stripe.com"]').forEach(function(a){ try{ var u=new URL(a.href); u.searchParams.set('client_reference_id',REF); a.href=u.toString(); }catch(e){} }); }
 function up(){
   var t=DATA[sel.value]; if(!t)return;
   if(t.active===false){
@@ -220,7 +225,8 @@ function up(){
     var b=r.querySelector('.tier-badge'); if(b)b.style.display=on?'':'none';
   });
 }
-sel.addEventListener('change',up); up();
+function upAndRef(){ up(); applyRef(); }
+sel.addEventListener('change',upAndRef); upAndRef();
 </script>
 </body></html>`;
 

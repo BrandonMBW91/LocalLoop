@@ -138,6 +138,21 @@ Deno.serve(async (req) => {
   try {
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
+      // Attribute a conversion back to outreach. The advertise-page Stripe links
+      // carry ?client_reference_id=<slug> (set from a /for/<slug> click's ?ref),
+      // which Stripe passes through here. Fire-and-forget — analytics logging must
+      // NEVER affect fulfillment, so it's isolated in its own try/catch.
+      try {
+        const ref = String(s.client_reference_id || '').slice(0, 120);
+        if (ref) {
+          await supabase.from('outreach_events').insert({
+            event: 'conversion', slug: ref, ref,
+            meta: { session_id: s.id, product: s.metadata?.product || null, amount_total: s.amount_total ?? null, email: s.customer_details?.email || null },
+          });
+        }
+      } catch (e) {
+        console.error('outreach conversion log failed (non-fatal):', (e as Error).message);
+      }
       const product = s.metadata?.product || 'town_sponsor'; // town_sponsor | all_region | metro_sponsor | featured_30 | deal
       // Sanitize buyer-supplied checkout fields before they become a live ad.
       const clamp = (v: string, n: number) => (v || '').slice(0, n);

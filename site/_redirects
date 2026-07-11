@@ -8,6 +8,12 @@
 # with app.json's android.intentFilters (autoVerify) so Android auto-opens links.
 /.well-known/assetlinks.json  /assetlinks.json  200
 
+# Outreach click tracker: branded localloop.io/for/<slug> links in cold emails
+# hit the outreach-click edge function, which logs the click then 302s the human
+# to the homepage. Keeps the tracking URL on our own domain (trust) while the
+# function does the logging + final redirect.
+/for/*  https://wtaefyspddadcrnovumk.supabase.co/functions/v1/outreach-click?s=:splat  302
+
 # Deep-link paths: when the app is installed, iOS Universal Links / Android App
 # Links intercept these before the browser. When it isn't, serve a small
 # interstitial (200 rewrite, URL preserved) that routes iOS to the App Store and
