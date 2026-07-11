@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
 import { colors, spacing } from '../theme/theme';
 
@@ -10,9 +11,12 @@ export default function SectionHeader({ title, count, accent = colors.primary, u
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <ThemedText size="subtitle" weight="bold" color={highlight ? accent : colors.text}>
-          {title === 'Featured' ? '★ Featured' : title}
-        </ThemedText>
+        <View style={styles.titleWrap}>
+          {title === 'Featured' ? <Ionicons name="star" size={16} color={accent} style={{ marginRight: 4 }} /> : null}
+          <ThemedText size="subtitle" weight="bold" color={highlight ? accent : colors.text}>
+            {title}
+          </ThemedText>
+        </View>
         <ThemedText size="small" color={colors.textMuted}>
           {count} {count === 1 ? unit : `${unit}s`}
         </ThemedText>
@@ -28,6 +32,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xs,
   },
+  titleWrap: { flexDirection: 'row', alignItems: 'center' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

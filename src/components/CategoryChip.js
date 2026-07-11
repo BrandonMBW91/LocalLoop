@@ -8,7 +8,7 @@ export default function CategoryChip({ label, selected, onPress }) {
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={({ pressed }) => [styles.chip, selected && styles.chipSelected, pressed && { opacity: 0.7 }]}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={`Filter by ${label}`}

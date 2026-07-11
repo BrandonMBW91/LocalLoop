@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Choose your town"
         >
-          <ThemedText size="subtitle" weight="bold" color={colors.primary}>
+          <ThemedText size="subtitle" weight="bold" color="#15315B">
             Choose your town
           </ThemedText>
         </Pressable>
@@ -61,7 +61,9 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.primary,
+    // Fixed brand navy in BOTH schemes — this is the first branded moment, so it
+    // must not invert to the theme's bright dark-mode blue (colors.primary).
+    backgroundColor: '#15315B',
     paddingHorizontal: spacing.xl,
     justifyContent: 'space-between',
   },
@@ -81,7 +83,7 @@ const styles = StyleSheet.create({
   tagline: { textAlign: 'center', opacity: 0.95, lineHeight: 28 },
   actions: { gap: spacing.md },
   primaryBtn: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     alignItems: 'center',

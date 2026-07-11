@@ -153,9 +153,9 @@ export default function EventsScreen() {
           body: 'Try a different category or search, or clear your filters to see everything.',
         }}
         emptyFirst={{
-          icon: 'search',
-          title: 'No events found',
-          body: 'Nothing is posted here yet. Be the first to add one!',
+          icon: 'calendar-outline',
+          title: 'Nothing on the calendar yet',
+          body: `No upcoming events in ${city.name} right now. Check back soon, or add one yourself.`,
           actionLabel: 'Submit an Event',
           onAction: () => goPost('/event/new'),
         }}
