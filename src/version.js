@@ -5,3 +5,8 @@
 // a full rebuild.
 export const APP_VERSION = '1.0.3';
 export const BUILD = 102;
+
+// One-line "what's new" shown once in a dismissible banner after an update (see
+// WhatsNewBanner). Update it alongside BUILD each release so returning users get a
+// gentle heads-up about what changed. Keep it short and user-facing.
+export const WHATS_NEW = "New: RSVP \"I'm going\" to events, follow your favorite food trucks, and plan a route for garage-sale day.";
