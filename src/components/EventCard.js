@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Pressable, Image, Animated } from 'react-native';
+import { View, StyleSheet, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
+import FadeInImage from './FadeInImage';
 import DateChip from './DateChip';
 import Pill from './Pill';
 import { colors, spacing, radius, categoryColor } from '../theme/theme';
@@ -37,7 +38,7 @@ function EventCard({ event }) {
         accessibilityLabel={`${event.title}, ${relativeDay(event.start)}, at ${event.venue}`}
       >
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={[styles.thumb, { width: thumbSize, height: thumbSize }]} resizeMode="cover" />
+          <FadeInImage source={{ uri: event.imageUrl }} style={[styles.thumb, { width: thumbSize, height: thumbSize }]} resizeMode="cover" />
         ) : (
           <DateChip date={event.start} accent={accent} scale={scale} />
         )}

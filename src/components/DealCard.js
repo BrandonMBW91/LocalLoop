@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, Image, Linking } from 'react-native';
+import { View, StyleSheet, Pressable, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
+import FadeInImage from './FadeInImage';
 import Pill from './Pill';
 import { useApp } from '../context/AppContext';
 import { recordDealView } from '../lib/db';
@@ -24,7 +25,7 @@ export default function DealCard({ deal }) {
     <View style={[styles.card, deal.featured && styles.cardFeatured]}>
       <View style={styles.row}>
         {deal.imageUrl ? (
-          <Image source={{ uri: deal.imageUrl }} style={[styles.thumb, { width: thumb, height: thumb }]} resizeMode="cover" />
+          <FadeInImage source={{ uri: deal.imageUrl }} style={[styles.thumb, { width: thumb, height: thumb }]} resizeMode="cover" />
         ) : (
           <View style={[styles.thumb, styles.thumbIcon, { width: thumb, height: thumb }]}>
             <Ionicons name="pricetag" size={26} color={accent} />

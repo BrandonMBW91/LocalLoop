@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share, Image } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
+import FadeInImage from '../../src/components/FadeInImage';
 import AdBanner from '../../src/components/AdBanner';
 import DetailSkeleton from '../../src/components/DetailSkeleton';
 import ReportButton from '../../src/components/ReportButton';
@@ -44,6 +45,7 @@ export default function EventDetailScreen() {
   // loaded city — fetch it directly when the cache misses.
   const [fetched, setFetched] = useState(null);
   const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
+  const [heroFailed, setHeroFailed] = useState(false); // fall back to the category icon on a 404/timeout
   useEffect(() => {
     if (!cached && backendEnabled && id) {
       let ok = true;
@@ -145,8 +147,13 @@ export default function EventDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
       {/* Hero — real artwork when we have it, otherwise a category icon */}
-      {event.imageUrl ? (
-        <Image source={{ uri: event.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+      {event.imageUrl && !heroFailed ? (
+        <FadeInImage
+          source={{ uri: event.imageUrl }}
+          style={styles.heroImage}
+          resizeMode="cover"
+          onError={() => setHeroFailed(true)}
+        />
       ) : (
         <View style={[styles.hero, { backgroundColor: accent + '1A' }]}>
           <Ionicons name={categoryIcon(event.category)} size={72} color={accent} />

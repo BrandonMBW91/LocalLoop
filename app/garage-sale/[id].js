@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share, Image } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
+import FadeInImage from '../../src/components/FadeInImage';
 import AdBanner from '../../src/components/AdBanner';
 import DetailSkeleton from '../../src/components/DetailSkeleton';
 import ReportButton from '../../src/components/ReportButton';
@@ -128,7 +129,7 @@ export default function GarageSaleDetailScreen() {
             contentContainerStyle={{ gap: spacing.sm }}
           >
             {sale.images.map((uri, i) => (
-              <Image key={i} source={{ uri }} style={styles.galleryImg} resizeMode="cover" />
+              <FadeInImage key={i} source={{ uri }} style={styles.galleryImg} resizeMode="cover" />
             ))}
           </ScrollView>
         ) : null}

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, Image } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
+import FadeInImage from './FadeInImage';
 import DateChip from './DateChip';
 import Pill from './Pill';
 import { colors, spacing, radius } from '../theme/theme';
@@ -67,7 +68,7 @@ function GarageSaleCard({ sale }) {
       accessibilityLabel={`${sale.title}, ${dateRangeLabel(sale.start, sale.end)}, at ${sale.address}`}
     >
       {sale.images?.length ? (
-        <Image source={{ uri: sale.images[0] }} style={[styles.thumb, { width: thumb, height: thumb }]} resizeMode="cover" />
+        <FadeInImage source={{ uri: sale.images[0] }} style={[styles.thumb, { width: thumb, height: thumb }]} resizeMode="cover" />
       ) : (
         <DateChip date={sale.start} accent={accent} scale={scale} />
       )}

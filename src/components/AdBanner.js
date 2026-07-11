@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable, Image, Linking } from 'react-native';
+import { View, StyleSheet, Pressable, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
+import FadeInImage from './FadeInImage';
 import { useApp } from '../context/AppContext';
 import { trackSponsor } from '../lib/db';
 import { colors, spacing, radius } from '../theme/theme';
@@ -55,7 +56,7 @@ export default function AdBanner({ index = 0 }) {
           {/* Accent bar signals a paid, premium slot without shouting "AD". */}
           <View style={styles.accentBar} />
           {sponsor.imageUrl ? (
-            <Image source={{ uri: sponsor.imageUrl }} style={styles.thumb} resizeMode="cover" />
+            <FadeInImage source={{ uri: sponsor.imageUrl }} style={styles.thumb} resizeMode="cover" />
           ) : (
             <View style={[styles.thumb, styles.thumbFallback]}>
               <Ionicons name="storefront" size={28} color={colors.accent} />
