@@ -121,8 +121,9 @@ const TRACK_LINKS = (process.env.OUTREACH_TRACK_LINKS || g('OUTREACH_TRACK_LINKS
 // lock older than 2h is a crashed run and is taken over. DRY runs skip it.
 const LOCK = join(OUTREACH, '.send-lock');
 if (!DRY) {
+  const acquire = () => writeFileSync(LOCK, String(process.pid), { flag: 'wx' });
   try {
-    writeFileSync(LOCK, String(process.pid), { flag: 'wx' });
+    acquire();
   } catch (e) {
     if (e.code === 'EEXIST') {
       let ageMs = 0;
@@ -131,11 +132,26 @@ if (!DRY) {
         console.log(`HELD: another send-queue run appears active (outreach/.send-lock is ${Math.round(ageMs / 60000)}m old). Exiting so we don't double-send. Delete the lock file if this is wrong.`);
         process.exit(0);
       }
+      // Race-safe takeover: delete, then re-create EXCLUSIVELY — when two
+      // stacked launches both see the same stale lock, only one wins the wx
+      // create; the loser exits instead of both "taking over".
       console.log('stale send lock (over 2h old) — taking over.');
-      writeFileSync(LOCK, String(process.pid));
+      try { unlinkSync(LOCK); } catch { /* the other taker removed it first */ }
+      try { acquire(); }
+      catch { console.log('HELD: another process won the stale-lock takeover. Exiting.'); process.exit(0); }
     } else { throw e; }
   }
-  const releaseLock = () => { try { unlinkSync(LOCK); } catch { /* already gone */ } };
+  // Heartbeat: refresh the lock's mtime while alive, so a legitimately long run
+  // (raised quota x 2.5-5 min pacing can exceed 2h) is never mistaken for a
+  // stale lock by a second launch. unref'd so it can't hold the process open.
+  const hb = setInterval(() => { try { writeFileSync(LOCK, String(process.pid)); } catch { /* non-fatal */ } }, 10 * 60 * 1000);
+  hb.unref();
+  const releaseLock = () => {
+    // Only remove the lock if this process still owns it — after a stale
+    // takeover the file belongs to the taker, and blindly unlinking would
+    // reopen the door to a third concurrent run.
+    try { if (readFileSync(LOCK, 'utf8').trim() === String(process.pid)) unlinkSync(LOCK); } catch { /* already gone */ }
+  };
   process.on('exit', releaseLock);
   process.on('SIGINT', () => process.exit(130));
   process.on('SIGTERM', () => process.exit(143));
@@ -272,7 +288,10 @@ async function sweepBounces(knownTos) {
           const lower = text.toLowerCase();
           const found = [...knownTos].filter((t) => {
             const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            return new RegExp(`(^|[^a-z0-9._%+-])${esc}(?![a-z0-9-])`, 'i').test(lower);
+            // Trailing guard also rejects a dot-continued domain label
+            // (ann@cafe.com inside ann@cafe.com.mx) while still allowing an
+            // end-of-sentence period.
+            return new RegExp(`(^|[^a-z0-9._%+-])${esc}(?![a-z0-9-]|\\.[a-z0-9])`, 'i').test(lower);
           });
           if (found.length) {
             found.forEach((t) => { if (!bounced.has(t)) { bounced.add(t); newly.push(t); } });
@@ -529,9 +548,15 @@ let need = Math.max(0, quota - goodToday - followupsToday);
 // Circuit breaker — evaluated AFTER quota is initialized: it used to sit above
 // the `const quota`, so writeReport's quota reference threw a TDZ error that
 // its own try/catch swallowed, and last-run.json was never written exactly when
-// sending paused. bounceRateTripped is re-checked mid-run by the top-up loop.
-const bounceRateTripped = () =>
-  goodAllTime + bounced.size >= 10 && bounced.size / Math.max(goodAllTime + bounced.size, 1) > 0.15;
+// sending paused. bounceRateTripped is re-checked mid-run by the top-up loop;
+// liveSentThisRun keeps this run's delivered sends in the denominator so the
+// mid-run rate isn't overestimated (startup goodAllTime alone would false-trip
+// just past the boundary while bounced grows).
+let liveSentThisRun = 0;
+const bounceRateTripped = () => {
+  const denom = goodAllTime + liveSentThisRun + bounced.size;
+  return denom >= 10 && bounced.size / Math.max(denom, 1) > 0.15;
+};
 if (bounceRateTripped()) {
   console.error(`ALERT: bounce rate ${bounced.size}/${goodAllTime + bounced.size} exceeds 15% — sending PAUSED. Review list quality before resuming.`);
   writeReport('paused-bounce-rate');
@@ -639,17 +664,34 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
   if (round > 0) console.log(`top-up round ${round}: replacing ${batch.length} send(s)`);
   for (let i = 0; i < batch.length; i++) {
     const d = batch[i];
-    if (d.kind === 'followup') appendFileSync(FU_INTENT, `${new Date().toISOString()}  ${d.to}\n`); // intent BEFORE send (crash net)
+    // Intent BEFORE send (crash net: a crash between sendMail success and the
+    // log append must never double-send on the rerun).
+    let intentLine = null;
+    if (d.kind === 'followup') { intentLine = `${new Date().toISOString()}  ${d.to}`; appendFileSync(FU_INTENT, intentLine + '\n'); }
     const info = await sendOne(d);
-    if (!info) { sendErrors.push(d.to); skipRun.add(d.to); continue; }
+    if (!info) {
+      sendErrors.push(d.to); skipRun.add(d.to);
+      // Compensate the intent on a HANDLED failure: skipRun means "pending for
+      // a future run", so the intent must not permanently mark this lead as
+      // followed-up. Safe to rewrite the file — the run lock is exclusive. The
+      // crash-net property is preserved (a crash mid-send leaves the intent).
+      if (intentLine) {
+        try { writeFileSync(FU_INTENT, readLines(FU_INTENT).filter((l) => l !== intentLine).join('\n') + '\n'); }
+        catch { /* worst case: one missed follow-up, never a duplicate */ }
+      }
+      continue;
+    }
     appendFileSync(d.kind === 'followup' ? FOLLOWUP_LOG : LOG, `${new Date().toISOString()}  ${d.to}  ${d.subject}  ${info.messageId}\n`);
+    liveSentThisRun++;
     sentTos.add(d.to); skipRun.add(d.to); sentThisRun.push((d.kind === 'followup' ? 'followup ' : '') + d.to);
     console.log((d.kind === 'followup' ? 'sent follow-up:' : 'sent:'), d.subject, '->', d.to);
     if (i < batch.length - 1) await sleep(SEND_GAP_MS + Math.floor(Math.random() * SEND_GAP_MS));
   }
   await sleep(GRACE_MS);
   const newly = await sweepBounces(new Set(batch.map((d) => d.to)));
-  need = batch.filter((d) => newly.includes(d.to)).length; // top up only true bounces
+  const bouncedFromBatch = batch.filter((d) => newly.includes(d.to)).length;
+  liveSentThisRun = Math.max(0, liveSentThisRun - bouncedFromBatch); // bounced sends aren't "good"
+  need = bouncedFromBatch; // top up only true bounces
   // Re-check the breaker with the mid-run bounces: the startup-only check let a
   // fully-bouncing list absorb the initial batch + every top-up round (up to 3x
   // quota) before the NEXT run could trip it.

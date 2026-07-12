@@ -61,9 +61,14 @@ console.log(`now (ET): ${new Date().toLocaleString('en-US', { timeZone: TZ })}`)
 // with a now-based window systematically hid every all-day event happening
 // today — fairs and festivals, exactly the big-hitter class this feeds).
 // Still-running multi-day events (end_at in the future) are included too.
-const offset = new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' })
-  .formatToParts(now).find((p) => p.type === 'timeZoneName').value.replace('GMT', '') || '+00:00';
-const from = new Date(`${today}T00:00:00${offset}`).toISOString();
+const offAt = (d) => ((new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' })
+  .formatToParts(d).find((p) => p.type === 'timeZoneName') || {}).value || 'GMT-05:00').replace('GMT', '');
+// Compute the offset at MIDNIGHT, not at "now": on the two DST transition days
+// the two differ and the window boundary would shift by an hour. One recompute
+// converges (the transition is at 2 AM, safely past midnight).
+let fromD = new Date(`${today}T00:00:00${offAt(now)}`);
+fromD = new Date(`${today}T00:00:00${offAt(fromD)}`);
+const from = fromD.toISOString();
 const to = new Date(Date.now() + 2 * 86400000).toISOString();
 const nowIso = new Date().toISOString();
 const idList = decent.map((c) => c.id).join(',');
@@ -71,7 +76,7 @@ const idList = decent.map((c) => c.id).join(',');
 // exactly the low/zero-view ones, silently skewing the view-count signal.
 const events = [];
 for (let o = 0; ; o += 1000) {
-  const r = await fetch(`${SB}/rest/v1/events?select=city_id,title,category,start_at,end_at,venue,view_count&status=eq.approved&city_id=in.(${idList})&start_at=lte.${to}&or=(start_at.gte.${from},end_at.gte.${nowIso})&order=view_count.desc.nullslast,start_at.asc&limit=1000&offset=${o}`, { headers: H });
+  const r = await fetch(`${SB}/rest/v1/events?select=city_id,title,category,start_at,end_at,venue,view_count&status=eq.approved&city_id=in.(${idList})&start_at=lte.${to}&or=(start_at.gte.${from},end_at.gte.${nowIso})&order=view_count.desc.nullslast,start_at.asc,id.asc&limit=1000&offset=${o}`, { headers: H });
   const page = await r.json();
   if (!Array.isArray(page)) { console.error('events fetch failed:', JSON.stringify(page).slice(0, 150)); process.exit(1); }
   events.push(...page);

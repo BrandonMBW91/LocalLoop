@@ -73,6 +73,11 @@ if (PLATFORM === 'ios') {
 // API blip.
 const sel = await sql(`select value->'${PLATFORM}'->>'latest' as latest, value->'${PLATFORM}'->>'update_push_sent' as push_sent from public.app_config where key='version';`);
 if (!Array.isArray(sel)) { console.error(`[${stamp}] gate SELECT failed (refusing to flip blind): ${JSON.stringify(sel).slice(0, 200)}`); process.exit(1); }
+// A missing row must abort HERE: further down, a zero-row CAS UPDATE is read as
+// "lost the race to a concurrent run" and a zero-row marker claim as "push
+// already sent" — a missing row would sail through both and exit 0 reporting
+// success while nothing was ever armed or sent.
+if (sel.length === 0) { console.error(`[${stamp}] app_config key='version' row not found — aborting (seed it via supabase/app_config.sql).`); process.exit(1); }
 const cur = sel[0]?.latest;
 const pushSent = sel[0]?.push_sent;
 if (cur === VERSION && pushSent === VERSION) { console.log(`[${stamp}] ${PLATFORM}.latest already ${VERSION} and update push already sent. Done.`); process.exit(0); }

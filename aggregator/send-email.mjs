@@ -41,16 +41,20 @@ let body = args.body || '';
 if (!body && args.file) body = readFileSync(args.file, 'utf8');
 if (!body && !process.stdin.isTTY) {
   // A scheduler/wrapper can spawn us with a piped stdin it never writes to or
-  // closes; waiting for 'end' would hang forever. Give stdin 10s, then fall
-  // through to the empty-body error below (loud non-zero exit).
-  body = await Promise.race([
-    new Promise((res) => {
-      let s = '';
-      process.stdin.on('data', (d) => (s += d));
-      process.stdin.on('end', () => res(s));
-    }),
-    new Promise((res) => setTimeout(() => res(''), 10000)),
-  ]);
+  // closes; waiting for 'end' would hang forever. Use an IDLE timeout (reset on
+  // every chunk): a silent pipe resolves empty after 10s and hits the loud
+  // empty-body error below, a slow-but-active producer is never cut off, and a
+  // producer that writes then holds the pipe open resolves with what arrived.
+  body = await new Promise((res) => {
+    let s = '';
+    let timer = setTimeout(() => res(s), 10000);
+    const bump = () => { clearTimeout(timer); timer = setTimeout(() => res(s), 10000); };
+    process.stdin.on('data', (d) => { s += d; bump(); });
+    process.stdin.on('end', () => { clearTimeout(timer); res(s); });
+  });
+  // Close stdin so an open-but-idle pipe can't keep the process alive after the
+  // send completes (the timers above are cleared, but the stream handle isn't).
+  try { process.stdin.destroy(); } catch { /* already closed */ }
 }
 if (!body.trim()) {
   console.error('Empty body — pass --body=, --file=, or pipe stdin.');

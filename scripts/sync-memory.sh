@@ -62,8 +62,17 @@ if [ ! -d "$SYNC_DIR/.git" ]; then
   git clone "$SYNC_REMOTE" "$SYNC_DIR"
 fi
 if ! git -C "$SYNC_DIR" pull --ff-only origin main; then
-  echo "sync clone diverged from origin; resetting it (clone is just a cache, memory dirs hold the truth)"
   git -C "$SYNC_DIR" fetch origin main
+  # A diverged clone usually means a previous PUSH committed but failed to
+  # upload. Resetting is safe for push (it re-copies from this machine's memory
+  # dir right after), but a PULL would replace those unpushed local edits with
+  # origin's older files — refuse loudly instead of silently losing them.
+  if [ "$ACTION" = pull ] && [ -n "$(git -C "$SYNC_DIR" rev-list origin/main..HEAD 2>/dev/null)" ]; then
+    echo "sync clone has UNPUSHED local memory commits; refusing to pull over them."
+    echo "Run 'sync-memory.sh push' first (it re-copies this machine's memory and pushes), then pull."
+    exit 1
+  fi
+  echo "sync clone diverged from origin; resetting it (clone is just a cache, memory dirs hold the truth)"
   git -C "$SYNC_DIR" reset --hard origin/main
 fi
 
