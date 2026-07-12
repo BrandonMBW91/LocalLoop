@@ -19,6 +19,7 @@ import { CATEGORIES } from '../../src/data/events';
 import { CITIES } from '../../src/data/cities';
 import { insertEvent } from '../../src/lib/db';
 import { colors, spacing, radius, baseFont, categoryColor } from '../../src/theme/theme';
+import { formatTime } from '../../src/utils/dates';
 
 const EMOJI_BY_CAT = {
   Music: '🎶', Family: '👨‍👩‍👧', Food: '🍽️', Sports: '🏅',
@@ -56,7 +57,8 @@ export default function CurateEventScreen() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Community');
   const [dateValue, setDateValue] = useState(null);
-  const [timeValue, setTimeValue] = useState(null);
+  const [startTimeValue, setStartTimeValue] = useState(null);
+  const [endTimeValue, setEndTimeValue] = useState(null);
   const [venue, setVenue] = useState('');
   const [address, setAddress] = useState('');
   const [price, setPrice] = useState('');
@@ -78,21 +80,42 @@ export default function CurateEventScreen() {
     );
   }
 
-  const onSubmit = async () => {
-    if (!title.trim() || !venue.trim() || !dateValue) {
-      Alert.alert('Almost there', 'Please fill in the event name, date, and venue.');
+  const onSubmit = async (opts = {}) => {
+    const { overnightOk = false } = opts;
+    if (!title.trim() || !venue.trim() || !dateValue || !startTimeValue || !endTimeValue) {
+      Alert.alert('Almost there', 'Please fill in the event name, date, start time, end time, and venue.');
       return;
     }
+
+    // Every repeat instance shares one start/end time-of-day, so an end at or
+    // before the start means each instance runs past midnight. Confirm once,
+    // before rolling the ends to the next day (mirrors the public post form).
+    const startMins = startTimeValue.getHours() * 60 + startTimeValue.getMinutes();
+    const endMins = endTimeValue.getHours() * 60 + endTimeValue.getMinutes();
+    if (endMins <= startMins && !overnightOk) {
+      Alert.alert(
+        'Check the end time',
+        `You entered ${formatTime(startTimeValue)} to ${formatTime(endTimeValue)}. Does this event run past midnight into the next day?`,
+        [
+          { text: 'Fix the time', style: 'cancel' },
+          { text: 'Yes, past midnight', onPress: () => onSubmit({ overnightOk: true }) },
+        ]
+      );
+      return;
+    }
+
     const n = repeat === 'once' ? 1 : Math.min(Math.max(parseInt(count, 10) || 1, 1), 12);
 
     try {
       setSubmitting(true);
       for (let i = 0; i < n; i++) {
-        const d = new Date(dateValue);
-        if (repeat === 'weekly') d.setDate(d.getDate() + 7 * i);
-        else if (repeat === 'daily') d.setDate(d.getDate() + i);
-        if (timeValue) d.setHours(timeValue.getHours(), timeValue.getMinutes(), 0, 0);
-        else d.setHours(12, 0, 0, 0);
+        const startD = new Date(dateValue);
+        if (repeat === 'weekly') startD.setDate(startD.getDate() + 7 * i);
+        else if (repeat === 'daily') startD.setDate(startD.getDate() + i);
+        startD.setHours(startTimeValue.getHours(), startTimeValue.getMinutes(), 0, 0);
+        const endD = new Date(startD);
+        endD.setHours(endTimeValue.getHours(), endTimeValue.getMinutes(), 0, 0);
+        if (endD.getTime() <= startD.getTime()) endD.setDate(endD.getDate() + 1);
 
         const cityObj = CITIES.find((c) => c.id === selectedCity) || CITIES[0];
         // eslint-disable-next-line no-await-in-loop
@@ -101,8 +124,8 @@ export default function CurateEventScreen() {
           title: title.trim(),
           category,
           emoji: EMOJI_BY_CAT[category] || '📅',
-          start: d.toISOString(),
-          end: null,
+          start: startD.toISOString(),
+          end: endD.toISOString(),
           venue: venue.trim(),
           address: address.trim() || `${cityObj.name}, ${cityObj.state}`,
           price: price.trim() || 'See details',
@@ -209,8 +232,12 @@ export default function CurateEventScreen() {
           <DateTimeField mode="date" value={dateValue} onChange={setDateValue} />
         </Field>
 
-        <Field label="Start time">
-          <DateTimeField mode="time" value={timeValue} onChange={setTimeValue} />
+        <Field label="Start time" required>
+          <DateTimeField mode="time" value={startTimeValue} onChange={setStartTimeValue} />
+        </Field>
+
+        <Field label="End time" hint="Ends after midnight? Just pick that time." required>
+          <DateTimeField mode="time" value={endTimeValue} onChange={setEndTimeValue} />
         </Field>
 
         <Field label="Repeats" hint="Great for weekly markets, classes, etc.">
@@ -292,7 +319,7 @@ export default function CurateEventScreen() {
 
         <Pressable
           style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-          onPress={onSubmit}
+          onPress={() => onSubmit()}
           disabled={submitting}
         >
           <Ionicons name="add-circle" size={22} color={colors.textInverse} />
