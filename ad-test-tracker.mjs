@@ -15,13 +15,14 @@
 //   node ad-test-tracker.mjs --email   send the report to the owner + update state
 //   node ad-test-tracker.mjs           print + update state, no email
 //   node ad-test-tracker.mjs --dry     print only; does NOT touch state or email
-//   node ad-test-tracker.mjs --reset   clear the saved baseline (next run re-baselines)
+//   node ad-test-tracker.mjs --reset   delete the saved baseline and exit; the
+//                                      NEXT run captures a fresh baseline
 //
 // The baseline is captured automatically on the FIRST run (do that the morning the
 // ads launch, before they can have any effect). Everything after is measured
 // against it. Verdict is provisional until day 7, then firm; the routine keeps
 // reporting through day 9 to catch installs that open the app a day or two late.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { CITIES } from './src/data/cities.js';
@@ -36,7 +37,15 @@ const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
 
 const EMAIL = process.argv.includes('--email');
 const DRY = process.argv.includes('--dry');
-const RESET = process.argv.includes('--reset');
+
+// --reset deletes the state and EXITS (it does not re-baseline in the same run:
+// an evening reset would otherwise stamp startDate a day early and skew the
+// day/spend math). The next run captures the fresh baseline.
+if (process.argv.includes('--reset')) {
+  try { unlinkSync(new URL(`./ad-test-state.json`, import.meta.url)); console.log('ad-test-state.json cleared; the next run captures a fresh baseline.'); }
+  catch { console.log('no ad-test-state.json to clear.'); }
+  process.exit(0);
+}
 
 // --- Test design -------------------------------------------------------------
 const PAIRS = [
@@ -62,13 +71,30 @@ async function rows(path) {
   if (!r.ok) throw new Error(`${path} -> ${r.status} ${(await r.text()).slice(0, 200)}`);
   return r.json();
 }
-const da = await rows(`device_activity?select=city_id,last_seen&city_id=in.(${ALL.join(',')})&last_seen=gte.${since30}&limit=100000`);
+// Paginate: PostgREST caps every response at the server max-rows (~1000)
+// regardless of the requested limit, so a single request would silently
+// undercount MAU exactly when the test succeeds and the towns grow.
+const da = [];
+for (let from = 0; ; from += 1000) {
+  const page = await rows(`device_activity?select=city_id,last_seen&city_id=in.(${ALL.join(',')})&last_seen=gte.${since30}&order=device_id.asc&limit=1000&offset=${from}`);
+  da.push(...page);
+  if (page.length < 1000) break;
+}
 const mau = Object.fromEntries(ALL.map((id) => [id, 0]));
 for (const r of da) if (mau[r.city_id] != null) mau[r.city_id] += 1;
 
 // --- Load / init state -------------------------------------------------------
 const todayKey = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
-let state = !RESET && existsSync(join(DIR, STATE_FILE)) ? JSON.parse(read(STATE_FILE) || '{}') : {};
+// A corrupt state file must ABORT, not silently re-baseline: re-baselining
+// mid-flight against ad-inflated MAU would destroy the whole measurement.
+let state = {};
+if (existsSync(join(DIR, STATE_FILE))) {
+  try { state = JSON.parse(read(STATE_FILE)); }
+  catch (e) {
+    console.error(`ad-test-state.json is corrupt (${e.message}). NOT re-baselining. Inspect the file, or run --reset to start the test over.`);
+    process.exit(1);
+  }
+}
 let firstRun = false;
 if (!state.startDate) {
   firstRun = true;

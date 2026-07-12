@@ -10,11 +10,18 @@
 // tasks keep firing on their own cron; this just lets you trigger the same work
 // yourself, defaulting to a no-side-effect run. Behavior lives in routines/<id>.md.
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..'); // repo root (routines/ is one level down)
+
+// On Windows a bare "bash" can resolve to WSL's System32 bash.exe, which runs
+// with a Linux $HOME and can't read C:\ paths — sync-memory.sh would look for
+// memory in the wrong place. Prefer Git Bash explicitly when it exists.
+const GIT_BASH = 'C:/Program Files/Git/usr/bin/bash.exe';
+const BASH = process.platform === 'win32' && existsSync(GIT_BASH) ? GIT_BASH : 'bash';
 
 // type: 'node' runs the script with this node; 'bash' runs it with bash.
 // cwd is relative to the repo root. note explains what the mode actually does.
@@ -39,7 +46,9 @@ const ROUTINES = {
   'll-outreach-send': {
     desc: 'Paced sponsor/food-truck outreach sender',
     safe: { type: 'node', args: ['send-queue.mjs', '--dry-run'], cwd: 'aggregator', note: 'lists what WOULD send, sends nothing' },
-    live: { type: 'node', args: ['send-queue.mjs'], cwd: 'aggregator', note: 'SENDS real cold emails to leads (self-paced within its window)' },
+    // A real batch paces 2.5-5 min between emails, so a full quota run takes
+    // 30-70 min; the default 10-min timeout would SIGTERM it mid-batch.
+    live: { type: 'node', args: ['send-queue.mjs'], cwd: 'aggregator', note: 'SENDS real cold emails to leads (self-paced within its window)', timeout: 5400000 },
   },
   'll-memory-sync': {
     desc: 'Push this machine\'s Claude memory to the cloud repo',
@@ -72,9 +81,9 @@ function listAll() {
 }
 
 function runSpec(spec) {
-  const cmd = spec.type === 'node' ? process.execPath : spec.type;
+  const cmd = spec.type === 'node' ? process.execPath : spec.type === 'bash' ? BASH : spec.type;
   console.log(`\n> ${cmd === process.execPath ? 'node' : cmd} ${spec.args.join(' ')}  (cwd: ${spec.cwd})\n`);
-  const r = spawnSync(cmd, spec.args, { cwd: join(ROOT, spec.cwd || '.'), stdio: 'inherit', timeout: 600000 });
+  const r = spawnSync(cmd, spec.args, { cwd: join(ROOT, spec.cwd || '.'), stdio: 'inherit', timeout: spec.timeout || 600000 });
   if (r.error) { console.error(`\nrun error: ${r.error.message}`); process.exit(1); }
   process.exit(r.status || 0);
 }

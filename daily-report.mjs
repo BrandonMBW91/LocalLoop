@@ -153,7 +153,11 @@ for (let i = 6; i >= 0; i--) {
 // Boost metrics — measured over the ad window [startedAt, endedAt|now]. Shown
 // while the ad is live and retrospectively after it ends (frozen to the window).
 let boostLine = null;
-if (BOOST.startedAt && (BOOST.active || BOOST.endedAt)) {
+// Show the boost section while live and for 14 days after it ends — a months-old
+// ended ad shouldn't haunt every future report (and would read as if it were the
+// current paired ad test, which ad-test-tracker.mjs reports separately).
+const boostRecent = BOOST.active || (BOOST.endedAt && Date.parse(BOOST.endedAt) > Date.now() - 14 * 86400000);
+if (BOOST.startedAt && boostRecent) {
   const end = BOOST.active ? null : BOOST.endedAt;
   const lte = end ? `&created_at=lte.${end}` : '';
   const [opensSince, actionsSince] = await Promise.all([

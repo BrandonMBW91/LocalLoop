@@ -21,6 +21,11 @@ const SB = g('SUPABASE_ACCESS_TOKEN');
 const val = (n) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : undefined; };
 const VERSION = val('--version') || APP_VERSION;
 const PLATFORM = (val('--platform') || 'ios').toLowerCase();
+// Both values are interpolated into SQL and gate which store is checked, so
+// validate hard: a typo'd platform would skip the ASC liveness check entirely
+// and "flip" a key that doesn't exist.
+if (!['ios', 'android'].includes(PLATFORM)) { console.error(`bad --platform "${PLATFORM}" (must be ios or android)`); process.exit(1); }
+if (!/^\d+(\.\d+)*$/.test(VERSION)) { console.error(`bad --version "${VERSION}"`); process.exit(1); }
 const DRY = process.argv.includes('--dry-run');
 const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
@@ -46,6 +51,12 @@ const sql = async (q) => {
 // production — internal-track builds are NOT publicly downloadable).
 if (PLATFORM === 'ios') {
   const vr = await asc(`/v1/apps/${APP_ID}/appStoreVersions?filter[versionString]=${VERSION}&filter[platform]=IOS&limit=1`);
+  // An ASC error (expired key, 401/403/429/5xx) must FAIL loudly, not read as
+  // "no version record yet": that would silently report not-live forever.
+  if (vr.status !== 200 || vr.json?.errors) {
+    console.error(`[${stamp}] ASC API error (HTTP ${vr.status}): ${JSON.stringify(vr.json?.errors || vr.json).slice(0, 300)}`);
+    process.exit(1);
+  }
   const v = vr.json?.data?.[0];
   if (!v) { console.log(`[${stamp}] iOS ${VERSION}: no version record yet — not live. No change.`); process.exit(0); }
   const state = v.attributes.appStoreState;
@@ -56,11 +67,24 @@ if (PLATFORM === 'ios') {
   console.log(`[${stamp}] iOS ${VERSION} is LIVE (READY_FOR_SALE).`);
 }
 
-const cur = (await sql(`select value->'${PLATFORM}'->>'latest' as latest from public.app_config where key='version';`))[0]?.latest;
+// The cur===VERSION check below is the ONLY thing standing between a scheduled
+// re-run and a duplicate broadcast to every device, so a failed SELECT must
+// abort — treating an error body as "not flipped yet" would re-push on every
+// transient API blip.
+const sel = await sql(`select value->'${PLATFORM}'->>'latest' as latest from public.app_config where key='version';`);
+if (!Array.isArray(sel)) { console.error(`[${stamp}] gate SELECT failed (refusing to flip blind): ${JSON.stringify(sel).slice(0, 200)}`); process.exit(1); }
+const cur = sel[0]?.latest;
 if (cur === VERSION) { console.log(`[${stamp}] ${PLATFORM}.latest already ${VERSION} — prompt already armed. Done.`); process.exit(0); }
 if (DRY) { console.log(`[${stamp}] [dry] would flip ${PLATFORM}.latest ${cur} -> ${VERSION}.`); process.exit(0); }
-const res = await sql(`update public.app_config set value=jsonb_set(value,'{${PLATFORM},latest}','"${VERSION}"'), updated_at=now() where key='version';`);
-if (!Array.isArray(res)) { console.log(`[${stamp}] flip FAILED: ${JSON.stringify(res).slice(0, 200)}`); process.exit(1); }
+// RETURNING proves the row existed AND the value actually changed; jsonb_set
+// silently no-ops when the platform key is absent, and the management API
+// returns [] for an UPDATE that matched zero rows — both would otherwise
+// "succeed" and broadcast without ever arming the prompt.
+const res = await sql(`update public.app_config set value=jsonb_set(value,'{${PLATFORM},latest}','"${VERSION}"'), updated_at=now() where key='version' returning value->'${PLATFORM}'->>'latest' as latest;`);
+if (!Array.isArray(res) || res.length !== 1 || res[0]?.latest !== VERSION) {
+  console.error(`[${stamp}] flip FAILED or unverified (no broadcast sent): ${JSON.stringify(res).slice(0, 200)}`);
+  process.exit(1);
+}
 console.log(`[${stamp}] ✔ Flipped ${PLATFORM}.latest ${cur} -> ${VERSION}. Users below ${VERSION} now get the in-app "Update available" prompt.`);
 
 // One-time broadcast push so users are told to update even without opening the app.

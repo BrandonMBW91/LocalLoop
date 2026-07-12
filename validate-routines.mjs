@@ -27,12 +27,18 @@ const g = (k) => (env.match(new RegExp('^' + k + '=(.*)$', 'm')) || [])[1]?.trim
 const results = []; // { routine, status: PASS|FAIL|WARN|SKIP, detail }
 const add = (routine, status, detail) => results.push({ routine, status, detail });
 
+// On Windows a bare "bash" can resolve to WSL's System32 bash.exe (which cannot
+// read C:\ paths and false-FAILs every .sh check outside Git Bash). Prefer Git
+// Bash explicitly when it exists.
+const GIT_BASH = 'C:/Program Files/Git/usr/bin/bash.exe';
+const BASH = process.platform === 'win32' && existsSync(GIT_BASH) ? GIT_BASH : 'bash';
+
 // ---- primitive checks -------------------------------------------------------
 function syntaxOk(relPath) {
   const abs = join(DIR, relPath);
   if (!existsSync(abs)) return { ok: false, why: `missing: ${relPath}` };
   const isSh = relPath.endsWith('.sh');
-  const r = spawnSync(isSh ? 'bash' : process.execPath, isSh ? ['-n', abs] : ['--check', abs], {
+  const r = spawnSync(isSh ? BASH : process.execPath, isSh ? ['-n', abs] : ['--check', abs], {
     encoding: 'utf8', timeout: 30000,
   });
   return r.status === 0 ? { ok: true } : { ok: false, why: `syntax: ${relPath} (${(r.stderr || '').trim().split('\n')[0]})` };
@@ -99,12 +105,16 @@ const ROUTINES = [
   {
     id: 'll-memory-sync',
     scripts: ['scripts/sync-memory.sh'],
-    // NOT run live (it pushes git). Validate the sync target is a reachable remote.
+    // NOT run live (it pushes git). Real read-only probe instead: can this
+    // machine reach the sync remote with its stored credentials? This is the
+    // exact remote sync-memory.sh pushes to, so an auth break fails HERE
+    // instead of silently failing every night at 9:40 PM.
     dry: () => {
-      const r = spawnSync('bash', [join(DIR, 'scripts/sync-memory.sh'), '--help'], { encoding: 'utf8', timeout: 15000 });
-      // sync-memory has no --help; we only needed the syntax check. Confirm the
-      // memory dir exists as the thing it syncs.
-      return existsSync(join(DIR, 'scripts/sync-memory.sh')) ? { ok: true } : { ok: false, why: 'script missing' };
+      const r = spawnSync('git', ['ls-remote', 'https://github.com/BrandonMBW91/localloop-memory.git', 'HEAD'], { encoding: 'utf8', timeout: 30000 });
+      if (r.error) return { ok: false, why: `git unavailable: ${r.error.message}` };
+      return r.status === 0
+        ? { ok: true }
+        : { ok: false, why: `sync remote unreachable/auth failed: ${(r.stderr || '').trim().split('\n')[0]}` };
     },
   },
 ];
