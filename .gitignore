@@ -74,3 +74,6 @@ site/manage-ad.html
 local-refresh.log
 *.enc
 .asc-screenshots/
+
+# FB ad test/control tracker runtime state (baseline + daily snapshots)
+ad-test-state.json
