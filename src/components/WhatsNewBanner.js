@@ -30,11 +30,12 @@ export default function WhatsNewBanner() {
         // Show after an UPDATE only: the rev advanced, or an existing (onboarded) user
         // is seeing the banner for the first time. Never for a brand-new install.
         const isUpdate = seen != null ? seen < BUILD : onboarded === 'true';
-        if (isUpdate && WHATS_NEW) {
-          if (alive) setShow(true);
-        } else {
-          AsyncStorage.setItem(SEEN_KEY, String(BUILD)).catch(() => {});
-        }
+        if (isUpdate && WHATS_NEW && alive) setShow(true);
+        // Mark this rev seen NOW, whether or not we showed the banner. Writing it only
+        // on dismiss meant a user who saw the banner but swiped the app away without
+        // tapping the X got it again on every cold launch — this keeps it a one-time
+        // "what's new" moment, as intended.
+        AsyncStorage.setItem(SEEN_KEY, String(BUILD)).catch(() => {});
       } catch { /* fail silent */ }
     })();
     return () => { alive = false; };

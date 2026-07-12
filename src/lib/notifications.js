@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parse } from '../utils/dates.js';
 
 // Show a banner even if the app is foregrounded.
 Notifications.setNotificationHandler({
@@ -54,7 +55,9 @@ export async function ensurePermission() {
 export async function scheduleEventReminder(event) {
   try {
     if (!event?.start || !event?.id) return;
-    const fireAt = new Date(event.start).getTime() - HOURS_BEFORE * 3600 * 1000;
+    // parse() handles date-only strings (garage sales like "2026-07-15") as local
+    // midnight; a bare new Date() would read them as UTC and fire a day early in ET.
+    const fireAt = parse(event.start).getTime() - HOURS_BEFORE * 3600 * 1000;
     if (fireAt < Date.now() + 60 * 1000) return; // too soon or already passed
     // Silent: schedule ONLY if already granted. The priming modal owns the ask, so
     // saving an event never fires a cold OS prompt here. Reminders for events saved

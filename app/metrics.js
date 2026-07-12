@@ -170,7 +170,7 @@ export default function MetricsScreen() {
               <Ionicons name="star" size={16} color={colors.accent} style={{ marginRight: spacing.sm }} />
               <ThemedText size="body" style={{ flex: 1 }} numberOfLines={1}>{it.title}</ThemedText>
               <ThemedText size="small" color={colors.textMuted} style={{ marginRight: 4 }}>
-                {KIND_LABEL[it.kind].replace(/s$/, '')}
+                {(KIND_LABEL[it.kind] || it.kind || '').replace(/s$/, '')}
               </ThemedText>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>

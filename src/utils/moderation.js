@@ -2,9 +2,13 @@
 // not the only one — everything still goes to the pending queue for a human.
 // The goal is to catch obvious profanity and spam before it wastes your time.
 
-// Kept intentionally small and stem-based. Expand as you see real abuse.
+// Kept intentionally small and stem-based. Expand as you see real abuse. NOTE: only
+// unambiguous terms belong here — this is a HARD block. Stems with common innocent
+// uses ("dick" -> Dick's Sporting Goods / a person named Dick; "piss" -> "pissed")
+// were removed because they blocked legitimate submissions outright; borderline
+// content still lands in the pending queue for a human, so nothing goes public unseen.
 const PROFANITY = [
-  'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'piss',
+  'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt',
   'slut', 'whore', 'nigger', 'faggot', 'retard',
 ];
 

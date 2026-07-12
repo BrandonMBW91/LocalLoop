@@ -75,7 +75,7 @@ function GarageSaleCard({ sale }) {
 
       <View style={styles.body}>
         <View style={styles.topRow}>
-          <Pill label={sale.type.toUpperCase()} color={accent} bg={accent + '18'} />
+          <Pill label={(sale.type || 'Sale').toUpperCase()} color={accent} bg={accent + '18'} />
           {sale.featured ? (
             <Pill label="FEATURED" color={colors.accent} bg={colors.accentLight} icon="star" />
           ) : null}

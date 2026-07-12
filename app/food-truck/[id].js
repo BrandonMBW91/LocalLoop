@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Linking, Platform, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -53,10 +53,16 @@ export default function FoodTruckDetailScreen() {
   }, [cached, backendEnabled, id]);
   const truck = cached || fetched;
 
+  // Record the view once per id, but only AFTER the truck has resolved, so a deep
+  // link to a deleted/invalid truck (which renders "not found") and remounts don't
+  // inflate the view counts shown to advertisers. Owner/admin views are excluded.
+  const viewedRef = useRef(null);
   useEffect(() => {
-    // Never count the owner's own views — they'd inflate the numbers shown to advertisers.
-    if (backendEnabled && id && !isAdmin) recordView('food_truck', id);
-  }, [id, backendEnabled, isAdmin]);
+    if (backendEnabled && id && truck && viewedRef.current !== id && !isAdmin) {
+      viewedRef.current = id;
+      recordView('food_truck', id);
+    }
+  }, [id, backendEnabled, truck, isAdmin]);
 
   if (!truck) {
     if (fetching) return <DetailSkeleton tint={colors.foodTruckLight} />;

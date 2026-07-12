@@ -3,6 +3,7 @@
 import assert from 'node:assert';
 import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel, isOver, isThisWeekend } from '../src/utils/dates.js';
 import { rateForUsers, PRICING_TIERS } from '../src/data/pricing.js';
+import { effectiveEndMs } from '../src/lib/eventTime.js';
 
 // Mirror of grouping.bucketForDays (can't import it directly — it uses a
 // bundler-style extensionless import that native Node won't resolve). Kept in
@@ -84,7 +85,24 @@ t('relativeDay: today/tomorrow', () => {
 });
 t('dateRangeLabel: single vs range', () => {
   assert.equal(dateRangeLabel('2026-06-20', '2026-06-20'), dateRangeLabel('2026-06-20'));
-  assert.ok(dateRangeLabel('2026-06-19', '2026-06-20').includes('–'));
+  assert.ok(dateRangeLabel('2026-06-19', '2026-06-20').includes(' to '));
+});
+
+// --- all-day events: the aggregator anchors them to NOON Eastern with no end;
+//     effectiveEndMs must keep them visible through the rest of the ET day, not
+//     drop them off the feed a few hours in (regression: noon-anchored festivals
+//     were vanishing ~2-4pm on the day they happened). ---
+t('effectiveEndMs keeps a noon-anchored all-day event through the ET day', () => {
+  const noonET = '2026-07-15T16:00:00.000Z'; // noon EDT (UTC-4)
+  const end = effectiveEndMs(noonET, null, 'Hancock County Fair', 'family');
+  // still current at 6pm ET (22:00Z) the same day
+  assert.ok(end >= Date.parse('2026-07-15T22:00:00Z'));
+  // ends by midnight ET (04:00Z next day)
+  assert.equal(end, Date.parse('2026-07-16T04:00:00Z'));
+});
+t('effectiveEndMs respects a real end time', () => {
+  const end = effectiveEndMs('2026-07-15T23:00:00.000Z', '2026-07-16T01:00:00.000Z', 'Concert', 'music');
+  assert.equal(end, Date.parse('2026-07-16T01:00:00Z'));
 });
 
 // --- grouping buckets ---
@@ -103,12 +121,12 @@ t('bucketForDays thresholds', () => {
 t('rateForUsers tiers step up by active users', () => {
   assert.equal(rateForUsers(0).name, 'Founding');
   assert.equal(rateForUsers(0).sponsor, 19);
-  assert.equal(rateForUsers(0).nextTierAt, 50);
-  assert.equal(rateForUsers(60).name, 'Local');
-  assert.equal(rateForUsers(60).sponsor, 29);
-  assert.equal(rateForUsers(300).name, 'Established');
-  assert.equal(rateForUsers(2000).name, 'Premier');
-  assert.equal(rateForUsers(2000).nextTierAt, null);
+  assert.equal(rateForUsers(0).nextTierAt, 250);
+  assert.equal(rateForUsers(300).name, 'Local');
+  assert.equal(rateForUsers(300).sponsor, 29);
+  assert.equal(rateForUsers(1200).name, 'Established');
+  assert.equal(rateForUsers(6000).name, 'Premier');
+  assert.equal(rateForUsers(6000).nextTierAt, null);
 });
 t('pricing tiers monotonically increase', () => {
   for (let i = 1; i < PRICING_TIERS.length; i++) {

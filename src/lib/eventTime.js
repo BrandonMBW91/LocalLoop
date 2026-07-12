@@ -10,11 +10,16 @@ export function estimatedEndMs(startISO, title = '', category = '') {
   const start = Date.parse(startISO);
   if (Number.isNaN(start)) return start;
 
-  // A midnight start almost always means "all day / time unknown" from the feed —
-  // keep it visible through the day instead of ending it at 2am. nyHour is
-  // Hermes-safe (no Intl), so this behaves identically on iOS and Android.
+  // An "all day / time unknown" event from the feed — keep it visible through the
+  // rest of its Eastern day instead of ending it a few hours in. The aggregator
+  // anchors all-day events to NOON Eastern (older data used a midnight anchor), and
+  // leaves the end null, so treat BOTH anchors as all-day. This matches isOver() in
+  // dates.js, which the list/calendar/map otherwise disagreed with — a noon-anchored
+  // festival was dropping off the feed around 2pm on the very day it happened. nyHour
+  // is Hermes-safe (no Intl), so this behaves identically on iOS and Android.
   const hourET = nyHour(new Date(start));
-  if (hourET === 0) return start + 24 * 3600 * 1000;
+  if (hourET === 12) return start + 12 * 3600 * 1000; // noon ET -> end of the ET day
+  if (hourET === 0) return start + 24 * 3600 * 1000; // midnight ET -> end of the ET day
 
   const t = (title || '').toLowerCase();
   const cat = (category || '').toLowerCase();

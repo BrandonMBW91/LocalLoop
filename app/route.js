@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { colors, spacing, radius } from '../src/theme/theme';
-import { formatLongDate } from '../src/utils/dates';
+import { formatLongDate, nyDateKey } from '../src/utils/dates';
 
 // #5 Garage-sale route planner. Pick the sales you want to hit; we hand the
 // ordered addresses to the phone's Maps app, which does the driving directions.
@@ -18,7 +18,10 @@ export default function RouteScreen() {
 
   // Upcoming sales for this town, soonest first — the ones worth routing today.
   const sales = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    // Eastern-anchored "today" (Hermes-safe). toISOString() would be UTC and,
+    // after ~8pm ET, roll to tomorrow — silently dropping same-day sales that are
+    // still valid. s.end is a local YYYY-MM-DD, so compare against the ET day key.
+    const today = nyDateKey();
     return (garageSales || [])
       .filter((s) => s.address && (!s.end || s.end >= today))
       .sort((a, b) => (a.start || '').localeCompare(b.start || ''));

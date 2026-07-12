@@ -45,7 +45,7 @@ function EventCard({ event }) {
 
         <View style={styles.body}>
           <View style={styles.topRow}>
-            <Pill label={event.category.toUpperCase()} color={accent} bg={accent + '18'} />
+            <Pill label={(event.category || 'Community').toUpperCase()} color={accent} bg={accent + '18'} />
             {event.featured ? (
               <Pill label="FEATURED" color={colors.accent} bg={colors.accentLight} icon="star" />
             ) : null}

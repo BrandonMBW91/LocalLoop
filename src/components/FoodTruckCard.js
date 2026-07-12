@@ -35,7 +35,7 @@ function FoodTruckCard({ truck }) {
       <View style={styles.body}>
         <View style={styles.topRow}>
           <Pill
-            label={`${CUISINE_EMOJI[truck.cuisine] ? `${CUISINE_EMOJI[truck.cuisine]} ` : ''}${truck.cuisine.toUpperCase()}`}
+            label={`${CUISINE_EMOJI[truck.cuisine] ? `${CUISINE_EMOJI[truck.cuisine]} ` : ''}${(truck.cuisine || 'Food').toUpperCase()}`}
             color={accent}
             bg={accent + '18'}
           />
