@@ -24,7 +24,8 @@ scheduled task itself except to approve or change its cron.
 | `ll-morning-brief.md` | Daily 8:28 AM | Ops brief: daily metrics + overnight pipeline health |
 | `ll-ad-test.md` | Daily 8:18 AM | Facebook ad test/control MAU tracker |
 | `ll-evening-spotlight.md` | Daily 3:46 PM | Judge tonight's events; spotlight push only for a genuine big hitter |
-| `ll-outreach-send.md` | Weekdays 8:09 AM | Paced sponsor/food-truck outreach sender |
+| `ll-outreach-send.md` | Daily 8:09 AM (sends Mon-Sat) | Paced sponsor/food-truck outreach sender |
+| `ll-104-readiness.md` | Daily 7:40 AM | 1.0.4 / OTA build-readiness validation report |
 | `ll-memory-sync.md` | Daily 9:40 PM | Push this machine's Claude memory to the cloud sync repo |
 | `localloop-release-gate-104.md` | Every 4 hours | Arm the in-app update prompt + broadcast push when iOS 1.0.4 goes live |
 

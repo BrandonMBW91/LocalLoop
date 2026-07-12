@@ -1,4 +1,6 @@
-# Routine: ll-outreach-send (weekdays 8:09 AM)
+# Routine: ll-outreach-send (daily 8:09 AM trigger; SENDS Mon-Sat only)
+
+Send policy (Michael's call, Jul 12 2026): cold outreach goes out Monday through Saturday, never Sunday. The cron fires daily, but send-queue.mjs gates sends by OUTREACH_SEND_DAYS in .env (set to Mon-Sat), so a Sunday run only sweeps the inbox for bounces/replies and sends nothing. If a Sunday run ever reports actual sends, that is a bug: check OUTREACH_SEND_DAYS in .env.
 
 Run the Local Loop outreach sender and report the result. Repo: C:\Users\micha\New\FindlayEvents.
 
