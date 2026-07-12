@@ -45,6 +45,10 @@ function rowToEvent(r) {
     ticketUrl: r.ticket_url || null,
     pending: r.status !== 'approved',
     description: cleanDescription(r.description),
+    // Non-null = this row is ingested from a calendar feed; the aggregator
+    // re-upserts it nightly, so in-app edits to feed events would be clobbered.
+    // Gates the admin Edit button to user/admin-created events only.
+    sourceUid: r.source_uid || null,
   };
 }
 
@@ -301,6 +305,35 @@ export async function insertEvent(event) {
   const { data, error } = await supabase
     .from('events')
     .insert(eventToRow(event))
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToEvent(data);
+}
+
+// Admin-only field edit (RLS: the events_update policy is is_admin(), so the
+// server rejects this for anyone else regardless of what the client sends).
+// Only the content fields are patchable — status/featured/created_by stay put.
+export async function updateEvent(id, patch) {
+  const row = {
+    title: patch.title,
+    category: patch.category,
+    emoji: patch.emoji,
+    start_at: patch.start,
+    end_at: patch.end,
+    venue: patch.venue,
+    address: patch.address,
+    price: patch.price,
+    description: patch.description,
+  };
+  // When the location changed, clear the coordinates: the nightly geocoder only
+  // fills NULL lat/lng, so keeping the old values would pin the map at the OLD
+  // address forever while the detail screen shows the new one.
+  if (patch.clearCoords) { row.lat = null; row.lng = null; }
+  const { data, error } = await supabase
+    .from('events')
+    .update(row)
+    .eq('id', id)
     .select()
     .single();
   if (error) throw error;

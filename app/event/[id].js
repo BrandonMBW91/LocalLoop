@@ -327,6 +327,23 @@ export default function EventDetailScreen() {
         </ThemedText>
       </View>
 
+      {/* Admin: edit this event's fields. Hidden for feed-ingested rows — the
+          nightly aggregator upsert would overwrite edits (the edit screen
+          explains this too, and RLS enforces admin-only server-side). */}
+      {/* `cached` required: the edit screen resolves via findEventById (the
+          loaded town), so an out-of-town event reached by deep link would
+          dead-end at its not-found guard. */}
+      {isAdmin && cached && !event.sourceUid ? (
+        <Pressable
+          style={({ pressed }) => [styles.adminEditBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push({ pathname: '/event/edit', params: { id: event.id } })}
+          accessibilityRole="button"
+          accessibilityLabel="Edit this event"
+        >
+          <Ionicons name="create-outline" size={20} color={colors.primary} />
+          <ThemedText size="body" weight="bold" color={colors.primary}>Edit Event</ThemedText>
+        </Pressable>
+      ) : null}
       <FeatureButton kind="event" id={event.id} featured={event.featured} featuredUntil={event.featuredUntil} />
       <ReportButton kind="event" id={event.id} />
       <AdBanner />
@@ -336,6 +353,19 @@ export default function EventDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  adminEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    marginHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    minHeight: 52,
+  },
   followBtn: {
     flexDirection: 'row',
     alignItems: 'center',

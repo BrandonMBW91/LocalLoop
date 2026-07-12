@@ -48,6 +48,10 @@ export default function RootLayout() {
               options={{ title: 'Add an Event', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="event/edit"
+              options={{ title: 'Edit Event', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="garage-sale/[id]"
               options={{ title: 'Garage Sale', headerBackTitle: 'Back' }}
             />
