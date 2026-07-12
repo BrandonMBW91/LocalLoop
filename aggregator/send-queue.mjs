@@ -33,7 +33,7 @@
 //   • Circuit breaker: >15% bounce rate (min 10 sent) pauses everything with ALERT.
 //   • Writes outreach/last-run.json each run for observability.
 
-import { readFileSync, writeFileSync, readdirSync, appendFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, appendFileSync, existsSync, statSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { resolveMx, resolve4 } from 'node:dns/promises';
@@ -113,13 +113,45 @@ const TRACK_LINKS = (process.env.OUTREACH_TRACK_LINKS || g('OUTREACH_TRACK_LINKS
     process.exit(0);
   }
 }
+// ---- run lock: one real sender at a time ----
+// Every quota/dedupe input (sent-log, Zoho Sent folder, follow-up log) is
+// snapshotted ONCE at startup, so a second concurrent run (cron + a manual run,
+// or a stacked scheduler launch) computes the same shortfall and sends the SAME
+// top-priority leads the same email. A pid lockfile serializes real runs; a
+// lock older than 2h is a crashed run and is taken over. DRY runs skip it.
+const LOCK = join(OUTREACH, '.send-lock');
+if (!DRY) {
+  try {
+    writeFileSync(LOCK, String(process.pid), { flag: 'wx' });
+  } catch (e) {
+    if (e.code === 'EEXIST') {
+      let ageMs = 0;
+      try { ageMs = Date.now() - statSync(LOCK).mtimeMs; } catch { ageMs = Infinity; }
+      if (ageMs < 2 * 3600 * 1000) {
+        console.log(`HELD: another send-queue run appears active (outreach/.send-lock is ${Math.round(ageMs / 60000)}m old). Exiting so we don't double-send. Delete the lock file if this is wrong.`);
+        process.exit(0);
+      }
+      console.log('stale send lock (over 2h old) — taking over.');
+      writeFileSync(LOCK, String(process.pid));
+    } else { throw e; }
+  }
+  const releaseLock = () => { try { unlinkSync(LOCK); } catch { /* already gone */ } };
+  process.on('exit', releaseLock);
+  process.on('SIGINT', () => process.exit(130));
+  process.on('SIGTERM', () => process.exit(143));
+}
+
 const readLines = (p) => (existsSync(p) ? readFileSync(p, 'utf8').split('\n').filter(Boolean) : []);
 const today = new Date().toLocaleDateString('en-CA');
 
 // ---- send window (ET) ----
 const SEND_DAYS = (process.env.OUTREACH_SEND_DAYS || g('OUTREACH_SEND_DAYS') || 'Mon,Tue,Wed,Thu,Fri,Sat').split(',').map((s) => s.trim());
-const SEND_START = Number(process.env.OUTREACH_SEND_START ?? g('OUTREACH_SEND_START') ?? 8);
-const SEND_END = Number(process.env.OUTREACH_SEND_END ?? g('OUTREACH_SEND_END') ?? 20);
+// Empty-valued env lines (OUTREACH_SEND_START=) are '' — not nullish, so `??`
+// defaults never applied and Number('') === 0 silently opened the window at
+// midnight. Treat empty/non-numeric as unset.
+const numOr = (v, dflt) => { const n = Number(v); return v != null && v !== '' && Number.isFinite(n) ? n : dflt; };
+const SEND_START = numOr(process.env.OUTREACH_SEND_START ?? g('OUTREACH_SEND_START'), 8);
+const SEND_END = numOr(process.env.OUTREACH_SEND_END ?? g('OUTREACH_SEND_END'), 20);
 const etParts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date()).map((p) => [p.type, p.value]));
 const etHour = Number(etParts.hour) % 24;
 const etDay = etParts.weekday;
@@ -234,7 +266,14 @@ async function sweepBounces(knownTos) {
           const { content } = await imap.download(String(uid), undefined, { uid: true });
           let text = '';
           for await (const chunk of content) { text += chunk.toString('utf8'); if (text.length > 200000) break; }
-          const found = [...knownTos].filter((t) => text.toLowerCase().includes(t));
+          // Boundary-anchored match, not includes(): an address that is a
+          // substring of another (ann@cafe.com inside joann@cafe.com in the
+          // same notice) must not blocklist the wrong lead.
+          const lower = text.toLowerCase();
+          const found = [...knownTos].filter((t) => {
+            const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(`(^|[^a-z0-9._%+-])${esc}(?![a-z0-9-])`, 'i').test(lower);
+          });
           if (found.length) {
             found.forEach((t) => { if (!bounced.has(t)) { bounced.add(t); newly.push(t); } });
             doomed.push(uid);
@@ -390,7 +429,11 @@ const ourMsgIds = new Set(Object.keys(msgIdToRecipient));
 // direction: set 0 to force off, or any N to set the delay regardless of warm-up.
 const FU_ENV = process.env.OUTREACH_FOLLOWUP_DAYS ?? g('OUTREACH_FOLLOWUP_DAYS');
 const FU_ACTIVATE_AT = Number(process.env.OUTREACH_FOLLOWUP_ACTIVATE_AT || g('OUTREACH_FOLLOWUP_ACTIVATE_AT') || 40);
-const FOLLOWUP_DAYS = (FU_ENV != null && FU_ENV !== '') ? Math.max(0, Number(FU_ENV)) : (goodAllTime >= FU_ACTIVATE_AT ? 6 : 0);
+// Number.isFinite guard: a non-numeric value yielded NaN, which slipped past
+// the `<= 0` off-switch and turned dueCut into 'Invalid Date' — making every
+// first touch instantly "due" by string comparison.
+const fuNum = Number(FU_ENV);
+const FOLLOWUP_DAYS = (FU_ENV != null && FU_ENV !== '' && Number.isFinite(fuNum)) ? Math.max(0, fuNum) : (goodAllTime >= FU_ACTIVATE_AT ? 6 : 0);
 
 // First-touch day per email (sent-log.txt holds first touches only; follow-ups
 // have their own log). Used to decide when a follow-up is due.
@@ -398,7 +441,17 @@ const firstTouchDay = {};
 for (const e of logEntries) { if (e.to && e.ts && (!firstTouchDay[e.to] || e.ts < firstTouchDay[e.to])) firstTouchDay[e.to] = e.ts; }
 // Follow-ups already sent (own log) + how many went out today (they share quota).
 const fuEntries = readLines(FOLLOWUP_LOG).map((l) => ({ ts: localDay(l.split(/\s+/)[0]), to: (l.split(/\s+/)[1] || '').toLowerCase() }));
-const followedUp = new Set(fuEntries.map((e) => e.to).filter(Boolean));
+// Crash net: an intent line is appended BEFORE each follow-up's SMTP send (see
+// the send loop), and intents count as "followed up" here — so a crash between
+// sendMail success and the FOLLOWUP_LOG append can never re-send the same
+// follow-up on the rerun. Failure direction: a crash mid-send costs one MISSED
+// follow-up, never a duplicate. (First touches are already rerun-safe via the
+// Zoho Sent-folder check.)
+const FU_INTENT = join(OUTREACH, 'followup-intent.txt');
+const followedUp = new Set([
+  ...fuEntries.map((e) => e.to).filter(Boolean),
+  ...readLines(FU_INTENT).map((l) => (l.split(/\s+/)[1] || '').toLowerCase()).filter(Boolean),
+]);
 const followupsToday = fuEntries.filter((e) => e.ts === today).length;
 const dueCut = new Date(Date.now() - FOLLOWUP_DAYS * 86400000).toLocaleDateString('en-CA');
 
@@ -457,20 +510,33 @@ function writeReport(status) {
   } catch { /* non-fatal */ }
 }
 
-if (goodAllTime + bounced.size >= 10 && bounced.size / Math.max(goodAllTime + bounced.size, 1) > 0.15) {
-  console.error(`ALERT: bounce rate ${bounced.size}/${goodAllTime + bounced.size} exceeds 15% — sending PAUSED. Review list quality before resuming.`);
-  writeReport('paused-bounce-rate');
-  process.exit(2);
-}
-
 // Warm-up ramp: 5/day until 15 good sends, 8 until 40, then the mature ceiling.
 // The ceiling is OUTREACH_MAX_DAILY (default 10) so it can be raised (15/20/25…)
 // as reputation + DMARC allow, without a code change. Default 10 = prior behavior.
 const MAX_DAILY = Math.max(1, Number(process.env.OUTREACH_MAX_DAILY || g('OUTREACH_MAX_DAILY') || 10));
-const rampBase = goodAllTime < 15 ? 5 : goodAllTime < 40 ? 8 : MAX_DAILY;
+// Tier from the count at the START of today: deriving it from the live all-time
+// count let a second same-day run cross a ramp boundary mid-day and stack the
+// next tier's quota on top of what had already gone out.
+const goodBeforeToday = goodAllTime - goodToday;
+const rampBase = goodBeforeToday < 15 ? 5 : goodBeforeToday < 40 ? 8 : MAX_DAILY;
 const ramp = Math.min(rampBase, MAX_DAILY);
-const quota = Math.min(ramp, Number(args.limit) || ramp);
+// --limit only ever LOWERS the quota. Parsed explicitly: Number('0') is falsy,
+// so the old `Number(args.limit) || ramp` sent the FULL quota on --limit=0.
+const limitNum = 'limit' in args ? Number(args.limit === true ? NaN : args.limit) : NaN;
+const quota = Number.isFinite(limitNum) ? Math.max(0, Math.min(ramp, limitNum)) : ramp;
 let need = Math.max(0, quota - goodToday - followupsToday);
+
+// Circuit breaker — evaluated AFTER quota is initialized: it used to sit above
+// the `const quota`, so writeReport's quota reference threw a TDZ error that
+// its own try/catch swallowed, and last-run.json was never written exactly when
+// sending paused. bounceRateTripped is re-checked mid-run by the top-up loop.
+const bounceRateTripped = () =>
+  goodAllTime + bounced.size >= 10 && bounced.size / Math.max(goodAllTime + bounced.size, 1) > 0.15;
+if (bounceRateTripped()) {
+  console.error(`ALERT: bounce rate ${bounced.size}/${goodAllTime + bounced.size} exceeds 15% — sending PAUSED. Review list quality before resuming.`);
+  writeReport('paused-bounce-rate');
+  process.exit(2);
+}
 
 if (replies.length) {
   console.log(`\nREPLY — review (${replies.length}):`);
@@ -573,6 +639,7 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
   if (round > 0) console.log(`top-up round ${round}: replacing ${batch.length} send(s)`);
   for (let i = 0; i < batch.length; i++) {
     const d = batch[i];
+    if (d.kind === 'followup') appendFileSync(FU_INTENT, `${new Date().toISOString()}  ${d.to}\n`); // intent BEFORE send (crash net)
     const info = await sendOne(d);
     if (!info) { sendErrors.push(d.to); skipRun.add(d.to); continue; }
     appendFileSync(d.kind === 'followup' ? FOLLOWUP_LOG : LOG, `${new Date().toISOString()}  ${d.to}  ${d.subject}  ${info.messageId}\n`);
@@ -583,6 +650,14 @@ while (need > 0 && round <= TOPUP_ROUNDS) {
   await sleep(GRACE_MS);
   const newly = await sweepBounces(new Set(batch.map((d) => d.to)));
   need = batch.filter((d) => newly.includes(d.to)).length; // top up only true bounces
+  // Re-check the breaker with the mid-run bounces: the startup-only check let a
+  // fully-bouncing list absorb the initial batch + every top-up round (up to 3x
+  // quota) before the NEXT run could trip it.
+  if (bounceRateTripped()) {
+    console.error(`ALERT: bounce rate ${bounced.size}/${goodAllTime + bounced.size} exceeded 15% mid-run — stopping top-ups.`);
+    writeReport('paused-bounce-rate');
+    process.exit(2);
+  }
   round++;
 }
 
