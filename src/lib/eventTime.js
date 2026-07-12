@@ -17,9 +17,15 @@ export function estimatedEndMs(startISO, title = '', category = '') {
   // dates.js, which the list/calendar/map otherwise disagreed with — a noon-anchored
   // festival was dropping off the feed around 2pm on the very day it happened. nyHour
   // is Hermes-safe (no Intl), so this behaves identically on iOS and Android.
-  const hourET = nyHour(new Date(start));
-  if (hourET === 12) return start + 12 * 3600 * 1000; // noon ET -> end of the ET day
-  if (hourET === 0) return start + 24 * 3600 * 1000; // midnight ET -> end of the ET day
+  const d0 = new Date(start);
+  const hourET = nyHour(d0);
+  // Only EXACT anchors count as all-day (the aggregator writes 12:00:00 sharp).
+  // ET's offset is a whole number of hours, so ET minutes equal UTC minutes —
+  // a genuine 12:30 PM matinee or 12:15 AM show keeps its timed estimate below
+  // (and stays in agreement with isOver(), which also requires minute zero).
+  const onTheHour = d0.getUTCMinutes() === 0;
+  if (hourET === 12 && onTheHour) return start + 12 * 3600 * 1000; // noon ET -> end of the ET day
+  if (hourET === 0 && onTheHour) return start + 24 * 3600 * 1000; // midnight ET -> end of the ET day
 
   const t = (title || '').toLowerCase();
   const cat = (category || '').toLowerCase();

@@ -105,9 +105,13 @@ export function isOver(start, end, now = new Date()) {
   if (end) return parse(end).getTime() <= now.getTime();
   const s = parse(start);
   if (isNaN(s)) return false;
-  if (s.getHours() === 12 && s.getMinutes() === 0) {
-    const endOfDay = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 23, 59, 59);
-    return endOfDay.getTime() <= now.getTime();
+  // Noon-ET all-day anchor (the aggregator writes 12:00:00 ET sharp): over at
+  // the end of its EASTERN day, start + 12h — exactly what eventTime's
+  // effectiveEndMs returns, so the two filters can never disagree. Detection is
+  // ET-based (nyHour) rather than device-local so a phone outside Eastern time
+  // agrees with the feed; ET minutes equal UTC minutes (whole-hour offset).
+  if (nyHour(s) === 12 && s.getUTCMinutes() === 0) {
+    return s.getTime() + 12 * 3600 * 1000 <= now.getTime();
   }
   return s.getTime() + 3 * 60 * 60 * 1000 <= now.getTime();
 }

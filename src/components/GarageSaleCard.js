@@ -32,7 +32,14 @@ function dailyHourStatus(sale, now) {
   const close = clockToMinutes(sale.dailyEnd);
   if (open == null || close == null) return 'live';
   const mins = now.getHours() * 60 + now.getMinutes();
-  if (close <= open) return mins >= open || mins < close ? 'live' : mins < open ? 'before' : 'after';
+  // Swapped or equal open/close is bad input (garage sales never legitimately
+  // cross midnight): treat it as the swapped-back range instead of a wrap, so
+  // a "2 PM to 8 AM" typo doesn't show HAPPENING NOW at 3 AM, and equal times
+  // are never "live" all day.
+  if (close <= open) {
+    const lo = Math.min(open, close), hi = Math.max(open, close);
+    return mins >= lo && mins < hi ? 'live' : mins < lo ? 'before' : 'after';
+  }
   if (mins < open) return 'before';
   if (mins >= close) return 'after';
   return 'live';
