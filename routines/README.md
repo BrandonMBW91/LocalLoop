@@ -8,6 +8,12 @@ says "read and follow `routines/<task-id>.md`."
 **To change what a routine does:** edit its file here. You never touch the
 scheduled task itself except to approve or change its cron.
 
+**To run a routine on demand** (from anywhere, not just the cron):
+- `node routines/run.mjs` — list every routine and its modes
+- `node routines/run.mjs <id>` — run its dry/safe path (no emails, pushes, or writes)
+- `node routines/run.mjs <id> --live` — run the real routine (sends/pushes); the
+  release gate additionally needs `--force`
+
 **To confirm they all still run cleanly** (dry, no sends/pushes):
 `node validate-routines.mjs`
 
