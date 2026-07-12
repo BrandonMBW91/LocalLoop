@@ -192,6 +192,7 @@ export async function fetchEvents(cityId) {
       .or(`start_at.gte.${cutoff},end_at.gte.${nowIso}`)
       .order('featured', { ascending: false })
       .order('start_at', { ascending: true })
+      .order('id', { ascending: true }) // unique tiebreaker so pages don't dupe/drop rows
       .range(from, from + 999);
     if (error) throw error;
     rows.push(...(data || []));
@@ -260,6 +261,7 @@ export async function fetchGarageSales(cityId) {
       .eq('status', 'approved')
       .order('featured', { ascending: false })
       .order('start_date', { ascending: true })
+      .order('id', { ascending: true }) // unique tiebreaker so pages don't dupe/drop rows
       .range(from, from + 999);
     if (error) throw error;
     rows.push(...(data || []));
@@ -282,6 +284,7 @@ export async function fetchFoodTrucks(cityId) {
       .eq('status', 'approved')
       .order('featured', { ascending: false })
       .order('date', { ascending: true })
+      .order('id', { ascending: true }) // unique tiebreaker so pages don't dupe/drop rows
       .range(from, from + 999);
     if (error) throw error;
     rows.push(...(data || []));
@@ -349,12 +352,21 @@ export async function fetchEventsByIds(ids) {
 
 // Listings that have been reported, grouped, with the listing details + reasons.
 export async function fetchReported() {
-  const { data: reps, error } = await supabase
-    .from('reports')
-    .select('kind, listing_id, reason, created_at')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  if (!reps || !reps.length) return [];
+  // Paginate past PostgREST's 1000-row cap so a backlog of reports can't silently
+  // hide the older tail of the moderation queue (id tiebreaker keeps pages stable).
+  const reps = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('kind, listing_id, reason, created_at')
+      .order('created_at', { ascending: false })
+      .order('listing_id', { ascending: true })
+      .range(from, from + 999);
+    if (error) throw error;
+    reps.push(...(data || []));
+    if ((data || []).length < 1000) break;
+  }
+  if (!reps.length) return [];
 
   const groups = {};
   for (const r of reps) {

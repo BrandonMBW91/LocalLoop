@@ -3,6 +3,7 @@
 // App Group ship (targets/widget/README.md). Guarded require so OTA on a binary
 // without the native module is a silent no-op, never a crash.
 import { Platform } from 'react-native';
+import { formatShortDate, formatTime } from '../utils/dates';
 
 let SharedGroupPreferences = null;
 try { SharedGroupPreferences = require('react-native-shared-group-preferences').default; } catch { SharedGroupPreferences = null; }
@@ -28,10 +29,10 @@ export async function updateWidget(townName, events = []) {
   }
 }
 
+// Hermes-safe: the app runs on Hermes (no Intl/ICU), so build the label from the
+// shared date helpers rather than toLocale* (which ignore locale/options on device).
 function shortWhen(iso) {
   try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-US', { weekday: 'short' }) + ' ' +
-           d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${formatShortDate(iso)} ${formatTime(iso)}`; // e.g. "Sat, Jun 20 5 PM"
   } catch { return ''; }
 }

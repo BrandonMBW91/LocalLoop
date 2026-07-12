@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { AppProvider } from '../src/context/AppContext';
+import ErrorBoundary from '../src/components/ErrorBoundary';
 import HeaderBack from '../src/components/HeaderBack';
 import { useOtaUpdates } from '../src/hooks/useOtaUpdates';
 import { useStoreUpdatePrompt } from '../src/hooks/useStoreUpdatePrompt';
@@ -17,6 +18,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <ErrorBoundary>
         <AppProvider>
           <StatusBar style="light" />
           <Stack
@@ -129,6 +131,7 @@ export default function RootLayout() {
           <WhatsNewBanner />
           <PushPrimingModal />
         </AppProvider>
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

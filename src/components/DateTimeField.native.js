@@ -40,7 +40,13 @@ export default function DateTimeField({
   // state on open, so what they see is what gets saved.
   const toggle = () => {
     const opening = !show;
-    if (opening && !value) {
+    // iOS ONLY: its inline/spinner picker fires onChange only on an actual scroll,
+    // so tapping Done without moving the wheel would leave a required field empty.
+    // Seed the displayed value on open to close that dead-end. On Android the
+    // native dialog already reports "set" vs "dismissed" (handleChange only commits
+    // on "set"), so seeding there would wrongly keep a value the user cancelled by
+    // pressing Back, e.g. on an optional leave-blank field.
+    if (opening && !value && Platform.OS === 'ios') {
       const seed = minimumDate && minimumDate.getTime() > Date.now() ? minimumDate : new Date();
       onChange(seed);
     }
