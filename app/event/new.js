@@ -17,7 +17,7 @@ import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { screenContent } from '../../src/utils/moderation';
 import { findDuplicateEvent } from '../../src/utils/dedup';
-import { formatShortDate } from '../../src/utils/dates';
+import { formatShortDate, formatTime } from '../../src/utils/dates';
 import { CATEGORIES } from '../../src/data/events';
 import { colors, spacing, radius, baseFont, categoryColor } from '../../src/theme/theme';
 
@@ -50,7 +50,8 @@ export default function SubmitScreen() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Community');
   const [dateValue, setDateValue] = useState(null);
-  const [timeValue, setTimeValue] = useState(null);
+  const [startTimeValue, setStartTimeValue] = useState(null);
+  const [endTimeValue, setEndTimeValue] = useState(null);
   const [venue, setVenue] = useState('');
   const [address, setAddress] = useState('');
   const [price, setPrice] = useState('');
@@ -61,15 +62,16 @@ export default function SubmitScreen() {
   const inputFontSize = Math.round(baseFont.body * scale);
 
   const reset = () => {
-    setTitle(''); setCategory('Community'); setDateValue(null); setTimeValue(null);
+    setTitle(''); setCategory('Community'); setDateValue(null); setStartTimeValue(null); setEndTimeValue(null);
     setVenue(''); setAddress(''); setPrice(''); setDescription(''); setContact('');
   };
 
-  const onSubmit = async (skipDupCheck = false) => {
-    if (!title.trim() || !venue.trim() || !dateValue) {
+  const onSubmit = async (opts = {}) => {
+    const { skipDupCheck = false, overnightOk = false } = opts;
+    if (!title.trim() || !venue.trim() || !dateValue || !startTimeValue || !endTimeValue) {
       Alert.alert(
         'Almost there',
-        'Please fill in at least the event name, date, and location.'
+        'Please fill in the event name, date, start time, end time, and location.'
       );
       return;
     }
@@ -80,7 +82,30 @@ export default function SubmitScreen() {
       return;
     }
 
-    const start = combineDateTime(dateValue, timeValue);
+    // Anchor both times to the picked date.
+    const startDate = new Date(dateValue);
+    startDate.setHours(startTimeValue.getHours(), startTimeValue.getMinutes(), 0, 0);
+    const endDate = new Date(dateValue);
+    endDate.setHours(endTimeValue.getHours(), endTimeValue.getMinutes(), 0, 0);
+
+    // End at or before start is ambiguous: the event either runs past midnight
+    // (9 PM to 1 AM) or the times were entered wrong. Confirm before rolling the
+    // end to the next day, so a reversed or duplicate time isn't silently saved
+    // as a day-long event.
+    if (endDate.getTime() <= startDate.getTime() && !overnightOk) {
+      Alert.alert(
+        'Check the end time',
+        `You entered ${formatTime(startTimeValue)} to ${formatTime(endTimeValue)}. Does this event run past midnight into the next day?`,
+        [
+          { text: 'Fix the time', style: 'cancel' },
+          { text: 'Yes, past midnight', onPress: () => onSubmit({ ...opts, overnightOk: true }) },
+        ]
+      );
+      return;
+    }
+    if (endDate.getTime() <= startDate.getTime()) endDate.setDate(endDate.getDate() + 1);
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
 
     // Gently catch likely duplicates of an event already on Local Loop (a feed
     // or a neighbor may have posted the same thing). Soft prompt, not a block.
@@ -93,7 +118,7 @@ export default function SubmitScreen() {
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'View it', onPress: () => router.push(`/event/${dup.id}`) },
-            { text: 'It’s different, post it', onPress: () => onSubmit(true) },
+            { text: 'It’s different, post it', onPress: () => onSubmit({ ...opts, skipDupCheck: true }) },
           ]
         );
         return;
@@ -107,7 +132,7 @@ export default function SubmitScreen() {
       category,
       emoji: EMOJI_BY_CAT[category] || '📅',
       start,
-      end: null,
+      end,
       venue: venue.trim(),
       address: address.trim() || city.name + ', ' + city.state,
       price: price.trim() || 'See details',
@@ -201,8 +226,12 @@ export default function SubmitScreen() {
           <DateTimeField mode="date" value={dateValue} onChange={setDateValue} />
         </Field>
 
-        <Field label="Start time">
-          <DateTimeField mode="time" value={timeValue} onChange={setTimeValue} />
+        <Field label="Start time" required>
+          <DateTimeField mode="time" value={startTimeValue} onChange={setStartTimeValue} />
+        </Field>
+
+        <Field label="End time" hint="Ends after midnight? Just pick that time." required>
+          <DateTimeField mode="time" value={endTimeValue} onChange={setEndTimeValue} />
         </Field>
 
         <Field label="Location / venue" required>
@@ -276,17 +305,6 @@ export default function SubmitScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-}
-
-// Combine the picked date with the picked time into an ISO datetime string.
-function combineDateTime(dateVal, timeVal) {
-  const d = new Date(dateVal);
-  if (timeVal) {
-    d.setHours(timeVal.getHours(), timeVal.getMinutes(), 0, 0);
-  } else {
-    d.setHours(12, 0, 0, 0); // default to noon if no time picked
-  }
-  return d.toISOString();
 }
 
 const styles = StyleSheet.create({

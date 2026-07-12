@@ -32,10 +32,25 @@ export default function DateTimeField({
     }
   };
 
+  // iOS fires onChange only when the user actually scrolls/taps the wheel, so a
+  // user who opens the picker, sees the wheel centered on a value, and taps Done
+  // without moving it would leave the field silently empty (its label still says
+  // "Tap to pick..."). That is a dead-end for a required field. Seed the value the
+  // wheel already displays (value || now, clamped to any future minimum) into
+  // state on open, so what they see is what gets saved.
+  const toggle = () => {
+    const opening = !show;
+    if (opening && !value) {
+      const seed = minimumDate && minimumDate.getTime() > Date.now() ? minimumDate : new Date();
+      onChange(seed);
+    }
+    setShow(opening);
+  };
+
   return (
     <View>
       <Pressable
-        onPress={() => setShow((s) => !s)}
+        onPress={toggle}
         style={[styles.field, show && { borderColor: accent }]}
         accessibilityRole="button"
         accessibilityLabel={`${mode === 'date' ? 'Date' : 'Time'}: ${label}`}
