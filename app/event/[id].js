@@ -70,6 +70,27 @@ export default function EventDetailScreen() {
     }
   }, [id, backendEnabled, event, isAdmin, recordView, logEvent]);
 
+  // "I'm going" RSVP — public count as social proof, one tap to toggle. The
+  // count loads from the backend; taps update optimistically and reconcile with
+  // the server's returned total. Fails soft (button just won't change on error).
+  // IMPORTANT: this and EVERY hook must stay ABOVE the `if (!event)` early return
+  // below. If the event is deleted while this screen is open, `event` flips from
+  // present to null on the next render; a hook placed after the early return
+  // would then stop being called, changing the hook count between renders and
+  // crashing with "rendered fewer hooks than expected."
+  const [rsvp, setRsvp] = useState({ n: 0, mine: false, loaded: false });
+  useEffect(() => {
+    let ok = true;
+    if (backendEnabled && event?.id && !isAdmin) {
+      fetchRsvpCounts('event', [event.id], deviceId).then((map) => {
+        if (!ok) return;
+        const r = map[event.id];
+        setRsvp({ n: r?.n || 0, mine: Boolean(r?.mine), loaded: true });
+      });
+    }
+    return () => { ok = false; };
+  }, [backendEnabled, event?.id, isAdmin, deviceId]);
+
   if (!event) {
     if (fetching) return <DetailSkeleton tint={colors.primaryLight} />;
     return (
@@ -89,21 +110,6 @@ export default function EventDetailScreen() {
   const saved = savedIds.includes(event.id);
   const following = isFollowing(event.venue);
 
-  // "I'm going" RSVP — public count as social proof, one tap to toggle. The
-  // count loads from the backend; taps update optimistically and reconcile with
-  // the server's returned total. Fails soft (button just won't change on error).
-  const [rsvp, setRsvp] = useState({ n: 0, mine: false, loaded: false });
-  useEffect(() => {
-    let ok = true;
-    if (backendEnabled && event?.id && !isAdmin) {
-      fetchRsvpCounts('event', [event.id], deviceId).then((map) => {
-        if (!ok) return;
-        const r = map[event.id];
-        setRsvp({ n: r?.n || 0, mine: Boolean(r?.mine), loaded: true });
-      });
-    }
-    return () => { ok = false; };
-  }, [backendEnabled, event?.id, isAdmin, deviceId]);
   const onRsvp = async () => {
     if (!deviceId || !event?.id) return;
     const optimistic = { n: rsvp.n + (rsvp.mine ? -1 : 1), mine: !rsvp.mine, loaded: true };
