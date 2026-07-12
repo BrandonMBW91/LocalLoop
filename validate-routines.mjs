@@ -93,9 +93,8 @@ const ROUTINES = [
     id: 'localloop-release-gate-104',
     scripts: ['scripts/release-gate.mjs'],
     files: [['.asc', 'App Store Connect key dir']],
-    // NOT run live: it flips the version gate + broadcast push the moment 1.0.4
-    // is live, which is a real side effect. Syntax + key presence only.
-    dry: null,
+    // --dry-run is a read-only ASC state check: it exits before any flip/push.
+    dry: () => runSafe(process.execPath, ['scripts/release-gate.mjs', '--dry-run'], { timeout: 60000 }),
   },
   {
     id: 'll-memory-sync',

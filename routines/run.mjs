@@ -49,8 +49,7 @@ const ROUTINES = {
   },
   'localloop-release-gate-104': {
     desc: 'Arm the in-app update prompt when iOS 1.0.4 goes live',
-    safe: null,
-    safeNote: 'No safe run: release-gate.mjs self-gates on the App Store state. If 1.0.4 is READY_FOR_SALE it flips the version gate AND broadcasts a push to all iOS devices. It is a no-op otherwise, but there is no dry mode.',
+    safe: { type: 'node', args: ['scripts/release-gate.mjs', '--dry-run'], cwd: '.', note: 'reports the App Store state, changes nothing (read-only ASC check)' },
     live: { type: 'node', args: ['scripts/release-gate.mjs'], cwd: '.', note: 'FLIPS the update gate + broadcast push IF 1.0.4 is live (else prints the current state)' },
     danger: true, // requires --live AND --force
   },
