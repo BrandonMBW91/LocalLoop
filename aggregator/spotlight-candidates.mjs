@@ -38,8 +38,16 @@ const decent = CITIES.filter((c) => (c.pop || 0) >= MIN_POP).sort((a, b) => (b.p
 const nameById = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
 
 // Opted-in device counts, so we know which town sends would actually reach people.
-const tokRes = await fetch(`${SB}/rest/v1/push_tokens?select=city_id`, { headers: H });
-const tokens = await tokRes.json();
+// Paginated: PostgREST caps responses at ~1000 rows, and past 1000 opted-in
+// devices an uncapped fetch would undercount towns arbitrarily.
+const tokens = [];
+for (let o = 0; ; o += 1000) {
+  const tokRes = await fetch(`${SB}/rest/v1/push_tokens?select=city_id&order=token.asc&limit=1000&offset=${o}`, { headers: H });
+  const page = await tokRes.json();
+  if (!Array.isArray(page)) { console.error('push_tokens fetch failed:', JSON.stringify(page).slice(0, 150)); process.exit(1); }
+  tokens.push(...page);
+  if (page.length < 1000) break;
+}
 const devices = {};
 for (const t of tokens) devices[t.city_id || 'findlay'] = (devices[t.city_id || 'findlay'] || 0) + 1;
 
@@ -48,12 +56,27 @@ console.log(`scanning ${decent.length} towns with pop >= ${MIN_POP.toLocaleStrin
 console.log(`opted-in devices: ${totalDevices} across ${Object.keys(devices).length} town(s) — ${JSON.stringify(devices)}`);
 console.log(`now (ET): ${new Date().toLocaleString('en-US', { timeZone: TZ })}`);
 
-// Pull the next 48h of approved events for the decent-pop towns only.
-const from = new Date().toISOString();
+// Pull approved events for the decent-pop towns from ET *midnight today* (NOT
+// "now": the aggregator anchors all-day events to ET noon, so a 3:46 PM run
+// with a now-based window systematically hid every all-day event happening
+// today — fairs and festivals, exactly the big-hitter class this feeds).
+// Still-running multi-day events (end_at in the future) are included too.
+const offset = new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' })
+  .formatToParts(now).find((p) => p.type === 'timeZoneName').value.replace('GMT', '') || '+00:00';
+const from = new Date(`${today}T00:00:00${offset}`).toISOString();
 const to = new Date(Date.now() + 2 * 86400000).toISOString();
+const nowIso = new Date().toISOString();
 const idList = decent.map((c) => c.id).join(',');
-const r = await fetch(`${SB}/rest/v1/events?select=city_id,title,category,start_at,venue,view_count&status=eq.approved&city_id=in.(${idList})&start_at=gte.${from}&start_at=lte.${to}&order=view_count.desc.nullslast&limit=1000`, { headers: H });
-const events = await r.json();
+// Paginated for the same ~1000-row server cap; without it the dropped rows are
+// exactly the low/zero-view ones, silently skewing the view-count signal.
+const events = [];
+for (let o = 0; ; o += 1000) {
+  const r = await fetch(`${SB}/rest/v1/events?select=city_id,title,category,start_at,end_at,venue,view_count&status=eq.approved&city_id=in.(${idList})&start_at=lte.${to}&or=(start_at.gte.${from},end_at.gte.${nowIso})&order=view_count.desc.nullslast,start_at.asc&limit=1000&offset=${o}`, { headers: H });
+  const page = await r.json();
+  if (!Array.isArray(page)) { console.error('events fetch failed:', JSON.stringify(page).slice(0, 150)); process.exit(1); }
+  events.push(...page);
+  if (page.length < 1000) break;
+}
 
 // Show towns that have devices first (a city-specific send is actionable there),
 // then the rest; within each group, biggest town first. Skip towns with no events.
@@ -69,7 +92,7 @@ for (const town of withEvents) {
   for (const e of townEvents.slice(0, 15)) {
     const d = new Date(e.start_at);
     const k = dayKey(d);
-    const when = k === today ? 'TODAY' : k === tomorrow ? 'tomorrow' : k;
+    const when = k === today ? 'TODAY' : k === tomorrow ? 'tomorrow' : k < today ? 'ongoing' : k;
     const time = d.toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
     console.log(`  [${e.view_count || 0} views] ${when} ${time} · ${e.category} · ${e.title.slice(0, 60)} @ ${String(e.venue).slice(0, 40)}`);
   }

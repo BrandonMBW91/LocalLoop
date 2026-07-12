@@ -117,9 +117,9 @@ const readLines = (p) => (existsSync(p) ? readFileSync(p, 'utf8').split('\n').fi
 const today = new Date().toLocaleDateString('en-CA');
 
 // ---- send window (ET) ----
-const SEND_DAYS = (process.env.OUTREACH_SEND_DAYS || 'Mon,Tue,Wed,Thu,Fri,Sat').split(',').map((s) => s.trim());
-const SEND_START = Number(process.env.OUTREACH_SEND_START ?? 8);
-const SEND_END = Number(process.env.OUTREACH_SEND_END ?? 20);
+const SEND_DAYS = (process.env.OUTREACH_SEND_DAYS || g('OUTREACH_SEND_DAYS') || 'Mon,Tue,Wed,Thu,Fri,Sat').split(',').map((s) => s.trim());
+const SEND_START = Number(process.env.OUTREACH_SEND_START ?? g('OUTREACH_SEND_START') ?? 8);
+const SEND_END = Number(process.env.OUTREACH_SEND_END ?? g('OUTREACH_SEND_END') ?? 20);
 const etParts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false, weekday: 'short' }).formatToParts(new Date()).map((p) => [p.type, p.value]));
 const etHour = Number(etParts.hour) % 24;
 const etDay = etParts.weekday;
@@ -255,6 +255,34 @@ async function sweepBounces(knownTos) {
 // word doesn't suppress an otherwise-interested reply.
 const OPTOUT_RE = /\b(unsubscribe|no thanks|no thank you|remove me|take me off|please remove|stop emailing|stop sending|do ?n[o']t (?:email|contact|message)|opt[- ]?out|not interested|leave me alone|take my (?:name|email) off)\b/i;
 
+// CRITICAL guard: classify only the text the SENDER actually wrote. Every draft
+// we send ends with the PS 'Reply "no thanks" and I won't email you again.',
+// and nearly all mail clients quote the original under a reply — so testing the
+// raw message classified EVERY genuine reply (even "tell me more!") as an
+// opt-out, permanently suppressing interested leads and hiding their replies.
+// Strategy: drop the MIME headers, drop ">"-quoted lines, cut at the standard
+// reply-attribution markers (Gmail/Apple "On ... wrote:", Outlook's From:-block
+// and dividers), and cut HTML alternatives at the first blockquote/gmail_quote.
+// Failure direction is deliberately safe: if we can't be sure it's an opt-out
+// from the sender's own words, the reply is SURFACED for a human instead of
+// silently suppressed.
+function replyOwnText(raw) {
+  let s = String(raw || '');
+  const headerEnd = s.search(/\r?\n\r?\n/);           // end of top-level headers
+  if (headerEnd >= 0) s = s.slice(headerEnd + 2);
+  s = s.replace(/=\r?\n/g, '');                        // quoted-printable soft breaks
+  s = s.replace(/<blockquote[\s\S]*$/i, '');           // HTML quoted original
+  s = s.replace(/<div[^>]*class="gmail_quote[\s\S]*$/i, '');
+  s = s.split(/^On .{0,300} wrote:\s*$/m)[0];          // Gmail/Apple attribution
+  s = s.split(/^-{2,}\s*Original Message\s*-{2,}\s*$/mi)[0]; // Outlook classic
+  s = s.split(/^\s*_{6,}\s*$/m)[0];                    // Outlook divider
+  s = s.split(/^\s*From:\s.+$/m)[0];                   // Outlook top-quote header block
+  return s
+    .split(/\r?\n/)
+    .filter((l) => !/^\s*>/.test(l))                   // ">"-quoted lines
+    .join('\n');
+}
+
 // Scan INBOX for genuine replies from people we emailed. Opt-outs -> suppress.txt
 // (+ draft removed). Everything else is surfaced for a human to read. Returns
 // { newlySuppressed, replies }.
@@ -290,7 +318,7 @@ async function sweepReplies(knownRecipients, ourMsgIds = new Set(), msgIdMap = {
           const { content } = await imap.download(String(c.uid), undefined, { uid: true });
           for await (const chunk of content) { text += chunk.toString('utf8'); if (text.length > 100000) break; }
         } catch { /* subject-only classification */ }
-        if (OPTOUT_RE.test(`${c.subject}\n${text}`)) {
+        if (OPTOUT_RE.test(`${c.subject}\n${replyOwnText(text)}`)) {
           if (!suppressed.has(c.recipient)) { suppressed.add(c.recipient); newlySuppressed.push(c.recipient); }
         } else {
           replies.push({ from: c.from, subject: c.subject });

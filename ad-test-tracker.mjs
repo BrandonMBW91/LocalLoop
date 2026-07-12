@@ -43,7 +43,13 @@ const DRY = process.argv.includes('--dry');
 // day/spend math). The next run captures the fresh baseline.
 if (process.argv.includes('--reset')) {
   try { unlinkSync(new URL(`./ad-test-state.json`, import.meta.url)); console.log('ad-test-state.json cleared; the next run captures a fresh baseline.'); }
-  catch { console.log('no ad-test-state.json to clear.'); }
+  catch (e) {
+    // Only a MISSING file is fine; a locked/permission-blocked file must fail
+    // loudly, or the operator believes the test was reset while the old
+    // baseline is still on disk.
+    if (e.code === 'ENOENT') { console.log('no ad-test-state.json to clear.'); }
+    else { console.error(`could not clear ad-test-state.json (${e.code}): ${e.message}`); process.exit(1); }
+  }
   process.exit(0);
 }
 

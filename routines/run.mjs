@@ -21,7 +21,10 @@ const ROOT = join(HERE, '..'); // repo root (routines/ is one level down)
 // with a Linux $HOME and can't read C:\ paths — sync-memory.sh would look for
 // memory in the wrong place. Prefer Git Bash explicitly when it exists.
 const GIT_BASH = 'C:/Program Files/Git/usr/bin/bash.exe';
-const BASH = process.platform === 'win32' && existsSync(GIT_BASH) ? GIT_BASH : 'bash';
+// null (not a bare 'bash' fallback) when Git Bash is missing on Windows: bare
+// 'bash' resolves to WSL's bash with a Linux $HOME, which would run
+// sync-memory.sh against the wrong filesystem entirely.
+const BASH = process.platform === 'win32' ? (existsSync(GIT_BASH) ? GIT_BASH : null) : 'bash';
 
 // type: 'node' runs the script with this node; 'bash' runs it with bash.
 // cwd is relative to the repo root. note explains what the mode actually does.
@@ -81,6 +84,7 @@ function listAll() {
 }
 
 function runSpec(spec) {
+  if (spec.type === 'bash' && !BASH) { console.error(`Git Bash not found at ${GIT_BASH}; refusing to fall back to WSL bash.`); process.exit(1); }
   const cmd = spec.type === 'node' ? process.execPath : spec.type === 'bash' ? BASH : spec.type;
   console.log(`\n> ${cmd === process.execPath ? 'node' : cmd} ${spec.args.join(' ')}  (cwd: ${spec.cwd})\n`);
   const r = spawnSync(cmd, spec.args, { cwd: join(ROOT, spec.cwd || '.'), stdio: 'inherit', timeout: spec.timeout || 600000 });

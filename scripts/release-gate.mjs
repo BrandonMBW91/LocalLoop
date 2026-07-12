@@ -67,39 +67,69 @@ if (PLATFORM === 'ios') {
   console.log(`[${stamp}] iOS ${VERSION} is LIVE (READY_FOR_SALE).`);
 }
 
-// The cur===VERSION check below is the ONLY thing standing between a scheduled
-// re-run and a duplicate broadcast to every device, so a failed SELECT must
-// abort — treating an error body as "not flipped yet" would re-push on every
-// transient API blip.
-const sel = await sql(`select value->'${PLATFORM}'->>'latest' as latest from public.app_config where key='version';`);
+// Two idempotency keys, both read up front: `latest` (the prompt gate) and
+// `update_push_sent` (the broadcast marker). A failed SELECT must abort —
+// treating an error body as "not flipped yet" would re-push on every transient
+// API blip.
+const sel = await sql(`select value->'${PLATFORM}'->>'latest' as latest, value->'${PLATFORM}'->>'update_push_sent' as push_sent from public.app_config where key='version';`);
 if (!Array.isArray(sel)) { console.error(`[${stamp}] gate SELECT failed (refusing to flip blind): ${JSON.stringify(sel).slice(0, 200)}`); process.exit(1); }
 const cur = sel[0]?.latest;
-if (cur === VERSION) { console.log(`[${stamp}] ${PLATFORM}.latest already ${VERSION} — prompt already armed. Done.`); process.exit(0); }
-if (DRY) { console.log(`[${stamp}] [dry] would flip ${PLATFORM}.latest ${cur} -> ${VERSION}.`); process.exit(0); }
-// RETURNING proves the row existed AND the value actually changed; jsonb_set
-// silently no-ops when the platform key is absent, and the management API
-// returns [] for an UPDATE that matched zero rows — both would otherwise
-// "succeed" and broadcast without ever arming the prompt.
-const res = await sql(`update public.app_config set value=jsonb_set(value,'{${PLATFORM},latest}','"${VERSION}"'), updated_at=now() where key='version' returning value->'${PLATFORM}'->>'latest' as latest;`);
-if (!Array.isArray(res) || res.length !== 1 || res[0]?.latest !== VERSION) {
-  console.error(`[${stamp}] flip FAILED or unverified (no broadcast sent): ${JSON.stringify(res).slice(0, 200)}`);
-  process.exit(1);
+const pushSent = sel[0]?.push_sent;
+if (cur === VERSION && pushSent === VERSION) { console.log(`[${stamp}] ${PLATFORM}.latest already ${VERSION} and update push already sent. Done.`); process.exit(0); }
+if (DRY) { console.log(`[${stamp}] [dry] would ${cur === VERSION ? 'skip the flip (already armed)' : `flip ${PLATFORM}.latest ${cur} -> ${VERSION}`} and ${pushSent === VERSION ? 'skip the push (already sent)' : 'send the update push'}.`); process.exit(0); }
+if (cur !== VERSION) {
+  // Compare-and-swap: the WHERE clause means only ONE concurrent run can win
+  // the flip (the loser matches zero rows). RETURNING proves the row existed
+  // and the value actually changed — jsonb_set silently no-ops on an absent
+  // platform key, and the management API returns [] for a zero-row UPDATE.
+  const res = await sql(`update public.app_config set value=jsonb_set(value,'{${PLATFORM},latest}','"${VERSION}"'), updated_at=now() where key='version' and value->'${PLATFORM}'->>'latest' is distinct from '${VERSION}' returning value->'${PLATFORM}'->>'latest' as latest;`);
+  if (!Array.isArray(res)) { console.error(`[${stamp}] flip UPDATE failed: ${JSON.stringify(res).slice(0, 200)}`); process.exit(1); }
+  if (res.length === 0) {
+    console.log(`[${stamp}] another run flipped ${PLATFORM}.latest concurrently; continuing to the push check.`);
+  } else if (res[0]?.latest !== VERSION) {
+    console.error(`[${stamp}] flip unverified (no broadcast sent): ${JSON.stringify(res).slice(0, 200)}`);
+    process.exit(1);
+  } else {
+    console.log(`[${stamp}] ✔ Flipped ${PLATFORM}.latest ${cur} -> ${VERSION}. Users below ${VERSION} now get the in-app "Update available" prompt.`);
+  }
 }
-console.log(`[${stamp}] ✔ Flipped ${PLATFORM}.latest ${cur} -> ${VERSION}. Users below ${VERSION} now get the in-app "Update available" prompt.`);
+
+// Claim the broadcast marker BEFORE sending (compare-and-swap, at most once):
+// a crash after the old flip-then-push lost the one-time push forever, and two
+// concurrent runs could both send it. Claiming first means the worst crash case
+// is a missed push (users still get the in-app prompt), never a duplicate blast.
+const claim = await sql(`update public.app_config set value=jsonb_set(value,'{${PLATFORM},update_push_sent}','"${VERSION}"'), updated_at=now() where key='version' and value->'${PLATFORM}'->>'update_push_sent' is distinct from '${VERSION}' returning 1 as ok;`);
+if (!Array.isArray(claim)) { console.error(`[${stamp}] push-marker claim failed (no push sent): ${JSON.stringify(claim).slice(0, 200)}`); process.exit(1); }
+if (claim.length === 0) { console.log(`[${stamp}] update push already sent (marker present). Done.`); process.exit(0); }
 
 // One-time broadcast push so users are told to update even without opening the app.
 // Runs ONLY on the flip (the check above is idempotent), and ONLY to this platform's
 // tokens — the other store may not have the release yet. Best-effort.
 const store = PLATFORM === 'android' ? 'Play Store' : 'App Store';
-const rows = await sql(`select token from public.push_tokens where platform='${PLATFORM}' and token is not null;`);
-const tokens = Array.isArray(rows) ? rows.map((r) => r.token) : [];
+// Paged defensively (the row cap of the management query endpoint is not
+// documented; past it an unpaged select would silently truncate the broadcast).
+const tokens = [];
+for (let o = 0; ; o += 1000) {
+  const page = await sql(`select token from public.push_tokens where platform='${PLATFORM}' and token is not null order by token limit 1000 offset ${o};`);
+  if (!Array.isArray(page)) { console.error(`[${stamp}] token page failed: ${JSON.stringify(page).slice(0, 150)}`); break; }
+  tokens.push(...page.map((r) => r.token));
+  if (page.length < 1000) break;
+}
 const body = `${WHATS_NEW} Update now in the ${store}.`;
-let sent = 0;
+// Expo answers HTTP 200 with PER-MESSAGE tickets; counting pr.ok as "sent" hid
+// every dead token (DeviceNotRegistered etc.). Count real ticket statuses.
+let sent = 0, errored = 0, deadTokens = 0;
 for (let i = 0; i < tokens.length; i += 100) {
   const batch = tokens.slice(i, i + 100).map((to) => ({ to, title: 'Update available', body, sound: 'default' }));
   try {
     const pr = await fetch('https://exp.host/--/api/v2/push/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(batch) });
-    if (pr.ok) sent += batch.length;
-  } catch { /* best-effort broadcast */ }
+    const tickets = (await pr.json().catch(() => null))?.data;
+    if (Array.isArray(tickets)) {
+      for (const t of tickets) {
+        if (t.status === 'ok') sent += 1;
+        else { errored += 1; if (t.details?.error === 'DeviceNotRegistered') deadTokens += 1; }
+      }
+    } else if (pr.ok) { sent += batch.length; } // unexpected shape; keep old optimistic count
+  } catch { errored += batch.length; /* best-effort broadcast */ }
 }
-console.log(`[${stamp}] update push sent to ${sent}/${tokens.length} ${PLATFORM} device(s).`);
+console.log(`[${stamp}] update push sent to ${sent}/${tokens.length} ${PLATFORM} device(s)` + (errored ? ` (${errored} failed, ${deadTokens} dead tokens worth pruning)` : '') + '.');

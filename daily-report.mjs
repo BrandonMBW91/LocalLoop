@@ -24,9 +24,11 @@ const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
 // The "day" window is the PREVIOUS full calendar day, local time (midnight to
 // midnight) — so the headline reflects one complete day, not a rolling 24h that
 // straddles today's partial data. dayStart = yesterday 00:00, dayEnd = today 00:00.
+// Built from calendar components (NOT -86400000ms): on DST transition days the
+// local day is 23/25h, and the fixed-ms subtraction lands an hour off midnight.
 const now = new Date();
 const dayEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // today 00:00 local
-const dayStartDate = new Date(dayEndDate.getTime() - 86400000);                // yesterday 00:00 local
+const dayStartDate = new Date(dayEndDate.getFullYear(), dayEndDate.getMonth(), dayEndDate.getDate() - 1); // yesterday 00:00 local
 const dayStart = dayStartDate.toISOString();
 const dayEnd = dayEndDate.toISOString();
 const dayLabel = dayStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -48,13 +50,28 @@ const BOOST = {
   note: '$10/day, Findlay +25mi, engagement goal',
 };
 
+// Both helpers FAIL LOUDLY on an API error: parsing a 4xx as 0 / [] would
+// produce a confidently-formatted report full of plausible zeros during an
+// outage or auth break — worse than no report at all.
 async function count(path) {
   const r = await fetch(`${SB}/rest/v1/${path}`, { headers: { ...H, Prefer: 'count=exact', Range: '0-0' } });
-  return Number((r.headers.get('content-range') || '/0').split('/')[1]) || 0;
+  if (!r.ok) throw new Error(`count ${path.split('?')[0]} -> HTTP ${r.status}`);
+  const range = r.headers.get('content-range');
+  if (!range) throw new Error(`count ${path.split('?')[0]} -> no content-range header`);
+  return Number(range.split('/')[1]) || 0;
 }
+// Paginates past PostgREST's server row cap (~1000; a bigger limit= is silently
+// ignored). Callers must include an order= param for stable pages.
 async function rows(path) {
-  const r = await fetch(`${SB}/rest/v1/${path}`, { headers: H });
-  return r.ok ? r.json() : [];
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const r = await fetch(`${SB}/rest/v1/${path}&limit=1000&offset=${from}`, { headers: H });
+    if (!r.ok) throw new Error(`rows ${path.split('?')[0]} -> HTTP ${r.status}`);
+    const page = await r.json();
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
 }
 
 const [
@@ -74,14 +91,14 @@ const [
   count('events?select=id&status=eq.approved'),
 ]);
 
-// Per-device city + platform, looked up so the day's opens can be attributed to a
-// town/platform accurately even when a device has reopened since (device_activity
-// only keeps the latest last_seen per device, so filtering it by a past day would
-// drop returning devices).
+// Per-device city + platform lookup. NOTE: device_activity keeps only the
+// device's CURRENT (latest) town/platform, so yesterday's opens are attributed
+// to where the device is NOW — an approximation that's exact unless a device
+// switched towns since (rare, and the alternative would drop returning devices).
 const platName = (p) => (p === 'ios' ? 'iOS' : p === 'android' ? 'Android' : 'unknown');
 const daInfo = {};
 const byPlatform = {};
-for (const d of await rows('device_activity?select=device_id,city_id,platform')) {
+for (const d of await rows('device_activity?select=device_id,city_id,platform&order=device_id.asc')) {
   daInfo[d.device_id] = { city: d.city_id, platform: d.platform };
   const k = platName(d.platform); byPlatform[k] = (byPlatform[k] || 0) + 1;
 }
@@ -90,7 +107,7 @@ for (const d of await rows('device_activity?select=device_id,city_id,platform'))
 // Opened = distinct devices with ANY event that day (matches the trend's per-day
 // device count); actions = taps only (app_open excluded). Since the 1.0.1 update
 // every open logs an app_open, so this is a complete picture for a recent day.
-const dayEvs = await rows(`app_events?select=event,device_id,props&created_at=gte.${dayStart}&created_at=lt.${dayEnd}&limit=8000`);
+const dayEvs = await rows(`app_events?select=event,device_id,props&created_at=gte.${dayStart}&created_at=lt.${dayEnd}&order=id.asc`);
 const openDevs = new Set();
 const activeDevs = new Set();
 const byType = {};
@@ -117,7 +134,15 @@ for (const id of openDevs) {
 
 // Real user posts: created_by is set = a signed-in local. Our own curated posts
 // come in via the service role with no created_by, so this filters them out.
-const uPostWhen = (t) => { const d = Math.floor((Date.now() - new Date(t)) / 86400000); return d <= 0 ? 'today' : d === 1 ? '1d ago' : d + 'd ago'; };
+// Calendar-day buckets (not rolling 24h) so the label agrees with the day-window
+// counts above it: a post from yesterday morning is "1d ago", not "today".
+const uPostWhen = (t) => {
+  const d = new Date(t);
+  const cal = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((today - cal) / 86400000);
+  return days <= 0 ? 'today' : days === 1 ? '1d ago' : days + 'd ago';
+};
 const [uEv, uGs, uFt] = await Promise.all([
   rows(`events?select=title,city_id,created_at&source_uid=is.null&created_by=not.is.null&created_at=gte.${weekAgo}&order=created_at.desc`),
   rows(`garage_sales?select=title,city_id,created_at&created_by=not.is.null&created_at=gte.${weekAgo}&order=created_at.desc`),
@@ -133,7 +158,7 @@ const userPosts24 = userPosts.filter((p) => p.at >= dayStart && p.at < dayEnd).l
 // 7-day trend, bucketed by local calendar day. "active" = distinct devices that
 // did anything that day (includes openers via app_open going forward); "actions"
 // = taps only (excludes app_open).
-const weekEvs = await rows(`app_events?select=event,device_id,created_at&created_at=gte.${weekAgo}&limit=8000`);
+const weekEvs = await rows(`app_events?select=event,device_id,created_at&created_at=gte.${weekAgo}&order=id.asc`);
 const dayKey = (iso) => new Date(iso).toLocaleDateString('en-CA'); // YYYY-MM-DD local
 const trend = {};
 for (const e of weekEvs) {
@@ -164,7 +189,7 @@ if (BOOST.startedAt && boostRecent) {
     count(`app_events?select=id&event=eq.app_open&created_at=gte.${BOOST.startedAt}${lte}`),
     count(`app_events?select=id&event=neq.app_open&created_at=gte.${BOOST.startedAt}${lte}`),
   ]);
-  const evSince = await rows(`app_events?select=device_id&created_at=gte.${BOOST.startedAt}${lte}&limit=8000`);
+  const evSince = await rows(`app_events?select=device_id&created_at=gte.${BOOST.startedAt}${lte}&order=id.asc`);
   const devActiveSince = new Set(evSince.map((e) => e.device_id).filter(Boolean)).size;
   const endMs = end ? new Date(end).getTime() : Date.now();
   const days = Math.max(1, Math.round((endMs - new Date(BOOST.startedAt).getTime()) / 86400000));

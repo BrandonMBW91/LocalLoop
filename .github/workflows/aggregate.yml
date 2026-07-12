@@ -71,9 +71,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        # No --send: prints who it WOULD push so we can confirm the match logic on
-        # real data before enabling delivery. Flip to `... --send` after verifying a
-        # push arrives on a device (follow a truck, post a new stop for it).
+        # LIVE: --send was deliberately enabled (commit b6b20cf, Jul 2026) after
+        # verifying the match logic on real data. Followers of a truck get one
+        # deduped push when it posts a new stop.
         run: node notify-truck-followers.mjs --send
       - name: Retention (drop aggregator events older than 60 days)
         working-directory: aggregator

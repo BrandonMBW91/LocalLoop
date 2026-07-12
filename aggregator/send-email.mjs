@@ -40,11 +40,17 @@ if (!args.to || !args.subject) {
 let body = args.body || '';
 if (!body && args.file) body = readFileSync(args.file, 'utf8');
 if (!body && !process.stdin.isTTY) {
-  body = await new Promise((res) => {
-    let s = '';
-    process.stdin.on('data', (d) => (s += d));
-    process.stdin.on('end', () => res(s));
-  });
+  // A scheduler/wrapper can spawn us with a piped stdin it never writes to or
+  // closes; waiting for 'end' would hang forever. Give stdin 10s, then fall
+  // through to the empty-body error below (loud non-zero exit).
+  body = await Promise.race([
+    new Promise((res) => {
+      let s = '';
+      process.stdin.on('data', (d) => (s += d));
+      process.stdin.on('end', () => res(s));
+    }),
+    new Promise((res) => setTimeout(() => res(''), 10000)),
+  ]);
 }
 if (!body.trim()) {
   console.error('Empty body — pass --body=, --file=, or pipe stdin.');

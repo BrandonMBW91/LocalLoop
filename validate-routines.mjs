@@ -31,13 +31,17 @@ const add = (routine, status, detail) => results.push({ routine, status, detail 
 // read C:\ paths and false-FAILs every .sh check outside Git Bash). Prefer Git
 // Bash explicitly when it exists.
 const GIT_BASH = 'C:/Program Files/Git/usr/bin/bash.exe';
-const BASH = process.platform === 'win32' && existsSync(GIT_BASH) ? GIT_BASH : 'bash';
+// null (not a bare 'bash' fallback) when Git Bash is missing on Windows: bare
+// 'bash' resolves to WSL's System32 bash there, which cannot read C:\ paths and
+// would false-FAIL every .sh check — worse than an honest "not found".
+const BASH = process.platform === 'win32' ? (existsSync(GIT_BASH) ? GIT_BASH : null) : 'bash';
 
 // ---- primitive checks -------------------------------------------------------
 function syntaxOk(relPath) {
   const abs = join(DIR, relPath);
   if (!existsSync(abs)) return { ok: false, why: `missing: ${relPath}` };
   const isSh = relPath.endsWith('.sh');
+  if (isSh && !BASH) return { ok: false, why: `Git Bash not found at ${GIT_BASH}; cannot syntax-check ${relPath}` };
   const r = spawnSync(isSh ? BASH : process.execPath, isSh ? ['-n', abs] : ['--check', abs], {
     encoding: 'utf8', timeout: 30000,
   });
@@ -110,7 +114,13 @@ const ROUTINES = [
     // exact remote sync-memory.sh pushes to, so an auth break fails HERE
     // instead of silently failing every night at 9:40 PM.
     dry: () => {
-      const r = spawnSync('git', ['ls-remote', 'https://github.com/BrandonMBW91/localloop-memory.git', 'HEAD'], { encoding: 'utf8', timeout: 30000 });
+      // GIT_TERMINAL_PROMPT=0 + GCM_INTERACTIVE=never: without them a missing/
+      // expired credential pops an interactive auth dialog that outlives the
+      // 30s kill and leaves a stray window on an unattended machine.
+      const r = spawnSync('git', ['ls-remote', 'https://github.com/BrandonMBW91/localloop-memory.git', 'HEAD'], {
+        encoding: 'utf8', timeout: 30000,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' },
+      });
       if (r.error) return { ok: false, why: `git unavailable: ${r.error.message}` };
       return r.status === 0
         ? { ok: true }
@@ -155,13 +165,14 @@ if (!QUICK) {
     const KEY = g('SUPABASE_SERVICE_ROLE_KEY');
     const res = await fetch(`${SB}/rest/v1/app_config?select=key&limit=1`, {
       headers: { apikey: KEY, Authorization: 'Bearer ' + KEY },
+      signal: AbortSignal.timeout(15000), // a blackholed connection must not hang the whole run
     });
     add('infra:supabase', res.ok ? 'PASS' : 'FAIL', res.ok ? 'reachable + authorized' : `HTTP ${res.status}`);
   } catch (e) { add('infra:supabase', 'FAIL', e.message); }
 
   // Resend API key valid (list domains; read-only, sends nothing).
   try {
-    const res = await fetch('https://api.resend.com/domains', { headers: { Authorization: 'Bearer ' + g('RESEND_API_KEY') } });
+    const res = await fetch('https://api.resend.com/domains', { headers: { Authorization: 'Bearer ' + g('RESEND_API_KEY') }, signal: AbortSignal.timeout(15000) });
     add('infra:resend', res.ok ? 'PASS' : 'FAIL', res.ok ? 'API key valid' : `HTTP ${res.status}`);
   } catch (e) { add('infra:resend', 'FAIL', e.message); }
 
@@ -176,6 +187,7 @@ if (!QUICK) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ city_id: 'findlay', title: 'Routine self-check dry run', body: 'Automated validation, nothing is sent.', dry: true }),
+      signal: AbortSignal.timeout(15000),
     });
     // 200 (audience), 422 (content lint), 429 (cooldown) all prove it is up + authorized.
     const healthy = [200, 422, 429].includes(res.status);
