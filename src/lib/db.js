@@ -365,6 +365,34 @@ export async function submitTruckCalendar({ name, cityId, cuisine, icalUrl, cont
   if (error) throw error;
 }
 
+// Self-serve EVENT calendar intake: an organizer registers a Google / iCal link
+// ONCE and their events auto-appear after admin review. Same shape as the truck
+// intake: a SECURITY DEFINER RPC drops a PENDING, disabled event_sources row that
+// the aggregator only pulls once approved (see supabase/event_source_intake.sql).
+export async function submitEventSource({ name, cityId, url, category, contact }) {
+  const { error } = await supabase.rpc('submit_event_source', {
+    p_name: name,
+    p_city: cityId,
+    p_url: url,
+    p_category: category || 'Community',
+    p_contact: contact || '',
+  });
+  if (error) throw error;
+}
+
+// Admin: list pending self-serve event-calendar submissions. event_sources is
+// service-role locked, so these go through is_admin()-gated SECURITY DEFINER RPCs.
+export async function fetchPendingCalendars() {
+  const { data, error } = await supabase.rpc('admin_pending_event_sources');
+  if (error) throw error;
+  return data || [];
+}
+// Admin: approve (enable + start pulling) or reject (delete) a pending calendar.
+export async function setCalendarStatus(id, approve) {
+  const { error } = await supabase.rpc('admin_set_event_source', { p_id: id, p_approve: approve });
+  if (error) throw error;
+}
+
 export async function insertFoodTruck(truck) {
   const { data, error } = await supabase
     .from('food_trucks')

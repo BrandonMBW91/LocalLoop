@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, Pressable, RefreshControl, ActivityIndica
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchPending, setPostStatus, fetchReported, dismissReports } from '../src/lib/db';
+import { fetchPending, setPostStatus, fetchReported, dismissReports, fetchPendingCalendars, setCalendarStatus } from '../src/lib/db';
 import { CITIES } from '../src/data/cities';
 import { colors, spacing, radius } from '../src/theme/theme';
 import { formatShortDate } from '../src/utils/dates';
@@ -96,6 +96,7 @@ export default function ModerateScreen() {
   const { isAdmin, refresh, refreshPendingCount } = useApp();
   const [items, setItems] = useState([]);
   const [reported, setReported] = useState([]);
+  const [calendars, setCalendars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [preview, setPreview] = useState(null); // { item, reported }
@@ -103,9 +104,10 @@ export default function ModerateScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [pending, flagged] = await Promise.all([fetchPending(), fetchReported()]);
+      const [pending, flagged, cals] = await Promise.all([fetchPending(), fetchReported(), fetchPendingCalendars()]);
       setItems(pending);
       setReported(flagged);
+      setCalendars(cals);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -147,6 +149,20 @@ export default function ModerateScreen() {
     }
   };
 
+  // Approve (start auto-importing) or reject (delete) a pending self-serve calendar.
+  const decideCalendar = async (cal, approve) => {
+    setBusyId(cal.id);
+    try {
+      await setCalendarStatus(cal.id, approve);
+      setCalendars((prev) => prev.filter((c) => c.id !== cal.id));
+      if (approve) refresh(); // approved feed's events flow in on the next aggregate run
+    } catch (e) {
+      Alert.alert('Could not update', e?.message || 'Please try again.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   // Remove a reported listing: reject it (hides it) and clear its reports.
   const removeReported = async (item) => {
     setBusyId(item.id);
@@ -173,7 +189,7 @@ export default function ModerateScreen() {
     );
   }
 
-  const nothing = items.length === 0 && reported.length === 0;
+  const nothing = items.length === 0 && reported.length === 0 && calendars.length === 0;
 
   return (
     <ScrollView
@@ -223,6 +239,56 @@ export default function ModerateScreen() {
                           <>
                             <Ionicons name="checkmark" size={20} color={colors.textInverse} />
                             <ThemedText size="body" weight="bold" color={colors.textInverse}>Keep</ThemedText>
+                          </>
+                        )}
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : null}
+
+          {/* Pending calendars — self-serve event feeds waiting to be turned on. */}
+          {calendars.length > 0 ? (
+            <>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="calendar-outline" size={18} color={colors.accent} />
+                <ThemedText size="subtitle" weight="bold">Pending calendars ({calendars.length})</ThemedText>
+              </View>
+              <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
+                An organizer connected their calendar. Approve to start auto-importing their events, or reject it.
+              </ThemedText>
+              {calendars.map((cal) => {
+                const busy = busyId === cal.id;
+                return (
+                  <View key={`cal-${cal.id}`} style={styles.card}>
+                    <View style={styles.kindRow}>
+                      <View style={[styles.kindBadge, { backgroundColor: colors.accent }]}>
+                        <ThemedText size="tiny" weight="bold" color={colors.textInverse}>CALENDAR</ThemedText>
+                      </View>
+                      {cal.city_id ? (
+                        <View style={[styles.kindBadge, styles.townBadge]}>
+                          <Ionicons name="location" size={11} color={colors.text} />
+                          <ThemedText size="tiny" weight="bold" color={colors.text}>{CITY_NAME[cal.city_id] || cal.city_id}</ThemedText>
+                        </View>
+                      ) : null}
+                    </View>
+                    <ThemedText size="subtitle" weight="bold" numberOfLines={2}>{cal.name}</ThemedText>
+                    <ThemedText size="small" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 2 }}>{cal.url}</ThemedText>
+                    <ThemedText size="small" color={colors.textMuted} style={{ marginTop: 2 }}>
+                      {(cal.default_category || 'Community')}{cal.submitted_contact ? ` · ${cal.submitted_contact}` : ''}
+                    </ThemedText>
+                    <View style={styles.actions}>
+                      <Pressable style={[styles.btn, styles.reject, busy && { opacity: 0.5 }]} onPress={() => decideCalendar(cal, false)} disabled={busy}>
+                        <Ionicons name="close" size={20} color={colors.danger} />
+                        <ThemedText size="body" weight="bold" color={colors.danger}>Reject</ThemedText>
+                      </Pressable>
+                      <Pressable style={[styles.btn, styles.approve, busy && { opacity: 0.5 }]} onPress={() => decideCalendar(cal, true)} disabled={busy}>
+                        {busy ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
+                          <>
+                            <Ionicons name="checkmark" size={20} color={colors.textInverse} />
+                            <ThemedText size="body" weight="bold" color={colors.textInverse}>Approve</ThemedText>
                           </>
                         )}
                       </Pressable>

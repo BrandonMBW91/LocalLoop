@@ -5,46 +5,13 @@
 //   node truck-calendars.mjs --dry-run  # report only
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { lookup } from 'node:dns/promises';
-import net from 'node:net';
 import { loadDotEnv } from './env.mjs';
 import { wallParts } from './et.mjs';
+import { safeFetch } from './safe-fetch.mjs';
 
-// SSRF guard: truck-calendar feeds are submitted by anyone and auto-approved, and this
-// script runs with the service role, so a feed URL must never point us at an internal
-// address. Validate the scheme + the resolved IP, and follow redirects MANUALLY so a
-// public URL can't 302 us onto localhost / cloud metadata / a private range.
-function isPrivateIp(ip) {
-  if (net.isIPv4(ip)) {
-    const p = ip.split('.').map(Number);
-    return p[0] === 0 || p[0] === 127 || p[0] === 10
-      || (p[0] === 169 && p[1] === 254) || (p[0] === 172 && p[1] >= 16 && p[1] <= 31)
-      || (p[0] === 192 && p[1] === 168) || p[0] >= 224;
-  }
-  const s = ip.toLowerCase();
-  return s === '::1' || s === '::' || s.startsWith('fe80:') || s.startsWith('fc') || s.startsWith('fd') || s.startsWith('::ffff:');
-}
-async function assertPublicUrl(u) {
-  let url;
-  try { url = new URL(u); } catch { throw new Error('bad url'); }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error(`blocked scheme ${url.protocol}`);
-  const host = url.hostname.replace(/^\[|\]$/g, '');
-  if (/^(localhost|.*\.local|.*\.internal|metadata\.google\.internal)$/i.test(host)) throw new Error('blocked host');
-  if (net.isIP(host)) { if (isPrivateIp(host)) throw new Error('private ip'); return; }
-  const { address } = await lookup(host);
-  if (isPrivateIp(address)) throw new Error('private ip');
-}
-async function safeFeedFetch(u, headers) {
-  let current = u;
-  for (let hop = 0; hop < 4; hop++) {
-    await assertPublicUrl(current);
-    const res = await fetch(current, { headers, redirect: 'manual' });
-    const loc = res.headers.get('location');
-    if (res.status >= 300 && res.status < 400 && loc) { current = new URL(loc, current).toString(); continue; }
-    return res;
-  }
-  throw new Error('too many redirects');
-}
+// SSRF-safe fetch (scheme/host/resolved-IP checks + socket-level DNS pin + manual
+// redirects) lives in ./safe-fetch.mjs, shared with the event aggregator — truck
+// feeds are user-submitted and this runs with the service role.
 
 loadDotEnv();
 const DRY = process.argv.includes('--dry-run');
@@ -139,7 +106,7 @@ let totalStops = 0;
 for (const cal of cals) {
   let stops = 0, skipped = 0, error = null;
   try {
-    const res = await safeFeedFetch(cal.ical_url, UA);
+    const res = await safeFetch(cal.ical_url, UA);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error('not iCal (bot wall or moved feed?)');

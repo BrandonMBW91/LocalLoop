@@ -12,6 +12,7 @@
 import './tz-utc.mjs'; // MUST be first: pins TZ=UTC before node-ical/rrule load (see file)
 import { createHash } from 'node:crypto';
 import ical from 'node-ical';
+import { safeFetch } from './safe-fetch.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { classifyEvents, emojiFor } from './classify.mjs';
@@ -136,16 +137,13 @@ async function fetchICS(url) {
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
     if (attempt > 0) await sleep(1500 * attempt); // 1.5s, then 3s
     try {
-      const res = await fetch(url, {
-        headers: {
-          // Full browser UA: several feeds' WAFs (PrestoSports, mod_security) 403/406
-          // the honest bot UA but allow a browser string.
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-          Accept: 'text/calendar, text/plain, */*',
-          Referer: new URL(url).origin + '/',
-        },
-        redirect: 'follow',
+      const res = await safeFetch(url, {
+        // Full browser UA: several feeds' WAFs (PrestoSports, mod_security) 403/406
+        // the honest bot UA but allow a browser string.
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        Accept: 'text/calendar, text/plain, */*',
+        Referer: new URL(url).origin + '/',
       });
       if (!res.ok) {
         const err = new Error(`HTTP ${res.status}`);
@@ -288,6 +286,10 @@ function makeRow(ev, source, start, end) {
     host: source.name,
     description,
     source_uid,
+    // The feed this row came from, so the reconcile step can remove ONLY this
+    // feed's own future events when they vanish/cancel/reschedule. null for the
+    // --url CLI test path and any source without an id.
+    source_id: source.id || null,
     image_url: httpsUrl(ev.image),
     ticket_url: httpsUrl(ev.url),
   };
@@ -384,6 +386,10 @@ async function pullSource(source) {
     if (!ev || ev.type !== 'VEVENT' || !ev.uid || !ev.start) continue;
     // A cancelled master means the whole series (or single event) is off.
     if (String(ev.status || '').toUpperCase() === 'CANCELLED') continue;
+    // Honor the organizer's own privacy flag: a self-serve calendar's Private /
+    // Confidential entries must never surface (the app promises this). node-ical
+    // exposes the iCal CLASS property as ev.class.
+    if (['PRIVATE', 'CONFIDENTIAL'].includes(String(ev.class || ev.CLASS || '').toUpperCase())) continue;
 
     const allDay = ev.datetype === 'date' || ev.start.dateOnly === true;
     const durationMs = ev.end ? new Date(ev.end).getTime() - new Date(ev.start).getTime() : 0;
@@ -449,6 +455,7 @@ async function pullSource(source) {
     for (const o of overrides) {
       if (!o || !o.start) continue;
       if (String(o.status || '').toUpperCase() === 'CANCELLED') continue;
+      if (['PRIVATE', 'CONFIDENTIAL'].includes(String(o.class || o.CLASS || '').toUpperCase())) continue;
       const oAllDay = o.datetype === 'date' || o.start.dateOnly === true;
       const oDur = o.end ? new Date(o.end).getTime() - new Date(o.start).getTime() : durationMs;
       emit({ ...ev, ...o }, oAllDay, new Date(o.start), oDur);
@@ -513,6 +520,25 @@ async function main() {
     }
     console.log(`  parsed ${rows.length} upcoming events`);
     await stamp(source, { last_ok_at: new Date().toISOString(), last_event_count: rows.length, last_error: null });
+
+    // Reconcile: the feed is the source of truth. Remove THIS feed's own future
+    // events that are no longer in it — cancelled, deleted, rescheduled to a new
+    // slot, or newly filtered out as private — so a partner's changes propagate on
+    // the next pull. Scoped to source_id so it never touches another feed's rows,
+    // user-posted events, or anything in the past. Runs only on a healthy pull that
+    // returned events (we are past the fetch/parse try, and rows.length guards a
+    // transient empty pull from wiping a whole calendar).
+    if (!DRY_RUN && supabase && source.id && rows.length) {
+      const keep = rows.map((r) => r.source_uid);
+      const { error: recErr, count } = await supabase
+        .from('events')
+        .delete({ count: 'exact' })
+        .eq('source_id', source.id)
+        .gt('start_at', new Date().toISOString())
+        .not('source_uid', 'in', `(${keep.join(',')})`);
+      if (recErr) console.error(`  ! reconcile failed: ${recErr.message}`);
+      else if (count) console.log(`  reconciled: removed ${count} stale event(s) no longer in the feed`);
+    }
 
     if (DRY_RUN) {
       rows.slice(0, 8).forEach((r) =>

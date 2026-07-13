@@ -15,6 +15,7 @@ import ThemedText from '../../src/components/ThemedText';
 import DateTimeField from '../../src/components/DateTimeField';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
+import { submitEventSource } from '../../src/lib/db';
 import { screenContent } from '../../src/utils/moderation';
 import { findDuplicateEvent } from '../../src/utils/dedup';
 import { formatShortDate, formatTime } from '../../src/utils/dates';
@@ -59,11 +60,42 @@ export default function SubmitScreen() {
   const [contact, setContact] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Self-serve calendar intake (mirrors the food-truck "add your calendar" flow).
+  const [calName, setCalName] = useState('');
+  const [calUrl, setCalUrl] = useState('');
+  const [calSubmitting, setCalSubmitting] = useState(false);
+
   const inputFontSize = Math.round(baseFont.body * scale);
 
   const reset = () => {
     setTitle(''); setCategory('Community'); setDateValue(null); setStartTimeValue(null); setEndTimeValue(null);
     setVenue(''); setAddress(''); setPrice(''); setDescription(''); setContact('');
+  };
+
+  const onAddCalendar = async () => {
+    if (!calName.trim()) {
+      Alert.alert('Add a name', 'Give your calendar a name (your venue, organization, or series), then paste the link.');
+      return;
+    }
+    const url = calUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      Alert.alert('Check the link', 'Paste your calendar link. It should start with http (a Google Calendar or website .ics link).');
+      return;
+    }
+    try {
+      setCalSubmitting(true);
+      await submitEventSource({ name: calName.trim(), cityId: city.id, url, category, contact: contact.trim() });
+      setCalUrl(''); setCalName('');
+      Alert.alert(
+        'Thanks! 🎉',
+        `We'll review your calendar, then keep your events in ${city.name} updated automatically, so you never post them one by one. This can take a day.`,
+        [{ text: 'Done', onPress: () => router.replace('/') }]
+      );
+    } catch (e) {
+      Alert.alert('Could not add calendar', e?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setCalSubmitting(false);
+    }
   };
 
   const onSubmit = async (opts = {}) => {
@@ -222,6 +254,59 @@ export default function SubmitScreen() {
           </View>
         </Field>
 
+        {backendEnabled ? (
+          <View style={styles.calCard}>
+            <View style={styles.calHead}>
+              <Ionicons name="calendar" size={20} color={colors.accent} />
+              <ThemedText size="body" weight="bold" color={colors.accent}>Have a whole calendar of events?</ThemedText>
+            </View>
+            <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 8 }}>
+              Add your Google Calendar or website calendar link once and we'll keep your events updated automatically, so you never post them one by one. We review it first. Add the calendar name and category above.
+            </ThemedText>
+            <ThemedText size="small" color={colors.textMuted} style={{ marginBottom: 8 }}>
+              Keep something private? Anything marked Private in your calendar (or on a separate personal calendar) stays off Local Loop. Only your public events show.
+            </ThemedText>
+            <TextInput
+              value={calName}
+              onChangeText={setCalName}
+              placeholder="Calendar name (your venue, org, or series)"
+              placeholderTextColor={colors.textMuted}
+              style={[styles.input, { fontSize: inputFontSize, marginBottom: spacing.sm }]}
+            />
+            <TextInput
+              value={calUrl}
+              onChangeText={setCalUrl}
+              placeholder="https://calendar.google.com/…/basic.ics"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              style={[styles.input, { fontSize: inputFontSize }]}
+            />
+            <Pressable
+              style={[styles.calBtn, calSubmitting && { opacity: 0.6 }]}
+              onPress={onAddCalendar}
+              disabled={calSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel="Add my calendar"
+            >
+              <Ionicons name="add-circle" size={20} color={colors.accent} />
+              <ThemedText size="body" weight="bold" color={colors.accent}>
+                {calSubmitting ? 'Sending…' : 'Add my calendar'}
+              </ThemedText>
+            </Pressable>
+            <ThemedText size="tiny" color={colors.textMuted} style={{ marginTop: 6, textAlign: 'center' }}>
+              Free, and your events update themselves from your calendar.
+            </ThemedText>
+          </View>
+        ) : null}
+
+        <View style={styles.orRow}>
+          <View style={styles.orLine} />
+          <ThemedText size="small" color={colors.textMuted}>or add a single event</ThemedText>
+          <View style={styles.orLine} />
+        </View>
+
         <Field label="Date" required>
           <DateTimeField mode="date" value={dateValue} onChange={setDateValue} />
         </Field>
@@ -341,6 +426,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     minHeight: 44,
   },
+  calCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  calHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 },
+  calBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    borderWidth: 1.5, borderColor: colors.accent, borderRadius: radius.pill,
+    paddingVertical: spacing.md, marginTop: spacing.md, minHeight: 52,
+  },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
