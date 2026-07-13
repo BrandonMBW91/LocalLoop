@@ -1,5 +1,7 @@
 # Routine: ll-ad-test (daily 8:18 AM)
 
+**ON HOLD (Michael, Jul 12 2026): the ad test does NOT start until the new 1.0.4 build is released.** Until this notice is removed from this file, do NOT run ad-test-tracker.mjs at all (its very first run captures the baseline and starts the spend clock, which must not happen before the ads launch). Just report one line: "ad test on hold until the 1.0.4 build is released" and stop. When Michael says the build is out and the ads are launching, this hold gets removed and the steps below apply again.
+
 Run the Local Loop Facebook ad test/control tracker and report the result.
 
 Context: this routine measures a paired baseline test to decide whether $5/day Facebook ads are worth scaling. Three TEST towns (Canton, Sandusky, Tiffin) each run a $5/day Traffic ad plus a free community post; three matched CONTROL towns (Youngstown, Ashland, Bucyrus) get the free post only. The metric is per-town 30-day MAU (the same number the in-app Metrics screen shows). Net ad lift = test MAU gain minus control MAU gain, which cancels ordinary organic growth. Michael runs the ads manually; this routine only measures.
