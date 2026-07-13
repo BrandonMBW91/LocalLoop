@@ -23,21 +23,22 @@ function ctaFor(linkUrl) {
 // "your ad could be here" placeholder (that pitch lives on the Advertise screen).
 // Pass `index` in a list so multiple slots rotate through the available sponsors.
 export default function AdBanner({ index = 0 }) {
-  const { sponsors = [], backendEnabled } = useApp();
+  const { sponsors = [], backendEnabled, isDevWeb } = useApp();
   const sponsor = sponsors.length ? sponsors[index % sponsors.length] : null;
+  const track = backendEnabled && !isDevWeb; // real users only — never dev/preview web
 
   // Count an impression the first time a real ad is shown this session.
   useEffect(() => {
-    if (backendEnabled && sponsor?.id && !countedImpressions.has(sponsor.id)) {
+    if (track && sponsor?.id && !countedImpressions.has(sponsor.id)) {
       countedImpressions.add(sponsor.id);
       trackSponsor(sponsor.id, 'impression');
     }
-  }, [backendEnabled, sponsor?.id]);
+  }, [track, sponsor?.id]);
 
   if (sponsor) {
     const cta = ctaFor(sponsor.linkUrl);
     const open = () => {
-      if (backendEnabled && sponsor.id) trackSponsor(sponsor.id, 'click');
+      if (track && sponsor.id) trackSponsor(sponsor.id, 'click');
       if (sponsor.linkUrl) Linking.openURL(sponsor.linkUrl).catch(() => {});
     };
     return (

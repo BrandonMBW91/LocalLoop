@@ -230,12 +230,20 @@ export function AppProvider({ children }) {
     session?.user?.email && session.user.email.toLowerCase() === ADMIN_EMAIL
   );
 
+  // Web is now PRODUCTION (localloop.io serves this app), so real web visitors
+  // MUST count toward metrics + advertiser reach. Only genuine dev/preview is
+  // excluded — Expo's __DEV__ builds and localhost — so `expo start --web` and
+  // local test builds never pollute the numbers.
+  const isDevWeb =
+    Platform.OS === 'web' &&
+    (__DEV__ || (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)));
+
   // Fire-and-forget product analytics, auto-tagged with the anon device + city.
   // No-op for the admin/owner so their own usage is never counted.
   const logEvent = useCallback(
     (event, props = {}) => {
       if (isAdmin) return;
-      if (Platform.OS === 'web') return; // dev/preview sessions must never pollute analytics
+      if (isDevWeb) return; // exclude only dev/preview web, not real localloop.io traffic
       trackEvent({ event, props, deviceId, cityId });
     },
     [deviceId, cityId, isAdmin]
@@ -295,9 +303,9 @@ export function AppProvider({ children }) {
   // user-based ad pricing.
   useEffect(() => {
     setupAndroidChannel(); // Android needs a channel to display any notification (no-op on iOS)
-    // Skip for the admin/owner AND for web (dev/preview) — neither may enter the
-    // metrics ('web' rows polluted the iOS/Android split before this guard).
-    if (isSupabaseEnabled && !isAdmin && Platform.OS !== 'web' && deviceId && cityId) {
+    // Skip the admin/owner and dev/preview web; real localloop.io web visitors DO
+    // count (they record with platform 'web', a distinct bucket from iOS/Android).
+    if (isSupabaseEnabled && !isAdmin && !isDevWeb && deviceId && cityId) {
       recordDeviceActivity(deviceId, cityId, Platform.OS);
       // Log one app_open per launch so daily opens are tracked historically in
       // app_events (device_activity is upsert-only and keeps no per-day history).
@@ -620,6 +628,7 @@ export function AppProvider({ children }) {
 
     // Auth / backend
     backendEnabled: isSupabaseEnabled,
+    isDevWeb, // true only on dev/localhost web — callers skip analytics when set
     signedIn: Boolean(session),
     session,
     requestOtp,
