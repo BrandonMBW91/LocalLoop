@@ -180,7 +180,7 @@ const NAMES_A_CITY = /,\s*(?:oh|ohio)\b|\b(?:oh|ohio)\s+\d{5}\b/i;
 // country and NO Ohio marker at all, it's out of area → return null up front.
 const NON_OH_STATE = new Set(['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
 const OH_MARKER = /,\s*oh\b|\bohio\b|\b4[3-5]\d{3}\b/i;
-function outOfArea(loc) {
+export function outOfArea(loc) {
   if (OH_MARKER.test(loc)) return false; // any Ohio marker wins
   for (const m of loc.matchAll(/,\s*([A-Za-z]{2})\b/g)) {
     if (NON_OH_STATE.has(m[1].toUpperCase())) return true;

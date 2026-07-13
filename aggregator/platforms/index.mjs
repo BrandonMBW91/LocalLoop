@@ -13,10 +13,12 @@ import * as librarymarket from './librarymarket.mjs';
 import * as bibliocommons from './bibliocommons.mjs';
 import * as communico from './communico.mjs';
 import * as simpleview from './simpleview.mjs';
+import * as baselocal from './baselocal.mjs';
 
 export const PLATFORMS = {
   librarymarket,
   bibliocommons,
   communico,
   simpleview,
+  baselocal,
 };

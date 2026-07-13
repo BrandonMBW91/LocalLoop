@@ -20,7 +20,7 @@ import { deriveVenue } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
 import { PLATFORMS } from './platforms/index.mjs';
 import { etToDate, etNoon, etWallToDate, wallParts } from './et.mjs';
-import { cityFromLocation } from './towns.mjs';
+import { cityFromLocation, outOfArea } from './towns.mjs';
 import { normalizeText, cleanLocation, cleanDescription } from '../src/lib/text.js';
 
 loadDotEnv();
@@ -246,6 +246,19 @@ const UNSAFE_RE = /\b(f+u+c+k+\w*|sh[i1]t+\w*|b[i1]tch\w*|c+u+n+t+|assholes?|\bw
 // published "[object Object]" titles. Unwrap like httpsUrl already does.
 const txt = (v) => (v && typeof v === 'object' && 'val' in v ? v.val : v);
 
+// County/metro-wide feeds whose branches sit in dozens of suburbs we don't serve
+// as their own towns. cityFromLocation drops those branch events as "out of area"
+// (the address names e.g. Beachwood or Solon, real Ohio cities not in our list),
+// which gutted Cuyahoga from ~1,750 events to 44. For these named sources we roll
+// an unplaceable-but-in-Ohio location up to the metro they were configured for, so
+// every county-library branch shows under its metro. Columbus/Cincinnati barely
+// change (their branches are inside the annexed city); Cleveland is the big win.
+const METRO_ROLLUP = new Set([
+  'Cuyahoga County Public Library',
+  'Cincinnati & Hamilton County Public Library',
+  'Columbus Metropolitan Library',
+]);
+
 function makeRow(ev, source, start, end) {
   const { venue: rawVenue, address: rawAddress } = deriveVenue(txt(ev.location), source.name);
   const venue = cleanLocation(rawVenue);
@@ -261,7 +274,14 @@ function makeRow(ev, source, start, end) {
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
   // Assign to the town in the event's location, not the feed's host town.
   // null = the address names a city we don't serve (out of area) → drop it.
-  const cityId = cityFromLocation(`${venue} ${address}`, source.city_id);
+  let cityId = cityFromLocation(`${venue} ${address}`, source.city_id);
+  // Metro county-library rollup: an in-Ohio suburb we don't serve individually is
+  // kept under the metro instead of dropped. outOfState (handled inside
+  // cityFromLocation via outOfArea) still returns a served id or the fallback, so
+  // this only rescues the NAMES_A_CITY drop, never an out-of-state address.
+  if (!cityId && METRO_ROLLUP.has(source.name) && !outOfArea(`${venue} ${address}`)) {
+    cityId = source.city_id;
+  }
   if (!cityId) return null;
   const startIso = start.toISOString();
   // Dedup key from the event's stable IDENTITY (town + title + start), not the
@@ -492,6 +512,14 @@ async function main() {
     const { data, error } = await supabase.from('event_sources').select('*').eq('enabled', true);
     if (error) throw error;
     sources = data || [];
+    // --only=<substring> re-pulls just the matching feed(s) — e.g. after a
+    // connector fix, or to top up a source that collapsed on the nightly run,
+    // without re-hitting all ~130 feeds.
+    if (args.only) {
+      const q = String(args.only).toLowerCase();
+      sources = sources.filter((s) => (s.name || '').toLowerCase().includes(q));
+      console.log(`--only=${args.only} → ${sources.length} source(s): ${sources.map((s) => s.name).join(', ')}`);
+    }
   }
   if (!DRY_RUN && !supabase) supabase = await getClient();
 
@@ -519,25 +547,62 @@ async function main() {
       continue;
     }
     console.log(`  parsed ${rows.length} upcoming events`);
-    await stamp(source, { last_ok_at: new Date().toISOString(), last_event_count: rows.length, last_error: null });
+
+    // Collapse guard: some upstreams (flaky Communico library instances) return
+    // HTTP 200 with only a FRACTION of their catalog — no error to catch. A
+    // healthy Cuyahoga pull is ~2300; a degraded one returns 44. If a pull comes
+    // back at under half this feed's known size, treat it as untrustworthy: do
+    // NOT reconcile (which would DELETE the real events as "no longer in feed"),
+    // and do NOT overwrite the good baseline count with the degraded one.
+    const prevCount = source.last_event_count || 0;
+    const collapsed = prevCount >= 50 && rows.length < prevCount * 0.5;
+    if (collapsed) {
+      console.warn(`  ! pull collapsed (${rows.length} vs baseline ${prevCount}) — skipping reconcile, keeping existing events`);
+      await stamp(source, { last_ok_at: new Date().toISOString(), last_error: `collapsed pull: ${rows.length} of ~${prevCount}` });
+    } else {
+      await stamp(source, { last_ok_at: new Date().toISOString(), last_event_count: rows.length, last_error: null });
+    }
 
     // Reconcile: the feed is the source of truth. Remove THIS feed's own future
     // events that are no longer in it — cancelled, deleted, rescheduled to a new
     // slot, or newly filtered out as private — so a partner's changes propagate on
     // the next pull. Scoped to source_id so it never touches another feed's rows,
     // user-posted events, or anything in the past. Runs only on a healthy pull that
-    // returned events (we are past the fetch/parse try, and rows.length guards a
-    // transient empty pull from wiping a whole calendar).
-    if (!DRY_RUN && supabase && source.id && rows.length) {
-      const keep = rows.map((r) => r.source_uid);
-      const { error: recErr, count } = await supabase
-        .from('events')
-        .delete({ count: 'exact' })
-        .eq('source_id', source.id)
-        .gt('start_at', new Date().toISOString())
-        .not('source_uid', 'in', `(${keep.join(',')})`);
-      if (recErr) console.error(`  ! reconcile failed: ${recErr.message}`);
-      else if (count) console.log(`  reconciled: removed ${count} stale event(s) no longer in the feed`);
+    // returned events (rows.length guards a transient empty pull, !collapsed guards
+    // a partial one, from wiping a whole calendar).
+    if (!DRY_RUN && supabase && source.id && rows.length && !collapsed) {
+      const nowIso = new Date().toISOString();
+      const keep = new Set(rows.map((r) => r.source_uid));
+      // A giant NOT IN (~2000 uids inline) overflows PostgREST ("Bad Request"),
+      // the same overflow the uid lookup below already dodges. Instead READ this
+      // feed's future uids (paginated past the 1000-row cap), diff against the
+      // pull, and DELETE the set-difference in chunks. Never deletes a kept row.
+      const existUids = [];
+      let recReadFailed = false;
+      for (let from = 0; ; from += 1000) {
+        const { data: ex, error: exErr } = await supabase
+          .from('events').select('source_uid')
+          .eq('source_id', source.id).gt('start_at', nowIso)
+          .range(from, from + 999);
+        if (exErr) { console.error(`  ! reconcile read failed: ${exErr.message}`); recReadFailed = true; break; }
+        (ex || []).forEach((r) => existUids.push(r.source_uid));
+        if (!ex || ex.length < 1000) break;
+      }
+      if (!recReadFailed) {
+        const stale = [...new Set(existUids)].filter((u) => !keep.has(u));
+        let removed = 0;
+        for (let i = 0; i < stale.length; i += 200) {
+          const { error: delErr, count } = await supabase
+            .from('events')
+            .delete({ count: 'exact' })
+            .eq('source_id', source.id)
+            .gt('start_at', nowIso)
+            .in('source_uid', stale.slice(i, i + 200));
+          if (delErr) { console.error(`  ! reconcile delete failed: ${delErr.message}`); break; }
+          removed += count || 0;
+        }
+        if (removed) console.log(`  reconciled: removed ${removed} stale event(s) no longer in the feed`);
+      }
     }
 
     if (DRY_RUN) {

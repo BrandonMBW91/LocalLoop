@@ -21,17 +21,39 @@ const trim = (s) => String(s || '').trim();
 export async function pull(source, { floor, cutoff }) {
   const host = source.url.replace(/\/+$/, '');
   const sub = new URL(host).hostname.split('.')[0];
-  const days = Math.min(120, Math.ceil((cutoff - floor) / 86400000));
-  const req = encodeURIComponent(JSON.stringify({
-    private: false,
-    date: new Date(floor).toISOString().slice(0, 10),
-    days,
-  }));
-
-  const res = await fetch(`${host}/eeventcaldata?event_type=0&req=${req}`, { headers: UA });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  if (!Array.isArray(data)) throw new Error('not a JSON array (Communico shape changed)');
+  // Fetch in 30-day slices, then merge+dedup by event id. A single wide window
+  // 500s on the busier instances (seen on columbus.libnet.info at 120 days), so
+  // we cap each request's span; each slice retries once on a transient error, and
+  // a slice that still fails never aborts the rest of the library.
+  const DAY = 86400000;
+  const totalDays = Math.min(120, Math.max(1, Math.ceil((cutoff - floor) / DAY)));
+  const CHUNK = 30;
+  const seen = new Set();
+  const data = [];
+  for (let off = 0; off < totalDays; off += CHUNK) {
+    const days = Math.min(CHUNK, totalDays - off);
+    const date = new Date(floor + off * DAY).toISOString().slice(0, 10);
+    const req = encodeURIComponent(JSON.stringify({ private: false, date, days }));
+    const url = `${host}/eeventcaldata?event_type=0&req=${req}`;
+    let arr = null;
+    for (let attempt = 0; attempt < 2 && !arr; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 600));
+      try {
+        const res = await fetch(url, { headers: UA });
+        if (!res.ok) continue;
+        const j = await res.json();
+        if (Array.isArray(j)) arr = j;
+      } catch { /* transient — retry once */ }
+    }
+    if (!arr) continue; // this slice failed both attempts; keep the rest
+    for (const e of arr) {
+      const k = e && e.id != null ? String(e.id) : `${e && e.title}|${e && e.raw_start_time}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      data.push(e);
+    }
+  }
+  if (!data.length) throw new Error('Communico returned no events (all slices failed)');
 
   // Branch address book (best-effort — custom domains may not resolve on the API host).
   const branchAddr = new Map();
