@@ -422,6 +422,17 @@ export async function fetchGarageSalesByIds(ids) {
   return (data || []).map(rowToSale);
 }
 
+// Total upcoming approved events across every town — the welcome-screen stat.
+export async function fetchUpcomingEventCount() {
+  const { count, error } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'approved')
+    .gte('start_at', new Date().toISOString());
+  if (error) throw error;
+  return count || 0;
+}
+
 // Listings that have been reported, grouped, with the listing details + reasons.
 export async function fetchReported() {
   // Paginate past PostgREST's 1000-row cap so a backlog of reports can't silently

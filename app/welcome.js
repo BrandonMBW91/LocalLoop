@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
+import { CITIES } from '../src/data/cities';
+import { fetchUpcomingEventCount } from '../src/lib/db';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 // One-time first-launch welcome. Explains what the app is in a single sentence
@@ -12,7 +14,20 @@ import { colors, spacing, radius } from '../src/theme/theme';
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { completeOnboarding } = useApp();
+  const { completeOnboarding, backendEnabled } = useApp();
+
+  // Live social proof: how much is already in the app across Ohio.
+  const [eventCount, setEventCount] = useState(null);
+  useEffect(() => {
+    if (!backendEnabled) return;
+    let ok = true;
+    fetchUpcomingEventCount().then((n) => { if (ok) setEventCount(n); }).catch(() => {});
+    return () => { ok = false; };
+  }, [backendEnabled]);
+  const townCount = CITIES.length;
+  const stat = eventCount
+    ? `${(Math.floor(eventCount / 100) * 100).toLocaleString()}+ events across ${townCount} Ohio towns`
+    : `${townCount} Ohio towns and growing`;
 
   const chooseTown = () => router.push({ pathname: '/city', params: { onboarding: '1' } });
   const useDefault = () => {
@@ -30,6 +45,11 @@ export default function WelcomeScreen() {
         <ThemedText size="subtitle" color={colors.textInverse} style={styles.tagline}>
           Events, garage sales, and food trucks near you, all across Ohio.
         </ThemedText>
+        <View style={styles.statPill}>
+          <ThemedText size="small" weight="bold" color={colors.textInverse}>
+            {stat}
+          </ThemedText>
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -81,6 +101,13 @@ const styles = StyleSheet.create({
   },
   brand: { textAlign: 'center' },
   tagline: { textAlign: 'center', opacity: 0.95, lineHeight: 28 },
+  statPill: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
   actions: { gap: spacing.md },
   primaryBtn: {
     backgroundColor: '#FFFFFF',
