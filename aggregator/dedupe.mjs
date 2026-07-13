@@ -78,6 +78,13 @@ async function sweep(apply) {
     const k = `${dedupeKey(e.city_id, e.title, e.start_at)}|${venueSig(e.venue)}`;
     (groups.get(k) || groups.set(k, []).get(k)).push(e);
   }
+  // Offset pagination can return the same row twice if a matching row lands
+  // concurrently mid-scan — the row would then group with ITSELF and its own id
+  // (the only copy of a real event) would be queued for deletion. Collapse by id.
+  for (const [k, evs] of groups) {
+    const seenIds = new Set();
+    groups.set(k, evs.filter((e) => (seenIds.has(e.id) ? false : seenIds.add(e.id))));
+  }
   const remove = [];
   const examples = [];
   for (const [, evs] of groups) {

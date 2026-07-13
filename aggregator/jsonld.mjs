@@ -3,6 +3,8 @@
 // in the HTML — the same structured data search engines read. This pulls those
 // out so we can aggregate sites that don't expose an iCal feed.
 
+import { etToDate } from './et.mjs';
+
 // Find every <script type="application/ld+json"> block and collect Event nodes
 // (handles arrays, @graph, and nested types). Returns objects shaped like the
 // iCal events makeRow() already understands: { summary, start, end, location, description }.
@@ -81,12 +83,18 @@ function imageUrl(img) {
   return '';
 }
 
-// Parse a schema.org date. Date-only strings ("2026-08-08") must parse as LOCAL
-// midnight — JS parses them as UTC, which lands on the previous day in US zones.
+// Parse a schema.org date, SERVER-TIMEZONE-INDEPENDENTLY (the old local-midnight
+// mint put date-only events a day early on the UTC CI runner):
+// - date-only ("2026-08-08") -> noon EASTERN of that calendar day (allDay stays
+//   true downstream, and aggregate's etNoon anchor is idempotent on noon ET);
+// - offset-less datetimes ("2026-08-08T19:00:00") are venue-local Eastern wall
+//   times -> DST-correct ET conversion (new Date(raw) read them as server-local);
+// - explicit Z/offset datetimes parse as-is.
 function parseDate(raw) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(raw || ''));
-  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return new Date(raw);
+  const s = String(raw || '');
+  if (/^(\d{4})-(\d{2})-(\d{2})$/.test(s)) return etToDate(`${s}T12:00`);
+  if (/T\d{2}:\d{2}/.test(s) && !/[Zz]|[+-]\d{2}:?\d{2}$/.test(s)) return etToDate(s) || new Date(s);
+  return new Date(s);
 }
 
 function normalize(node) {

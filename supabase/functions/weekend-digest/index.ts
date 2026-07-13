@@ -44,7 +44,7 @@ function easternOffsetMinutes(at: Date): number {
 // runs until then, so Sunday-evening events (which fall between Sun 8pm ET and
 // Mon midnight ET) are still included instead of being cut off at Mon 00:00 UTC.
 function nextMondayStartET(now: Date): Date {
-  const offMin = easternOffsetMinutes(now);
+  let offMin = easternOffsetMinutes(now);
   // Shift to Eastern wall-clock so we can find the local day, then figure out
   // how many days until the next Monday.
   const etNow = new Date(now.getTime() + offMin * 60000);
@@ -54,7 +54,13 @@ function nextMondayStartET(now: Date): Date {
   const etMidnight = Date.UTC(
     etNow.getUTCFullYear(), etNow.getUTCMonth(), etNow.getUTCDate() + daysToMon, 0, 0, 0, 0,
   );
-  return new Date(etMidnight - offMin * 60000);
+  // The offset can DIFFER at that Monday (DST transition weekends): a Friday
+  // send used Friday's EDT offset for a Monday that is already EST, ending the
+  // window an hour early. Recompute at the candidate instant and re-derive.
+  let result = new Date(etMidnight - offMin * 60000);
+  offMin = easternOffsetMinutes(result);
+  result = new Date(etMidnight - offMin * 60000);
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -91,7 +97,13 @@ Deno.serve(async (req) => {
       .select('token, city_id, interests')
       .order('token', { ascending: true })
       .range(from, from + 999);
-    if (error) break;
+    if (error) {
+      // A DB error is NOT "no tokens": returning 200 would let the workflow go
+      // green while the entire weekly digest silently skipped. Fail loudly.
+      return new Response(JSON.stringify({ sent: 0, error: `token fetch failed: ${error.message}` }), {
+        status: 500, headers: { 'Content-Type': 'application/json' },
+      });
+    }
     tokens.push(...(data || []));
     if ((data || []).length < 1000) break;
   }
@@ -153,15 +165,19 @@ Deno.serve(async (req) => {
   // paired with its token so the receipts pass (?mode=receipts, run ~30 min
   // later) can detect DeviceNotRegistered = the app was uninstalled.
   let removedAtSend = 0;
+  let failedBatches = 0;
   const ticketRows: Array<{ ticket_id: string; token: string }> = [];
   for (let i = 0; i < messages.length; i += 100) {
     const batch = messages.slice(i, i + 100);
-    const res = await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(batch),
-    });
     try {
+      // The fetch lives INSIDE the try: one transient network failure used to
+      // throw out of the whole handler mid-send — remaining batches never sent
+      // and the tickets already collected never persisted.
+      const res = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(batch),
+      });
       const tickets = (await res.json())?.data || [];
       for (let j = 0; j < tickets.length; j++) {
         const t = tickets[j];
@@ -175,13 +191,13 @@ Deno.serve(async (req) => {
           removedAtSend++;
         }
       }
-    } catch { /* ticket parsing is best-effort; the send itself succeeded */ }
+    } catch { failedBatches++; /* skip this batch, keep sending the rest */ }
   }
   if (ticketRows.length) {
     await supabase.from('push_tickets').upsert(ticketRows, { onConflict: 'ticket_id', ignoreDuplicates: true });
   }
 
-  return new Response(JSON.stringify({ sent: messages.length, removedAtSend, receiptsPending: ticketRows.length }), {
+  return new Response(JSON.stringify({ sent: messages.length, removedAtSend, failedBatches, receiptsPending: ticketRows.length }), {
     headers: { 'Content-Type': 'application/json' },
   });
 });

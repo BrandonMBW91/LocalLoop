@@ -9,6 +9,7 @@
 //
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (service-role key — keep secret)
 
+import './tz-utc.mjs'; // MUST be first: pins TZ=UTC before node-ical/rrule load (see file)
 import { createHash } from 'node:crypto';
 import ical from 'node-ical';
 import { createClient } from '@supabase/supabase-js';
@@ -17,7 +18,7 @@ import { classifyEvents, emojiFor } from './classify.mjs';
 import { deriveVenue } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
 import { PLATFORMS } from './platforms/index.mjs';
-import { etToDate, etNoon } from './et.mjs';
+import { etToDate, etNoon, etWallToDate, wallParts } from './et.mjs';
 import { cityFromLocation } from './towns.mjs';
 import { normalizeText, cleanLocation, cleanDescription } from '../src/lib/text.js';
 
@@ -87,8 +88,11 @@ function httpsUrl(raw) {
 // the text actually signals one, otherwise default to Free (nicer than "See details").
 function priceFor(title, description) {
   const text = `${title} ${description}`.toLowerCase();
-  if (/\bfree\b|no (cost|charge|admission|fee)/.test(text)) return 'Free';
+  // Paid signals first: "free parking, $10 admission" must not read as Free.
   if (/\$\d|\bfee\b|\bticket|\badmission\b|\bcost\b|\bpaid\b|\bpurchase\b/.test(text)) return 'See details';
+  // Lookbehind rejects hyphenated compounds (gluten-free, smoke-free) that
+  // otherwise published paid events as Free.
+  if (/(?<![-\w])free\b|no (cost|charge|admission|fee)/.test(text)) return 'Free';
   return 'Free';
 }
 
@@ -97,6 +101,22 @@ function priceFor(title, description) {
 // local ET machine — server-local noon minted different source_uids per runner,
 // re-inserting every all-day event when the runner changed.
 const atLocalNoon = etNoon;
+
+// Date-only values (iCal VALUE=DATE, jsonld date-only) are minted by their
+// parsers at SERVER-LOCAL midnight, so the parsed INSTANT is runner-dependent:
+// deriving the ET day from it (etNoon) anchored every all-day event a day early
+// on UTC CI and duplicated it against the ET desktop run (different source_uid,
+// unmergeable). The LOCAL calendar components are exactly what the parser
+// minted on any runner, so anchor from those.
+const noonETFromLocalDay = (d) => etWallToDate(d.getFullYear(), d.getMonth() + 1, d.getDate(), 12, 0, 0);
+const localDayKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// The noon/midnight-ET minute-zero anchors mark "all day / time unknown" rows.
+const isAllDayAnchor = (iso) => {
+  const w = wallParts(new Date(iso));
+  return w.mi === 0 && w.s === 0 && (w.h === 12 || w.h === 0);
+};
 
 function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -189,11 +209,13 @@ function isNearDupe(a, b) {
   const va = venueTokens(a.venue), vb = venueTokens(b.venue);
   const venueMatch = (!va.size || !vb.size) || jaccard(va, vb) >= 0.5;
   if (!venueMatch) return false; // distinct branch names keep real events apart
-  // Identical title + venue on the same Eastern day = the same event, even if the
-  // start time was shifted (all-day holiday, or a timezone re-anchor between runs
-  // that would otherwise mint a fresh source_uid). Fuzzy title matches still need
-  // the tight 5-minute window so recurring sessions stay separate.
-  if (titleSame && etDay(a.start_at) === etDay(b.start_at)) return true;
+  // Identical title + venue on the same Eastern day = the same event ONLY when
+  // one side carries an all-day anchor (noon/midnight-ET, minute zero) — that's
+  // the timezone-re-anchor/holiday case this rule exists for. Two REAL timed
+  // sessions of the same program (10am and 2pm storytime) must both survive, so
+  // timed-vs-timed pairs fall through to the tight 5-minute window.
+  if (titleSame && etDay(a.start_at) === etDay(b.start_at)
+    && (isAllDayAnchor(a.start_at) || isAllDayAnchor(b.start_at))) return true;
   return Math.abs(new Date(a.start_at) - new Date(b.start_at)) <= 5 * 60000;
 }
 
@@ -221,16 +243,21 @@ function saneEnd(start, end, allDay) {
 // user submissions get screenContent separately.
 const UNSAFE_RE = /\b(f+u+c+k+\w*|sh[i1]t+\w*|b[i1]tch\w*|c+u+n+t+|assholes?|\bwhore|\bslut\b|f+a+g+g?ot|n[i1]gg\w*|burlesque|stripper|striptease|strip\s*club|gentlemen'?s\s*club|escort\s*service|\bxxx\b|\bporn\w*|\bbdsm\b|fetish|wet\s*t.?shirt)\b/i;
 
+// Outlook/Exchange feeds attach iCal parameters (SUMMARY;LANGUAGE=en-US:...),
+// which node-ical stores as {params, val} objects — stringifying those
+// published "[object Object]" titles. Unwrap like httpsUrl already does.
+const txt = (v) => (v && typeof v === 'object' && 'val' in v ? v.val : v);
+
 function makeRow(ev, source, start, end) {
-  const { venue: rawVenue, address: rawAddress } = deriveVenue(ev.location, source.name);
+  const { venue: rawVenue, address: rawAddress } = deriveVenue(txt(ev.location), source.name);
   const venue = cleanLocation(rawVenue);
   const address = cleanLocation(rawAddress);
-  const title = cleanText(ev.summary || 'Untitled').slice(0, 200);
+  const title = cleanText(txt(ev.summary) || 'Untitled').slice(0, 200);
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
   if (WEATHER_RE.test(title)) return null; // skip NWS/weather alerts (not events)
   if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
   if (ACADEMIC_RE.test(title)) return null; // skip academic-calendar admin (add/drop, tuition due, deadlines)
-  const description = cleanDescription(ev.description) || `From ${source.name}.`;
+  const description = cleanDescription(txt(ev.description)) || `From ${source.name}.`;
   if (UNSAFE_RE.test(title)) return null; // drop profane/adult feed content (title only) before it auto-publishes
   // Not an event people attend, even though the title reads like a holiday.
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
@@ -355,10 +382,25 @@ async function pullSource(source) {
   for (const key of Object.keys(data)) {
     const ev = data[key];
     if (!ev || ev.type !== 'VEVENT' || !ev.uid || !ev.start) continue;
+    // A cancelled master means the whole series (or single event) is off.
+    if (String(ev.status || '').toUpperCase() === 'CANCELLED') continue;
 
     const allDay = ev.datetype === 'date' || ev.start.dateOnly === true;
     const durationMs = ev.end ? new Date(ev.end).getTime() - new Date(ev.start).getTime() : 0;
-    const exDates = ev.exdate ? Object.values(ev.exdate).map((d) => new Date(d)) : [];
+
+    // Cancelled occurrences: date-only EXDATEs are local-midnight mints, so
+    // match them by CALENDAR DAY (a 7pm-ET occurrence is the next UTC day, so
+    // runner-day sameDay() missed them); timed EXDATEs match by instant with a
+    // small tolerance instead of a whole runner-local day.
+    const exVals = ev.exdate ? Object.values(ev.exdate) : [];
+    const exInstants = exVals.filter((v) => !(v && v.dateOnly)).map((v) => new Date(v).getTime());
+    const exDays = new Set(exVals.filter((v) => v && v.dateOnly).map((v) => localDayKey(new Date(v))));
+
+    // RECURRENCE-ID overrides: a rescheduled/cancelled single occurrence lives
+    // in ev.recurrences keyed by its ORIGINAL date — the master expansion must
+    // drop those dates, and the moved ones publish at their NEW time below.
+    const overrides = ev.recurrences ? Object.values(ev.recurrences) : [];
+    const overriddenDays = new Set(Object.keys(ev.recurrences || {}).map((k) => String(k).slice(0, 10)));
 
     // Expand recurring events; otherwise just the single instance.
     let starts;
@@ -372,16 +414,44 @@ async function pullSource(source) {
       starts = [new Date(ev.start)];
     }
 
-    for (const raw of starts) {
-      if (exDates.some((ex) => sameDay(ex, raw))) continue; // skip cancelled occurrences
-      const start = allDay ? atLocalNoon(raw) : new Date(raw);
+    const emit = (evLike, occAllDay, rawStart, dMs) => {
+      // Date-only values anchor from their LOCAL calendar components (runner-
+      // independent); timed values are true instants under the pinned TZ.
+      const start = occAllDay ? noonETFromLocalDay(rawStart) : new Date(rawStart);
       const t = start.getTime();
-      // keep if it (or its end) is within the window
-      const endT = durationMs ? t + durationMs : t;
-      if (endT < floor || t > cutoff) continue;
-      const end = durationMs ? new Date(t + durationMs) : null;
-      const row = makeRow(ev, source, start, end);
+      if (Number.isNaN(t)) return;
+      let end = null;
+      if (dMs) {
+        if (occAllDay) {
+          // RFC 5545 DTEND is EXCLUSIVE for date-only events (a 1-day event has
+          // DTEND = the next day): <=1 day collapses to null (the settled
+          // all-day start+12h semantics); multi-day spans end at noon ET of the
+          // last REAL day.
+          end = dMs <= 864e5 ? null : noonETFromLocalDay(new Date(rawStart.getTime() + dMs - 864e5));
+        } else {
+          end = new Date(t + dMs);
+        }
+      }
+      end = saneEnd(start, end, occAllDay); // feeds with DTEND before DTSTART wrote end_at < start_at
+      const endT = end ? end.getTime() : t;
+      if (endT < floor || t > cutoff) return;
+      const row = makeRow(evLike, source, start, end);
       if (row) rows.push(row);
+    };
+
+    for (const raw of starts) {
+      const rawDay = localDayKey(raw);
+      if (allDay ? exDays.has(rawDay) : (exInstants.some((x) => Math.abs(x - raw.getTime()) < 60000) || exDays.has(etDay(raw.toISOString())))) continue;
+      if (overriddenDays.has(rawDay) || overriddenDays.has(etDay(raw.toISOString()))) continue; // replaced by an override below
+      emit(ev, allDay, raw, durationMs);
+    }
+
+    for (const o of overrides) {
+      if (!o || !o.start) continue;
+      if (String(o.status || '').toUpperCase() === 'CANCELLED') continue;
+      const oAllDay = o.datetype === 'date' || o.start.dateOnly === true;
+      const oDur = o.end ? new Date(o.end).getTime() - new Date(o.start).getTime() : durationMs;
+      emit({ ...ev, ...o }, oAllDay, new Date(o.start), oDur);
     }
   }
 
@@ -482,16 +552,25 @@ async function main() {
       const lo = new Date(Math.min(...starts) - 3600000).toISOString();
       const hi = new Date(Math.max(...starts) + 3600000).toISOString();
       const dbRows = [];
+      let windowFailed = false;
       for (let from = 0; ; from += 1000) {
-        const { data: page } = await supabase
+        const { data: page, error: pageErr } = await supabase
           .from('events')
           .select('city_id,title,start_at,venue')
           .gte('start_at', lo)
           .lte('start_at', hi)
           .order('start_at', { ascending: true }).order('id', { ascending: true }) // stable paging; without it a >1000-row window can skip a near-dup
           .range(from, from + 999);
+        if (pageErr) { windowFailed = true; console.error(`  ! dupe-window fetch failed: ${pageErr.message}`); break; }
         dbRows.push(...(page || []));
         if (!page || page.length < 1000) break;
+      }
+      if (windowFailed) {
+        // A transient DB error must not silently disable the near-dupe guard —
+        // inserting unguarded would re-add every variant. Skip this source's
+        // inserts; the next run retries.
+        console.log('  skipping inserts for this source (dupe guard unavailable this run)');
+        continue;
       }
       const kept = [];
       let skipped = 0;

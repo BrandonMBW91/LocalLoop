@@ -16,11 +16,19 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const cutoff = new Date(Date.now() - 60 * 86400 * 1000).toISOString();
 
-const { count } = await sb
+// "Over" means the event ENDED before the cutoff: end_at when present, else
+// start_at. Filtering on start_at alone deleted long-running events (a summer
+// exhibit) while still in progress — which ingestion then re-added nightly.
+const overness = `end_at.lt.${cutoff},and(end_at.is.null,start_at.lt.${cutoff})`;
+
+const { count, error: countErr } = await sb
   .from('events')
   .select('id', { count: 'exact', head: true })
-  .lt('start_at', cutoff)
+  .or(overness)
   .not('source_uid', 'is', null);
+// A failed count must not read as "nothing to delete" — that would report
+// success forever while cleanup silently never runs.
+if (countErr) { console.error('Retention count failed:', countErr.message); process.exit(1); }
 
 if (DRY) {
   console.log(`Would delete ${count || 0} aggregator event(s) older than 60 days (user submissions preserved).`);
@@ -33,7 +41,7 @@ if (!count) {
 const { error } = await sb
   .from('events')
   .delete()
-  .lt('start_at', cutoff)
+  .or(overness)
   .not('source_uid', 'is', null);
 if (error) { console.error('Retention delete failed:', error.message); process.exit(1); }
 console.log(`Retention: removed ${count} aggregator event(s) older than 60 days (user submissions preserved).`);

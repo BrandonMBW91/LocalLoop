@@ -5,7 +5,10 @@
 // Branch addresses ride in each event's location string, so the town router
 // sends "Boardman Branch" events to Boardman even on a county-wide source.
 
-const clean = (s) => String(s || '').replace(/<[^>]*>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+// Strip tags only — do NOT eat HTML entities here: makeRow's shared cleanText/
+// cleanDescription decode them properly, and replacing them with spaces first
+// destroyed apostrophes/quotes in published titles ("Ohio s Birds").
+const clean = (s) => String(s || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const first = (o) => (o && typeof o === 'object' ? Object.values(o)[0] : '') || '';
 
 // Library-local wall-clock ("2026-07-01 16:30:00") in a named tz → UTC Date,

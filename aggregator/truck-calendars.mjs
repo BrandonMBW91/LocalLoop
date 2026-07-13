@@ -66,14 +66,27 @@ function parseICS(text) {
   const re = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
   let m;
   while ((m = re.exec(unfolded))) {
-    const block = m[1];
+    // Strip embedded VALARM sub-components first: their DESCRIPTION ("This is
+    // an event reminder") would otherwise be read as the stop's public note.
+    const block = m[1].replace(/BEGIN:VALARM[\s\S]*?END:VALARM/g, '');
     const get = (name) => {
       const r = new RegExp('^' + name + '(;[^:\\n]*)?:(.*)$', 'm').exec(block);
-      return r ? { params: r[1] || '', value: r[2].trim() } : null;
+      return r ? { params: r[1] || '', value: unescapeText(r[2].trim()) } : null;
     };
-    events.push({ summary: get('SUMMARY'), location: get('LOCATION'), dtstart: get('DTSTART'), dtend: get('DTEND'), desc: get('DESCRIPTION'), cls: get('CLASS'), status: get('STATUS') });
+    events.push({ summary: get('SUMMARY'), location: get('LOCATION'), dtstart: get('DTSTART'), dtend: get('DTEND'), desc: get('DESCRIPTION'), cls: get('CLASS'), status: get('STATUS'), rrule: get('RRULE') });
   }
   return events;
+}
+
+// RFC 5545 TEXT values escape , ; \n and backslash — without unescaping, nearly
+// every address with a comma published with literal backslashes. Order matters:
+// unescape the double-backslash LAST so it can't create new escape sequences.
+function unescapeText(s) {
+  return String(s || '')
+    .replace(/\\n/gi, ' ')
+    .replace(/\\,/g, ',')
+    .replace(/\\;/g, ';')
+    .replace(/\\\\/g, '\\');
 }
 
 // Convert a wall-clock in a named IANA zone to the equivalent UTC instant, using
@@ -131,7 +144,12 @@ for (const cal of cals) {
     const text = await res.text();
     if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error('not iCal (bot wall or moved feed?)');
     const rows = [];
+    let rruleCount = 0;
     for (const ev of parseICS(text)) {
+      // RRULE recurring stops are NOT expanded by this minimal parser — only the
+      // master DTSTART ingests, and once that's past the series silently yields
+      // nothing. Surface it on the calendar record instead of a silent no-op.
+      if (ev.rrule) rruleCount++;
       const start = whenET(ev.dtstart);
       if (!start || start.date < todayET) continue; // future stops only
       // Privacy: never publish an event the owner marked Private/Confidential or
@@ -151,10 +169,16 @@ for (const cal of cals) {
         source_uid: sha1(`${cal.id}|${start.date}|${loc}`),
       });
     }
-    stops = rows.length;
+    // De-dup the payload by source_uid: two same-day events with the same
+    // summary/location hash identically, and Postgres aborts the ENTIRE upsert
+    // with "ON CONFLICT DO UPDATE command cannot affect row a second time".
+    const seenUid = new Set();
+    const uniqueRows = rows.filter((r) => (seenUid.has(r.source_uid) ? false : seenUid.add(r.source_uid)));
+    stops = uniqueRows.length;
+    if (rruleCount && !error) error = `${rruleCount} recurring event(s) not expanded (RRULE unsupported; post stops individually or flatten the series)`;
     if (!DRY) {
-      if (rows.length) {
-        const { error: upErr } = await sb.from('food_trucks').upsert(rows, { onConflict: 'source_uid', ignoreDuplicates: false });
+      if (uniqueRows.length) {
+        const { error: upErr } = await sb.from('food_trucks').upsert(uniqueRows, { onConflict: 'source_uid', ignoreDuplicates: false });
         if (upErr) throw upErr;
       }
       // Reconcile: remove this truck's FUTURE calendar-stops that are no longer in the
@@ -164,7 +188,7 @@ for (const cal of cals) {
       let del = sb.from('food_trucks').delete()
         .eq('city_id', cal.city_id).eq('name', cal.name)
         .gte('date', todayET).not('source_uid', 'is', null);
-      if (rows.length) del = del.not('source_uid', 'in', `(${rows.map((r) => r.source_uid).join(',')})`);
+      if (uniqueRows.length) del = del.not('source_uid', 'in', `(${uniqueRows.map((r) => r.source_uid).join(',')})`);
       const { error: delErr } = await del;
       if (delErr) throw delErr;
     }

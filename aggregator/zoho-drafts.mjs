@@ -20,6 +20,14 @@ const PASS = g('ZOHO_SMTP_PASS');
 const draftsDir = join(ROOT, 'outreach', 'drafts');
 const files = readdirSync(draftsDir).filter((f) => /^\d+.*\.txt$/.test(f)).sort();
 
+// Never upload a draft for a suppressed (opted-out) or bounced lead: such a
+// draft sits one manual send-click away from a CAN-SPAM violation.
+const readLines = (p) => { try { return readFileSync(p, 'utf8').split('\n').filter(Boolean); } catch { return []; } };
+const excluded = new Set([
+  ...readLines(join(ROOT, 'outreach', 'suppress.txt')),
+  ...readLines(join(ROOT, 'outreach', 'bounced.txt')),
+].map((l) => l.split(/\s+/)[0].toLowerCase()).filter(Boolean));
+
 function toMime(txt) {
   const lines = txt.split(/\r?\n/);
   const to = (lines[0].match(/^TO:\s*(.+)$/) || [])[1];
@@ -51,6 +59,7 @@ let ok = 0;
 for (const f of files) {
   const m = toMime(readFileSync(join(draftsDir, f), 'utf8'));
   if (!m) { console.log('skip (bad format):', f); continue; }
+  if (excluded.has(String(m.to).toLowerCase())) { console.log('skip (suppressed/bounced):', m.to); continue; }
   await client.append('Drafts', Buffer.from(m.raw), ['\\Draft']);
   ok++;
   console.log('drafted:', m.subject, '->', m.to);

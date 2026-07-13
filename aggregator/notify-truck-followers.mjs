@@ -43,16 +43,24 @@ async function main() {
     if (already.has(key)) continue;
 
     // Followers of this truck name (case-insensitive) with a push token. Escape
-    // %/_/\ so a name like "50% Off Tacos" is matched LITERALLY, not as an ILIKE
-    // wildcard that would notify unrelated trucks' followers.
-    const nameEsc = String(s.name || '').replace(/([\\%_])/g, '\\$1');
-    const { data: followers } = await sb
+    // %/_/\ AND '*' — PostgREST translates '*' in like/ilike patterns to the SQL
+    // '%' wildcard, so a truck name containing '*' (names are user-supplied)
+    // would match OTHER trucks' followers. '*' has no literal-escape through
+    // PostgREST, so match it with the single-char wildcard '_' instead: strictly
+    // narrower than '%', and the worst case is a one-character mismatch on a
+    // same-length name rather than a cross-truck broadcast.
+    const nameEsc = String(s.name || '').replace(/([\\%_])/g, '\\$1').replace(/\*/g, '_');
+    const { data: followers, error: folErr } = await sb
       .from('truck_follows')
       .select('push_token')
       .ilike('truck_name', nameEsc)
       .not('push_token', 'is', null);
+    // A failed follower query must NOT mark the stop as handled below — the
+    // followers would then never be notified for this stop at all.
+    if (folErr) { console.error(`notify-followers: follower lookup failed for "${s.name}" (will retry next run):`, folErr.message); continue; }
     const tokens = [...new Set((followers || []).map((f) => f.push_token).filter(Boolean))];
 
+    let sendOk = true;
     if (tokens.length) {
       const title = `${s.name} has a new stop`;
       const body = s.location_name
@@ -62,20 +70,25 @@ async function main() {
       if (!DRY) {
         const messages = tokens.map((to) => ({ to, title, body, sound: 'default' }));
         for (let i = 0; i < messages.length; i += 100) {
-          await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify(messages.slice(i, i + 100)),
-          }).catch((e) => console.error('push send failed:', e.message));
+          try {
+            const res = await fetch('https://exp.host/--/api/v2/push/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify(messages.slice(i, i + 100)),
+            });
+            if (!res.ok) { sendOk = false; console.error(`push send HTTP ${res.status}`); }
+          } catch (e) { sendOk = false; console.error('push send failed:', e.message); }
         }
       }
       console.log(`${DRY ? '[dry] would notify' : 'notified'} ${tokens.length} follower(s) of "${s.name}" (${s.location_name || s.date})`);
       notified++;
     }
-    // Mark handled either way (in dry run too? no — only when actually sent, so a
-    // real run still fires. In dry run we DON'T record, so the first --send run
-    // notifies the backlog once.)
-    if (!DRY) {
+    // Record the stop as handled ONLY when the send path succeeded (or there
+    // were genuinely zero followers). Recording a failed send would permanently
+    // mark the stop notified with zero pushes delivered; leaving it unrecorded
+    // lets the next run retry inside the 2-day window. (Dry runs never record,
+    // so the first --send run still notifies the backlog once.)
+    if (!DRY && sendOk) {
       const { error: insErr } = await sb.from('notified_followers')
         .upsert({ stop_key: key }, { onConflict: 'stop_key', ignoreDuplicates: true });
       if (insErr) console.error(`notify-followers: failed to record ${key} (may re-notify next run):`, insErr.message);
