@@ -69,11 +69,13 @@
 
   <div class="foot">
     <button id="add" class="ghost">+ Add group</button>
-    <button id="exp">Download backup</button>
+    <button id="link">Auto-save to file</button>
+    <button id="exp" class="ghost">Download backup</button>
     <button id="imp" class="ghost">Restore backup</button>
     <input type="file" id="impfile" accept=".json" style="display:none">
     <span class="saved" id="savemsg"></span>
   </div>
+  <div class="sub" id="linkstatus" style="margin-top:-8px;"></div>
 </div>
 
 <script>
@@ -191,10 +193,50 @@ function load() {
   return saved;
 }
 function save(msg) {
-  localStorage.setItem(KEY, JSON.stringify(data));
+  localStorage.setItem(KEY, JSON.stringify(data)); // primary: instant, browser
   const m = document.getElementById('savemsg');
   m.textContent = msg || 'Saved';
   clearTimeout(save.t); save.t = setTimeout(() => (m.textContent = ''), 1500);
+  clearTimeout(save.ft); save.ft = setTimeout(writeFile, 400); // mirror to the linked file
+}
+
+// ---- optional auto-save to a real file (Chrome/Edge; File System Access API) ----
+const FS_OK = 'showSaveFilePicker' in window;
+let fileHandle = null;
+const setLinkStatus = (t) => { document.getElementById('linkstatus').textContent = t; };
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('ll-fbg', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+async function idbSet(k, v) { const db = await idb(); return new Promise((res) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; }); }
+async function idbGet(k) { const db = await idb(); return new Promise((res) => { const rq = db.transaction('kv', 'readonly').objectStore('kv').get(k); rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); }); }
+
+async function writeFile() {
+  if (!fileHandle) return;
+  try {
+    const w = await fileHandle.createWritable();
+    await w.write(JSON.stringify(data, null, 2));
+    await w.close();
+    setLinkStatus('Auto-saving to your file. Nothing can be lost.');
+  } catch { fileHandle = null; setLinkStatus('File save stopped. Click Auto-save to file to relink.'); }
+}
+async function ensureLink() {
+  if (!FS_OK) return;
+  const h = await idbGet('handle');
+  if (h && (await h.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+    if ((await h.requestPermission({ mode: 'readwrite' })) === 'granted') { fileHandle = h; await writeFile(); return; }
+  }
+  try {
+    fileHandle = await window.showSaveFilePicker({ suggestedName: 'fb-groups.json',
+      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+    await idbSet('handle', fileHandle); await writeFile();
+  } catch { /* user cancelled the picker */ }
+}
+async function restoreLink() {
+  if (!FS_OK) { document.getElementById('link').style.display = 'none';
+    setLinkStatus('Auto-file needs Chrome or Edge. Your work still saves in this browser; use Download backup to keep a copy.'); return; }
+  const h = await idbGet('handle');
+  if (h && (await h.queryPermission({ mode: 'readwrite' })) === 'granted') { fileHandle = h; setLinkStatus('Auto-saving to your file. Nothing can be lost.'); }
+  else if (h) setLinkStatus('You linked a save file before. Click Auto-save to file to reconnect it.');
+  else setLinkStatus('Tip: click Auto-save to file once to keep a permanent copy that survives anything.');
 }
 
 let filter = 'all', query = '';
@@ -267,6 +309,7 @@ document.getElementById('exp').onclick = () => {
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = 'fb-groups-backup.json'; a.click();
 };
+document.getElementById('link').onclick = ensureLink;
 document.getElementById('imp').onclick = () => document.getElementById('impfile').click();
 document.getElementById('impfile').onchange = (e) => {
   const f = e.target.files[0]; if (!f) return;
@@ -275,6 +318,7 @@ document.getElementById('impfile').onchange = (e) => {
   r.readAsText(f);
 };
 render();
+restoreLink();
 </script>
 </body>
 </html>
