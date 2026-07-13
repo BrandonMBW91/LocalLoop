@@ -618,7 +618,6 @@ async function sendSeeds(sample) {
     try {
       await smtp.sendMail({
         from: `Local Loop <${USER}>`, to, subject: sample.subject, text: sample.body,
-        headers: { 'List-Unsubscribe': `<mailto:${USER}?subject=unsubscribe>` },
       });
       appendFileSync(SEED_LOG, `${new Date().toISOString()}  SEED  ${to}  ${sample.subject}\n`);
       console.log(`seed -> ${to} (check inbox vs spam): "${sample.subject}"`);
@@ -640,10 +639,13 @@ async function sendOne(d) {
         to: d.to,
         subject: d.subject,
         text: body,
-        // A List-Unsubscribe header is a free trust signal to Gmail/Yahoo and lets
-        // their UI offer one-click unsubscribe; the mailto reply ("unsubscribe")
-        // is caught by OPTOUT_RE on the next sweep and suppressed.
-        headers: { 'List-Unsubscribe': `<mailto:${USER}?subject=unsubscribe>` },
+        // NO List-Unsubscribe header, deliberately (Jul 12 2026): it is one of
+        // Gmail's strongest "bulk marketing" signals and was routing these
+        // 1:1-style notes to the PROMOTIONS tab (verified via the seed inbox —
+        // owners weren't seeing them). Personal mail never carries it; at our
+        // volume (~15/day, far under Gmail/Yahoo's 5k/day bulk-sender mandate)
+        // it is not required, and the PS "reply no thanks" line + OPTOUT_RE
+        // sweep remain the compliant CAN-SPAM opt-out mechanism.
       });
     } catch (e) {
       console.error(`send failed (attempt ${attempt}/2) ${d.to}: ${e.message}`);
