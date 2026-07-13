@@ -37,7 +37,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "node scripts/build-web.mjs"
+    "build:web": "node scripts/build-web.mjs",
+    "deploy:web": "node scripts/build-web.mjs && npx --no-install netlify deploy --prod --dir dist"
   },
   "private": true,
   "devDependencies": {
