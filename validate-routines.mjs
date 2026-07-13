@@ -85,6 +85,14 @@ const ROUTINES = [
     dry: () => runSafe(process.execPath, ['ad-test-tracker.mjs', '--dry'], { expect: 'FACEBOOK AD TEST' }),
   },
   {
+    id: 'll-fb-daily',
+    scripts: ['fb-daily-plan.mjs'],
+    env: ['EXPO_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY'],
+    files: [['fb-groups.json', 'FB group tracker data']],
+    // no --email = dry: prints the plan, sends nothing, writes no log.
+    dry: () => runSafe(process.execPath, ['fb-daily-plan.mjs'], { expect: 'LOCAL LOOP FB DAILY PLAN', timeout: 90000 }),
+  },
+  {
     id: 'll-evening-spotlight',
     scripts: ['aggregator/spotlight-candidates.mjs'],
     env: ['CRON_SECRET', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'],

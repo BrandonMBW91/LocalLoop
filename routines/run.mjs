@@ -40,6 +40,11 @@ const ROUTINES = {
     safe: { type: 'node', args: ['ad-test-tracker.mjs', '--dry'], cwd: '.', note: 'prints the current read, no email, no baseline write' },
     live: { type: 'node', args: ['ad-test-tracker.mjs', '--email'], cwd: '.', note: 'EMAILS the report and (on the first run) captures the baseline' },
   },
+  'll-fb-daily': {
+    desc: 'Daily Facebook-group posting plan from the tracker',
+    safe: { type: 'node', args: ['fb-daily-plan.mjs'], cwd: '.', note: "prints today's plan, sends nothing, writes nothing" },
+    live: { type: 'node', args: ['fb-daily-plan.mjs', '--email'], cwd: '.', note: 'EMAILS the plan to michabw91@gmail.com and appends to the log' },
+  },
   'll-evening-spotlight': {
     desc: 'Judge tonight; spotlight push only for a big hitter',
     safe: { type: 'node', args: ['spotlight-candidates.mjs'], cwd: 'aggregator', note: "prints tonight/tomorrow's candidates per town, read-only" },

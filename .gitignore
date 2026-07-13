@@ -71,6 +71,7 @@ site/manage-ad.html
 
 # Local Loop FB routine runtime state
 .fb-featured.json
+.fb-plan-log.json
 local-refresh.log
 *.enc
 .asc-screenshots/
