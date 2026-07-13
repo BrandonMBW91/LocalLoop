@@ -28,6 +28,7 @@
   .g.removed { border-left:6px solid var(--red); }
   .g.posted { border-left:6px solid var(--green); }
   .g.new { border-left:6px solid var(--amber); }
+  .g.pending { border-left:6px solid var(--navy); }
   .g.skipped { border-left:6px solid var(--line); opacity:.75; }
   .top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .name { font-weight:700; font-size:16px; flex:1; min-width:200px; }
@@ -59,6 +60,7 @@
     <input type="search" id="q" placeholder="Search groups or towns...">
     <button class="fbtn on" data-f="all">All</button>
     <button class="fbtn" data-f="new">To post</button>
+    <button class="fbtn" data-f="pending">Pending</button>
     <button class="fbtn" data-f="posted">Posted OK</button>
     <button class="fbtn" data-f="removed">Removed</button>
   </div>
@@ -196,7 +198,7 @@ function save(msg) {
 }
 
 let filter = 'all', query = '';
-const STATUS_LABEL = { posted: 'Posted OK', new: 'Not posted yet', removed: 'REMOVED', skipped: 'Skipped' };
+const STATUS_LABEL = { posted: 'Posted OK', new: 'Not posted yet', pending: 'Pending admin approval', removed: 'REMOVED', skipped: 'Skipped' };
 
 function render() {
   const list = document.getElementById('list');
@@ -216,6 +218,7 @@ function render() {
         <span class="area"></span>
         <select>
           <option value="new">Not posted yet</option>
+          <option value="pending">Pending admin approval</option>
           <option value="posted">Posted OK</option>
           <option value="removed">Removed / deleted</option>
           <option value="skipped">Skipped</option>
@@ -243,7 +246,7 @@ function render() {
   });
   const c = (s) => data.filter((g) => g.status === s).length;
   document.getElementById('counts').textContent =
-    `${shown} shown · ${c('new')} to post · ${c('posted')} posted OK · ${c('removed')} removed · ${c('skipped')} skipped · ${data.length} total`;
+    `${shown} shown · ${c('new')} to post · ${c('pending')} pending · ${c('posted')} posted OK · ${c('removed')} removed · ${c('skipped')} skipped · ${data.length} total`;
 }
 
 document.getElementById('q').oninput = (e) => { query = e.target.value; render(); };
