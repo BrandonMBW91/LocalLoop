@@ -35,6 +35,7 @@ import {
   savePushToken,
   recordDeviceActivity,
   fetchActiveCities,
+  fetchActiveCityCounts,
   deleteAccountRpc,
   toggleTruckFollow,
 } from '../lib/db';
@@ -93,6 +94,7 @@ export function AppProvider({ children }) {
   const [deals, setDeals] = useState([]); // live local deals for the current city
   const [editorPick, setEditorPick] = useState(null); // admin "This Week's Pick"
   const [activeCityIds, setActiveCityIds] = useState(null); // town ids with events (null = unknown → show all)
+  const [cityCounts, setCityCounts] = useState(null); // { cityId: upcomingCount } for the picker (null until loaded)
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -153,6 +155,9 @@ export function AppProvider({ children }) {
     fetchActiveCities().then((ids) => {
       if (ids) setActiveCityIds(new Set(ids));
     });
+    // Per-town counts (density-aware picker). Purely additive: on failure the
+    // picker still renders its list from activeCityIds above.
+    fetchActiveCityCounts().then((m) => setCityCounts(m || {}));
   }, []);
 
   // ---- Load events + garage sales for the current city ----
@@ -590,6 +595,7 @@ export function AppProvider({ children }) {
     deals,
     editorPick,
     activeCityIds,
+    cityCounts,
     loadingData,
     loadError,
     refresh: loadData,

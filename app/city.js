@@ -13,7 +13,7 @@ const CITY_NAME_SET = new Set(CITIES.map((c) => c.id));
 export default function CityPickerScreen() {
   const router = useRouter();
   const { onboarding } = useLocalSearchParams();
-  const { cityId, setCity, scale, activeCityIds } = useApp();
+  const { cityId, setCity, scale, activeCityIds, cityCounts } = useApp();
   const [query, setQuery] = useState('');
 
   // Show only towns the aggregator currently has events for (plus the user's own
@@ -123,6 +123,10 @@ export default function CityPickerScreen() {
             </View>
             {section.items.map((c, i) => {
               const selected = c.id === cityId;
+              // Density-aware label: a real count once a town has enough, else a
+              // friendly "just getting started" so a tiny number never discourages.
+              const n = cityCounts ? cityCounts[c.id] : undefined;
+              const countLabel = n == null ? null : n >= 25 ? `${n.toLocaleString()} events` : 'Just getting started';
               return (
                 <Pressable
                   key={c.id}
@@ -135,7 +139,11 @@ export default function CityPickerScreen() {
                     <ThemedText size="body" weight={selected ? 'bold' : 'regular'}>
                       {c.name}, {c.state}
                     </ThemedText>
-                    {c.tagline ? (
+                    {countLabel ? (
+                      <ThemedText size="small" color={colors.textMuted}>
+                        {countLabel}
+                      </ThemedText>
+                    ) : c.tagline ? (
                       <ThemedText size="small" color={colors.textMuted}>
                         {c.tagline}
                       </ThemedText>

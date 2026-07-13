@@ -769,6 +769,21 @@ export async function fetchActiveCities() {
   }
 }
 
+// Per-town upcoming-event counts for the picker, so a user sees which towns are
+// dense vs just getting started. Additive + fail-safe: returns {} on any error so
+// the picker still renders its town list (which comes from active_cities()).
+export async function fetchActiveCityCounts() {
+  try {
+    const { data, error } = await supabase.rpc('active_city_counts');
+    if (error) throw error;
+    const map = {};
+    for (const r of data || []) map[r.city_id] = r.n;
+    return map;
+  } catch (e) {
+    return {};
+  }
+}
+
 // App-wide runtime config — currently the cross-platform update-prompt version gate
 // ({ ios:{latest,min,url}, android:{...} }). Public row; returns null on any error so
 // the update prompt simply stays quiet rather than surfacing a failure.
