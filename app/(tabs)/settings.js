@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Linking, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Linking, Alert, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
@@ -7,6 +7,7 @@ import ThemedText from '../../src/components/ThemedText';
 import { useApp } from '../../src/context/AppContext';
 import { APP_VERSION, BUILD } from '../../src/version';
 import { openReview } from '../../src/lib/review';
+import { shareAppMessage } from '../../src/lib/links';
 import { formatDateMedium, formatTime } from '../../src/utils/dates';
 import { textScaleOptions, colors, spacing, radius } from '../../src/theme/theme';
 
@@ -76,6 +77,10 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const onShareApp = () => {
+    Share.share({ message: shareAppMessage() }).catch(() => {});
   };
 
   return (
@@ -306,6 +311,18 @@ export default function SettingsScreen() {
           <Ionicons name="star-outline" size={24} color={colors.accent} />
           <ThemedText size="body" weight="semibold" style={{ flex: 1, marginLeft: spacing.sm }}>
             Rate Local Loop
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+        </Pressable>
+        <Pressable
+          style={[styles.row, styles.rowBorder]}
+          onPress={onShareApp}
+          accessibilityRole="button"
+          accessibilityLabel="Tell a friend about Local Loop"
+        >
+          <Ionicons name="share-outline" size={24} color={colors.primary} />
+          <ThemedText size="body" weight="semibold" style={{ flex: 1, marginLeft: spacing.sm }}>
+            Tell a friend about Local Loop
           </ThemedText>
           <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
         </Pressable>

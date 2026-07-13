@@ -6,7 +6,7 @@ import { colors, spacing, radius } from '../theme/theme';
 
 // A friendly, consistent "nothing here yet" state with an optional primary
 // action. Used across the lists, the saved screen, etc.
-export default function EmptyState({ icon, title, body, actionLabel, onAction, accent = colors.primary }) {
+export default function EmptyState({ icon, title, body, actionLabel, onAction, actionIcon = 'add-circle', accent = colors.primary }) {
   return (
     <View style={styles.wrap}>
       <View style={[styles.iconCircle, { backgroundColor: accent + '14' }]}>
@@ -22,7 +22,7 @@ export default function EmptyState({ icon, title, body, actionLabel, onAction, a
       ) : null}
       {actionLabel && onAction ? (
         <Pressable style={({ pressed }) => [styles.btn, { backgroundColor: accent }, pressed && { opacity: 0.85 }]} onPress={onAction}>
-          <Ionicons name="add-circle" size={22} color={colors.textInverse} />
+          <Ionicons name={actionIcon} size={22} color={colors.textInverse} />
           <ThemedText size="body" weight="bold" color={colors.textInverse}>
             {actionLabel}
           </ThemedText>

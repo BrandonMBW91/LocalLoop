@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Share } from 'react-native';
 import ThemedText from '../src/components/ThemedText';
 import EventCard from '../src/components/EventCard';
 import SkeletonList from '../src/components/SkeletonCard';
 import EmptyState from '../src/components/EmptyState';
 import { useApp } from '../src/context/AppContext';
 import { fetchEventsByIds } from '../src/lib/db';
+import { shareAppMessage } from '../src/lib/links';
 import { getEventById } from '../src/data/events';
 import { colors, spacing } from '../src/theme/theme';
 
@@ -13,6 +14,10 @@ export default function SavedScreen() {
   const { savedIds, backendEnabled, submittedEvents } = useApp();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const onShareApp = () => {
+    Share.share({ message: shareAppMessage() }).catch(() => {});
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,7 +51,10 @@ export default function SavedScreen() {
       <EmptyState
         icon="heart-outline"
         title="No saved events yet"
-        body="Tap the heart on any event to save it here for quick access."
+        body="Tap the heart on any event to save it here, then share Local Loop so friends can find things to do too."
+        actionLabel="Tell a friend"
+        onAction={onShareApp}
+        actionIcon="share"
         accent={colors.primary}
       />
     );

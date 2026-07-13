@@ -136,6 +136,7 @@ export default function EventDetailScreen() {
   const onShare = () => {
     Share.share({
       message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('event', id))}`,
+      url: shareUrl('event', id), // iOS uses this to unfurl a rich preview card
     }).catch(() => {});
   };
 

@@ -18,3 +18,11 @@ export function shareFooter(url) {
 
 // Static footer (no specific listing) — used where there's no id to link to.
 export const SHARE_FOOTER = shareFooter(SITE);
+
+// Invite message for sharing the whole app (no specific listing). Uses SITE via
+// SHARE_FOOTER — never a single store's page — so it works for a recipient on
+// either platform. Wired into the "Tell a friend" actions in Settings and the
+// empty Saved state.
+export function shareAppMessage() {
+  return `Your town's happenings in one place: events, garage sales, and food trucks.${SHARE_FOOTER}`;
+}

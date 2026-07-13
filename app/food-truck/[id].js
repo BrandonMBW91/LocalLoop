@@ -13,6 +13,7 @@ import { CUISINE_EMOJI } from '../../src/data/foodTrucks';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { formatLongDate } from '../../src/utils/dates';
 import { shareUrl, shareFooter } from '../../src/lib/links';
+import { addToCalendarUrl } from '../../src/utils/calendar';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -94,7 +95,18 @@ export default function FoodTruckDetailScreen() {
   const onShare = () => {
     Share.share({
       message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime} to ${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('food-truck', truck.id))}`,
+      url: shareUrl('food-truck', truck.id), // iOS uses this to unfurl a rich preview card
     }).catch(() => {});
+  };
+
+  const onAddToCalendar = () => {
+    const url = addToCalendarUrl({
+      title: truck.name,
+      start: truck.date,
+      location: [truck.locationName, truck.address].filter(Boolean).join(', '),
+      details: `${truck.startTime} to ${truck.endTime}${truck.note ? '. ' + truck.note : ''}`,
+    });
+    Linking.openURL(url).catch(() => {});
   };
 
   const following = isFollowing(truck.name);
@@ -136,6 +148,12 @@ export default function FoodTruckDetailScreen() {
           <Ionicons name="share-outline" size={22} color={colors.foodTruck} />
           <ThemedText size="body" weight="bold" color={colors.foodTruck}>
             Share this truck
+          </ThemedText>
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.85 }]} onPress={onAddToCalendar}>
+          <Ionicons name="calendar-outline" size={22} color={colors.foodTruck} />
+          <ThemedText size="body" weight="bold" color={colors.foodTruck}>
+            Add to Calendar
           </ThemedText>
         </Pressable>
         <Pressable

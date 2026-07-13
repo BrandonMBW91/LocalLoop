@@ -13,6 +13,7 @@ import { recordView, fetchOneById } from '../../src/lib/db';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { dateRangeLabel } from '../../src/utils/dates';
 import { shareUrl, shareFooter } from '../../src/lib/links';
+import { addToCalendarUrl } from '../../src/utils/calendar';
 
 function InfoRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? Pressable : View;
@@ -94,7 +95,19 @@ export default function GarageSaleDetailScreen() {
   const onShare = () => {
     Share.share({
       message: `${sale.title}\n${dateRangeLabel(sale.start, sale.end)} · ${sale.dailyStart} to ${sale.dailyEnd}\n${sale.address}${shareFooter(shareUrl('garage-sale', sale.id))}`,
+      url: shareUrl('garage-sale', sale.id), // iOS uses this to unfurl a rich preview card
     }).catch(() => {});
+  };
+
+  const onAddToCalendar = () => {
+    const url = addToCalendarUrl({
+      title: sale.title,
+      start: sale.start,
+      end: sale.end,
+      location: sale.address,
+      details: `${sale.dailyStart} to ${sale.dailyEnd}${sale.note ? '. ' + sale.note : ''}`,
+    });
+    Linking.openURL(url).catch(() => {});
   };
 
   const saved = isSaleSaved(sale.id);
@@ -151,6 +164,12 @@ export default function GarageSaleDetailScreen() {
           <Ionicons name="share-outline" size={22} color={colors.garageSale} />
           <ThemedText size="body" weight="bold" color={colors.garageSale}>
             Share this sale
+          </ThemedText>
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.85 }]} onPress={onAddToCalendar}>
+          <Ionicons name="calendar-outline" size={22} color={colors.garageSale} />
+          <ThemedText size="body" weight="bold" color={colors.garageSale}>
+            Add to Calendar
           </ThemedText>
         </Pressable>
         <Pressable
