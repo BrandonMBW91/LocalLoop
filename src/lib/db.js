@@ -411,6 +411,14 @@ export async function fetchEventsByIds(ids) {
   return (data || []).map(rowToEvent);
 }
 
+// Fetch specific garage sales by id (for the Saved list — can be in any city).
+export async function fetchGarageSalesByIds(ids) {
+  if (!ids || !ids.length) return [];
+  const { data, error } = await supabase.from('garage_sales').select('*').in('id', ids);
+  if (error) throw error;
+  return (data || []).map(rowToSale);
+}
+
 // Listings that have been reported, grouped, with the listing details + reasons.
 export async function fetchReported() {
   // Paginate past PostgREST's 1000-row cap so a backlog of reports can't silently

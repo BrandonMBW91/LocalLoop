@@ -38,6 +38,7 @@ export default function SettingsScreen() {
     textScaleKey,
     setTextScale,
     savedIds,
+    savedSaleIds,
     backendEnabled,
     signedIn,
     session,
@@ -182,14 +183,14 @@ export default function SettingsScreen() {
       </View>
 
       {/* Saved */}
-      <SectionTitle>SAVED EVENTS</SectionTitle>
+      <SectionTitle>SAVED</SectionTitle>
       <View style={styles.card}>
         <Pressable style={styles.row} onPress={() => router.push('/saved')}>
           <Ionicons name="heart" size={24} color={colors.danger} />
           <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
-            {savedIds.length > 0
-              ? `View your ${savedIds.length} saved ${savedIds.length === 1 ? 'event' : 'events'}`
-              : 'No saved events yet'}
+            {savedIds.length + savedSaleIds.length > 0
+              ? `View your ${savedIds.length + savedSaleIds.length} saved ${savedIds.length + savedSaleIds.length === 1 ? 'item' : 'items'}`
+              : 'No saved events or sales yet'}
           </ThemedText>
           <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
         </Pressable>
