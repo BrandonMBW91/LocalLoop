@@ -51,6 +51,10 @@ export const ANCHORS = [
   { name: 'Ashtabula / Grand River Valley', city: 'ashtabula', lat: 41.865, lng: -80.790, radius: 20 }, // Ashtabula, Geneva(-on-the-Lake), Conneaut (Erie PA outside)
   { name: 'Millersburg / Amish Country', city: 'millersburg', lat: 40.554, lng: -81.918, radius: 15 },  // Millersburg + unincorporated Berlin/Walnut Creek route here
   { name: 'Mount Vernon / Knox', city: 'mount-vernon', lat: 40.393, lng: -82.486, radius: 15 },          // Mount Vernon, Fredericktown
+  // --- Big-3 metros (2026 expansion) ---
+  { name: 'Columbus metro', city: 'columbus', lat: 39.961, lng: -82.999, radius: 28 },   // Columbus + Dublin, Westerville, Hilliard, Grove City, Gahanna (Delaware edge overlaps Marion, deduped by source_uid)
+  { name: 'Cleveland metro', city: 'cleveland', lat: 41.499, lng: -81.694, radius: 24 }, // Cleveland + inner ring (Lakewood, Parma); Lake Erie to the N, Akron ~30mi S stays outside
+  { name: 'Cincinnati metro', city: 'cincinnati', lat: 39.103, lng: -84.512, radius: 24 }, // Cincinnati + Norwood, Blue Ash, Mason edge; KY/IN cross-border venues dropped by the town router
 ];
 
 // Great-circle miles between two points (haversine).

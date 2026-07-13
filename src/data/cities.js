@@ -72,6 +72,7 @@ export const CITIES = [
   { id: 'russells-point', name: "Russells Point", state: 'OH', region: CENTRAL, pop: 1433, tagline: "Indian Lake south shore" },
   { id: 'mount-vernon', name: "Mount Vernon", state: 'OH', region: CENTRAL, pop: 16956, tagline: "Knox County's historic seat" },
   { id: 'fredericktown', name: "Fredericktown", state: 'OH', region: CENTRAL, pop: 2533, tagline: "Home of the Tomato Show" },
+  { id: 'columbus', name: "Columbus", state: 'OH', region: CENTRAL, pop: 905748, tagline: "Ohio's capital city" },
   // --- Northeast Ohio (Akron & Canton metros) ---
   // All carry live content from the local-feed aggregator (libraries, city
   // calendars, universities, parks, downtowns) plus Ticketmaster.
@@ -111,6 +112,7 @@ export const CITIES = [
   { id: 'conneaut', name: "Conneaut", state: 'OH', region: NE, pop: 12318, tagline: "Ohio's northeast corner on Lake Erie" },
   { id: 'millersburg', name: "Millersburg", state: 'OH', region: NE, pop: 3131, tagline: "Heart of Amish Country" },
   { id: 'carrollton', name: "Carrollton", state: 'OH', region: NE, pop: 3197, tagline: "Carroll County seat" },
+  { id: 'cleveland', name: "Cleveland", state: 'OH', region: NE, pop: 372624, tagline: "The Forest City" },
   { id: 'zanesville', name: "Zanesville", state: 'OH', region: SE, pop: 24765, tagline: "Y-Bridge city on the Muskingum" },
   { id: 'cambridge', name: "Cambridge", state: 'OH', region: SE, pop: 10089, tagline: "Guernsey County's Dickens town" },
   { id: 'coshocton', name: "Coshocton", state: 'OH', region: SE, pop: 11050, tagline: "Historic Roscoe Village" },
@@ -148,4 +150,5 @@ export const CITIES = [
   { id: 'peebles', name: "Peebles", state: 'OH', region: SW, pop: 1742, tagline: "Gateway to Serpent Mound" },
   { id: 'xenia', name: "Xenia", state: 'OH', region: SW, pop: 25441, tagline: "Bike trail crossroads of Ohio" },
   { id: 'beavercreek', name: "Beavercreek", state: 'OH', region: SW, pop: 46549, tagline: "Greene County's largest city" },
+  { id: 'cincinnati', name: "Cincinnati", state: 'OH', region: SW, pop: 309317, tagline: "The Queen City" },
 ];

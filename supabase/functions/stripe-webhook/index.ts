@@ -65,7 +65,10 @@ const CATALOG_CITY_IDS = [
   'mount-vernon', // added by add-city.mjs,
   'fredericktown', // added by add-city.mjs,
   'carrollton', // added by add-city.mjs,
-  'paulding', // added by add-city.mjs
+  'paulding', // added by add-city.mjs,
+  'columbus', // added by add-city.mjs,
+  'cleveland', // added by add-city.mjs,
+  'cincinnati', // added by add-city.mjs
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);
