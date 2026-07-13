@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
 import DateTimeField from '../../src/components/DateTimeField';
+import PhotoPicker from '../../src/components/PhotoPicker';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { submitEventSource } from '../../src/lib/db';
@@ -58,6 +59,7 @@ export default function SubmitScreen() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [contact, setContact] = useState('');
+  const [photos, setPhotos] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Self-serve calendar intake (mirrors the food-truck "add your calendar" flow).
@@ -69,7 +71,7 @@ export default function SubmitScreen() {
 
   const reset = () => {
     setTitle(''); setCategory('Community'); setDateValue(null); setStartTimeValue(null); setEndTimeValue(null);
-    setVenue(''); setAddress(''); setPrice(''); setDescription(''); setContact('');
+    setVenue(''); setAddress(''); setPrice(''); setDescription(''); setContact(''); setPhotos([]);
   };
 
   const onAddCalendar = async () => {
@@ -172,6 +174,7 @@ export default function SubmitScreen() {
       featured: false,
       pending: true,
       description: description.trim() || 'No description provided.',
+      _photos: photos,
     };
 
     try {
@@ -359,6 +362,10 @@ export default function SubmitScreen() {
             numberOfLines={4}
             textAlignVertical="top"
           />
+        </Field>
+
+        <Field label="Add a photo" hint="Optional. A good photo helps your event stand out.">
+          <PhotoPicker photos={photos} onChange={setPhotos} max={1} accent={colors.accent} />
         </Field>
 
         <Field label="Your contact (organizer)" hint="Optional. Not shown publicly.">

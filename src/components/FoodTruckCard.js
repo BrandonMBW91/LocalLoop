@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from './ThemedText';
+import FadeInImage from './FadeInImage';
 import DateChip from './DateChip';
 import Pill from './Pill';
 import { colors, spacing, radius } from '../theme/theme';
@@ -72,6 +73,9 @@ function FoodTruckCard({ truck }) {
           </ThemedText>
         </View>
       </View>
+      {truck.imageUrl ? (
+        <FadeInImage source={{ uri: truck.imageUrl }} style={styles.thumb} resizeMode="cover" />
+      ) : null}
     </Pressable>
   );
 }
@@ -99,6 +103,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: spacing.xs },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  thumb: { width: 68, height: 68, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, alignSelf: 'center' },
 });
 
 export default React.memo(FoodTruckCard);

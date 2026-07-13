@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
 import DateTimeField from '../../src/components/DateTimeField';
+import PhotoPicker from '../../src/components/PhotoPicker';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { screenContent } from '../../src/utils/moderation';
@@ -55,6 +56,7 @@ export default function NewFoodTruckScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [calUrl, setCalUrl] = useState('');
   const [calSubmitting, setCalSubmitting] = useState(false);
+  const [photos, setPhotos] = useState([]);
 
   const inputFontSize = Math.round(baseFont.body * scale);
 
@@ -84,6 +86,7 @@ export default function NewFoodTruckScreen() {
         host: host.trim() || name.trim(),
         pending: true,
         note: note.trim() || '',
+        _photos: photos,
       };
       try {
         setSubmitting(true);
@@ -313,6 +316,10 @@ export default function NewFoodTruckScreen() {
             numberOfLines={4}
             textAlignVertical="top"
           />
+        </Field>
+
+        <Field label="Add a photo" hint="Optional. Show off your truck or a dish.">
+          <PhotoPicker photos={photos} onChange={setPhotos} max={1} accent={colors.foodTruck} />
         </Field>
 
         <Field label="Your contact" hint="Optional. Not shown publicly.">

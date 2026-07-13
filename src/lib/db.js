@@ -66,6 +66,7 @@ function eventToRow(e) {
     host: e.host,
     featured: false,
     description: e.description,
+    image_url: e.imageUrl || null,
     // status defaults to 'pending' in the database — never trust the client.
   };
 }
@@ -132,6 +133,7 @@ function rowToTruck(r) {
     source: r.source_uid ? 'calendar' : 'community',
     pending: r.status !== 'approved',
     note: cleanDescription(r.note),
+    imageUrl: r.image_url || null,
   };
 }
 
@@ -147,6 +149,7 @@ function truckToRow(t) {
     address: t.address,
     host: t.host,
     note: t.note,
+    image_url: t.imageUrl || null,
   };
 }
 

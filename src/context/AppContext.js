@@ -307,12 +307,17 @@ export function AppProvider({ children }) {
   // local pending copy so the prototype works with no backend. Both throw on
   // failure so the form can show an error.
   const addSubmittedEvent = async (event) => {
+    const { _photos = [], ...rest } = event;
     if (isSupabaseEnabled) {
-      await insertEvent(event);
+      // Reuse the garage-sale uploader + public 'sale-photos' bucket; an event
+      // keeps a single hero image, so take the first uploaded URL.
+      const images = _photos.length ? await uploadSalePhotos(_photos) : [];
+      await insertEvent({ ...rest, imageUrl: images[0] || rest.imageUrl || null });
       await loadData();
     } else {
+      const local = { ...rest, imageUrl: _photos[0]?.uri || rest.imageUrl || null };
       setSubmittedEvents((prev) => {
-        const next = [event, ...prev];
+        const next = [local, ...prev];
         AsyncStorage.setItem(STORAGE_KEYS.submitted, JSON.stringify(next)).catch(() => {});
         return next;
       });
@@ -337,12 +342,15 @@ export function AppProvider({ children }) {
   };
 
   const addSubmittedFoodTruck = async (truck) => {
+    const { _photos = [], ...rest } = truck;
     if (isSupabaseEnabled) {
-      await insertFoodTruck(truck);
+      const images = _photos.length ? await uploadSalePhotos(_photos) : [];
+      await insertFoodTruck({ ...rest, imageUrl: images[0] || rest.imageUrl || null });
       await loadData();
     } else {
+      const local = { ...rest, imageUrl: _photos[0]?.uri || rest.imageUrl || null };
       setSubmittedTrucks((prev) => {
-        const next = [truck, ...prev];
+        const next = [local, ...prev];
         AsyncStorage.setItem(STORAGE_KEYS.submittedTrucks, JSON.stringify(next)).catch(() => {});
         return next;
       });
