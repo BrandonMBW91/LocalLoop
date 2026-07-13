@@ -307,6 +307,9 @@ export default function SettingsScreen() {
 
       {/* About */}
       <SectionTitle>ABOUT</SectionTitle>
+      <ThemedText size="small" color={colors.textMuted} style={styles.aboutCaption}>
+        Local Loop is community-driven. Events come from locals like you.
+      </ThemedText>
       <View style={styles.card}>
         <Pressable style={styles.row} onPress={openReview} accessibilityRole="button" accessibilityLabel="Rate Local Loop in your app store">
           <Ionicons name="star-outline" size={24} color={colors.accent} />
@@ -390,6 +393,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
+  },
+  aboutCaption: {
+    marginLeft: spacing.xs,
+    marginTop: -spacing.xs,
+    marginBottom: spacing.sm,
+    lineHeight: 18,
   },
   card: {
     backgroundColor: colors.surface,

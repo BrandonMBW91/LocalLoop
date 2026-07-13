@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import PhotoPicker from '../../src/components/PhotoPicker';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
 import { submitEventSource } from '../../src/lib/db';
+import { shareAppMessage } from '../../src/lib/links';
 import { screenContent } from '../../src/utils/moderation';
 import { findDuplicateEvent } from '../../src/utils/dedup';
 import { formatShortDate, formatTime } from '../../src/utils/dates';
@@ -180,10 +182,14 @@ export default function SubmitScreen() {
     try {
       setSubmitting(true);
       await addSubmittedEvent(event);
+      const done = () => { reset(); router.replace('/'); };
       Alert.alert(
         'Thank you! 🎉',
-        `Your event has been submitted. It is reviewed, then shown to everyone in ${city.name}.`,
-        [{ text: 'View Events', onPress: () => { reset(); router.replace('/'); } }]
+        `Your event has been submitted. It is reviewed, then shown to everyone in ${city.name}. Local Loop grows when neighbors add and share what is happening.`,
+        [
+          { text: 'Tell a friend', onPress: () => { Share.share({ message: shareAppMessage() }).catch(() => {}).finally(done); } },
+          { text: 'View Events', onPress: done },
+        ]
       );
     } catch (e) {
       Alert.alert(

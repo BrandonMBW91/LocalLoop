@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
@@ -15,6 +15,7 @@ import { useApp } from '../../src/context/AppContext';
 import { CATEGORIES } from '../../src/data/events';
 import { daysFromNow, isThisWeekend } from '../../src/utils/dates';
 import { buildTimeSections } from '../../src/utils/grouping';
+import { shareAppMessage } from '../../src/lib/links';
 import { colors, spacing, radius } from '../../src/theme/theme';
 
 export default function EventsScreen() {
@@ -45,6 +46,8 @@ export default function EventsScreen() {
     if (backendEnabled && !signedIn) router.push({ pathname: '/sign-in', params: { next: path } });
     else router.push(path);
   };
+
+  const onInvite = () => Share.share({ message: shareAppMessage() }).catch(() => {});
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
@@ -154,10 +157,12 @@ export default function EventsScreen() {
         }}
         emptyFirst={{
           icon: 'calendar-outline',
-          title: 'Nothing on the calendar yet',
-          body: `No upcoming events in ${city.name} right now. Check back soon, or add one yourself.`,
+          title: `${city.name}'s calendar is just getting started`,
+          body: 'Events come from locals like you. Add one, or invite a neighbor to help fill it in.',
           actionLabel: 'Submit an Event',
           onAction: () => goPost('/event/new'),
+          secondaryLabel: 'Invite a neighbor',
+          onSecondary: onInvite,
         }}
       />
     </View>

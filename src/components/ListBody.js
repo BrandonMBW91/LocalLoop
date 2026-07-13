@@ -88,6 +88,8 @@ export default function ListBody({
             body={emptyFirst.body}
             actionLabel={emptyFirst.actionLabel}
             onAction={emptyFirst.onAction}
+            secondaryLabel={emptyFirst.secondaryLabel}
+            onSecondary={emptyFirst.onSecondary}
             accent={accent}
           />
         )

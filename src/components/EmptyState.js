@@ -6,7 +6,7 @@ import { colors, spacing, radius } from '../theme/theme';
 
 // A friendly, consistent "nothing here yet" state with an optional primary
 // action. Used across the lists, the saved screen, etc.
-export default function EmptyState({ icon, title, body, actionLabel, onAction, actionIcon = 'add-circle', accent = colors.primary }) {
+export default function EmptyState({ icon, title, body, actionLabel, onAction, actionIcon = 'add-circle', secondaryLabel, onSecondary, secondaryIcon = 'share-outline', accent = colors.primary }) {
   return (
     <View style={styles.wrap}>
       <View style={[styles.iconCircle, { backgroundColor: accent + '14' }]}>
@@ -25,6 +25,14 @@ export default function EmptyState({ icon, title, body, actionLabel, onAction, a
           <Ionicons name={actionIcon} size={22} color={colors.textInverse} />
           <ThemedText size="body" weight="bold" color={colors.textInverse}>
             {actionLabel}
+          </ThemedText>
+        </Pressable>
+      ) : null}
+      {secondaryLabel && onSecondary ? (
+        <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.6 }]} onPress={onSecondary} accessibilityRole="button" accessibilityLabel={secondaryLabel}>
+          <Ionicons name={secondaryIcon} size={18} color={accent} />
+          <ThemedText size="body" weight="semibold" color={accent}>
+            {secondaryLabel}
           </ThemedText>
         </Pressable>
       ) : null}
@@ -55,5 +63,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginTop: spacing.sm,
     minHeight: 52,
+  },
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
   },
 });
