@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Loop - FB Group Tracker</title>
+<style>
+  :root { --bg:#FBF8F1; --card:#fff; --ink:#1A1A1A; --muted:#5B5B5B; --line:#E4DED4;
+          --navy:#15315B; --red:#B22234; --green:#256B29; --amber:#9A6B00; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0F1729; --card:#182238; --ink:#E8ECF4; --muted:#98A4BA; --line:#2A3650;
+            --navy:#5B8AD1; --red:#E06A73; --green:#5BC98A; --amber:#D8C06A; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.45; }
+  .wrap { max-width:860px; margin:0 auto; padding:16px; }
+  h1 { font-size:22px; margin:6px 0 2px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:12px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  input[type=search] { flex:1; min-width:180px; padding:10px 12px; border:1.5px solid var(--line);
+         border-radius:10px; background:var(--card); color:var(--ink); font-size:15px; }
+  .fbtn { padding:8px 14px; border:1.5px solid var(--line); border-radius:999px; background:var(--card);
+          color:var(--ink); font-size:14px; cursor:pointer; }
+  .fbtn.on { border-color:var(--navy); color:var(--navy); font-weight:700; }
+  .counts { font-size:13px; color:var(--muted); margin-bottom:10px; }
+  .g { background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+  .g.removed { border-left:6px solid var(--red); }
+  .g.posted { border-left:6px solid var(--green); }
+  .g.new { border-left:6px solid var(--amber); }
+  .g.skipped { border-left:6px solid var(--line); opacity:.75; }
+  .top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .name { font-weight:700; font-size:16px; flex:1; min-width:200px; }
+  .area { font-size:12px; color:var(--muted); background:var(--bg); border:1px solid var(--line);
+          border-radius:999px; padding:2px 10px; white-space:nowrap; }
+  select { padding:7px 10px; border:1.5px solid var(--line); border-radius:9px; background:var(--card);
+           color:var(--ink); font-size:14px; }
+  label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 3px;
+          text-transform:uppercase; letter-spacing:.5px; }
+  textarea, input[type=text] { width:100%; padding:9px 11px; border:1.5px solid var(--line);
+          border-radius:9px; background:var(--bg); color:var(--ink); font-size:14px; font-family:inherit; }
+  textarea { min-height:44px; resize:vertical; }
+  .why { display:none; }
+  .g[data-status="removed"] .why { display:block; }
+  .g[data-status="removed"] .why input { border-color:var(--red); }
+  .foot { margin:18px 0; display:flex; gap:8px; flex-wrap:wrap; }
+  .foot button { padding:10px 16px; border-radius:999px; border:1.5px solid var(--navy);
+          background:var(--navy); color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+  .foot button.ghost { background:transparent; color:var(--navy); }
+  .saved { font-size:12px; color:var(--green); align-self:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FB Group Tracker</h1>
+  <div class="sub">Everything saves automatically on this computer. Mark a group Removed and write why so the next posting round adapts.</div>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="Search groups or towns...">
+    <button class="fbtn on" data-f="all">All</button>
+    <button class="fbtn" data-f="new">To post</button>
+    <button class="fbtn" data-f="posted">Posted OK</button>
+    <button class="fbtn" data-f="removed">Removed</button>
+  </div>
+  <div class="counts" id="counts"></div>
+  <div id="list"></div>
+
+  <div class="foot">
+    <button id="add" class="ghost">+ Add group</button>
+    <button id="exp">Download backup</button>
+    <button id="imp" class="ghost">Restore backup</button>
+    <input type="file" id="impfile" accept=".json" style="display:none">
+    <span class="saved" id="savemsg"></span>
+  </div>
+</div>
+
+<script>
+// Prefilled from docs/group-outreach.md (Jul 9 2026 round). status: posted | new | removed | skipped
+const SEED = [
+ ["Findlay Area Food Trucks","Findlay","posted","First posted Jun 30 2026"],
+ ["I grew up in Delaware","Delaware","posted","Nostalgia group, no rules"],
+ ["The Real Talk Of Sandusky","Sandusky","posted","General discussion + sales, permissive"],
+ ["Fostoria 44830 - Talk of the Town","Fostoria","posted","ADMIN PRE-APPROVAL. No selling/spam; community-first, app mention minimal"],
+ ["The Talk of Port Clinton (uncensored)","Port Clinton","posted","No business restrictions"],
+ ["The Talk of Port Clinton {uncensored}","Port Clinton","posted","2nd PC group (copycat name). Always reword, post a day apart"],
+ ["Kelleys Island Visitors","Kelleys Island","posted","Visitor Q&A. Trip-planner angle works great"],
+ ["North Canton, OH Talk, Thoughts, and Tips","North Canton","posted","Nostalgia + civility"],
+ ["Austintown, Boardman, Canfield, Poland Buy/Sell/Trade","Mahoning Valley","posted","BST: garage-sale angle only, no event-list posts"],
+ ["Welcome to Marion, Ohio USA","Marion","posted","Jokey welcome group; thin feed, pad with coming-up picks"],
+ ["What's Up in Delaware, OH","Delaware","posted","2nd Delaware group. Space a day from 'I grew up in'"],
+ ["PIQUA, OHIO","Piqua","posted","Open forum, no restrictions"],
+ ["Voices of Massillon","Massillon","posted","Events/news/business promotion explicitly welcome"],
+ ["Sylvania, Toledo, Perrysburg Small Business Group","Toledo area","posted","B2B: ADVERTISER pitch; advertise-page link OK here"],
+ ["The Talk of Fremont (Uncut) NW Ohio","Fremont","posted","No real rules"],
+ ["Fremont Open Discussion","Fremont","posted","2nd Fremont group. Space from Uncut"],
+ ["Fremont discussion and Issues page","Fremont","posted","3rd Fremont group. 'Nothing to do in this town' angle landed"],
+ ["Lima, Ohio Garage sales","Lima","posted","Lima-proper only per group; garage-sale angle"],
+ ["Allen County ( Lima ) & Surrounding areas Freebies","Lima","posted","Free items only; cheeky free-app angle"],
+ ["Medina County Ohio - News, Info and Discussions","Medina","posted","'NOT AD SPACE'. ZERO-pitch events post only. Highest removal risk"],
+ ["Facts in Fostoria & Other 411","Fostoria","posted","Businesses sharing events explicitly welcome; 2nd Fostoria group"],
+ ["Ashland Ohio Local Business","Ashland","posted","B2B: advertiser pitch"],
+ ["Austintown everything 2","Austintown","posted","Anti-censorship general group"],
+ ["Salem Ohio Community Chat","Salem","posted","Hometown-ties group; diaspora 'window back home' angle"],
+ ["Ravenna, Ohio","Ravenna","posted","Residents + former residents + visitors"],
+ ["What's Happening In Canton Ohio","Canton","posted","No rules; group name = the product"],
+ ["I'm so Youngstown......","Youngstown","posted","Memories/pics/anything, friendly"],
+ ["Austintown/Youngstown Area Misc.","Mahoning Valley","posted","BST-like; garage-sale/fundraiser angle"],
+ ["Youngstown Nightlife/Entertainment","Youngstown","posted","Party/music promo explicitly invited. Music-filter angle"],
+ ["Troy Ohio Citizens","Troy","posted","Events welcome; bans specific biz categories (not us)"],
+ ["Troy, Ohio Community (uncensored)","Troy","posted","2nd Troy group. Spotlight format to differ from Citizens"],
+ ["Sidney Ohio Community","Sidney","posted","No self-promotion/spam/links. ZERO-pitch events post only"],
+ ["The Talk of Bucyrus","Bucyrus","posted","No rules; Bratwurst Festival countdown = engagement gold"],
+ ["New Philadelphia, Ohio","New Philadelphia","posted","No ads/self-promotion. ZERO-pitch events post only"],
+ ["Mansfield/Ashland sales","Mansfield","posted","No rules; garage-sale angle"],
+ ["Mansfield Ohio Community Corner","Mansfield","posted","News/events group"],
+ ["Marysville, Ohio Networking","Marysville","posted","B2B. Personal intro required; post as Michael, not the Page"],
+ ["Bellefontaine In The Know","Bellefontaine","posted","No standalone biz posts. Comment in their WEEKLY BUSINESS THREAD only"],
+ ["Why I Love/Hate Findlay Ohio and surrounding area.","Findlay","new",""],
+ ["Findlay, Ohio's Nosy Neighbors Helping Other Nosy Neighbors","Findlay","new",""],
+ ["Findlay and Surrounding Community Talk","Findlay","new",""],
+ ["Findlay, Ohio Friends and Neighbors NO RULES!","Findlay","new",""],
+ ["Findlay, Ohio: Neighbors Helping Neighbors (OFFICIAL GROUP)","Findlay","new",""],
+ ["Findlay, Ohio: Neighbors Helping Neighbors","Findlay","new",""],
+ ["Actual Findlay Helping Neighbors","Findlay","new",""],
+ ["Findlay online garage sale","Findlay","new","Garage-sale angle"],
+ ["Better Than The Rest!45840 Online Garage Sale","Findlay","new","45840 = Findlay zip; garage-sale angle"],
+ ["Seneca/Tiffin online Garage Sale","Tiffin","new","Garage-sale angle"],
+ ["GARAGE AND YARD SALES IN TIFFIN AND ALL SURROUNDING AREAS","Tiffin","new","Garage-sale angle"],
+ ["BETTER tiffin, Findlay, and fostoria garage sale GROUP (:","Tiffin/Findlay/Fostoria","new","Garage-sale angle"],
+ ["Seneca County Garage SALES = )","Seneca County","new","Garage-sale angle"],
+ ["Putnam County Ohio OPEN Garage Sale","Putnam County","new","Garage-sale angle"],
+ ["Fostoria Area Garage Sale/Services/Info 44830","Fostoria","new","Garage-sale angle"],
+ ["Connecting Toledo","Toledo","new",""],
+ ["Toledo Area Food Trucks","Toledo","new","Food-truck angle"],
+ ["Toledo Music Scene","Toledo","new","Music-filter angle"],
+ ["Toledo \"to go\"","Toledo","new",""],
+ ["Support Local Business Toledo","Toledo","new","B2B: advertiser pitch"],
+ ["Toledo,Ohio","Toledo","new",""],
+ ["Toledo Ohio Community","Toledo","new",""],
+ ["Akron, Ohio - Buy/Sell/Trade/Drama 2.0","Akron","new","BST angle"],
+ ["Akron Ohio 330 Buy Sell Trade Group","Akron","new","BST angle"],
+ ["Akron Area Online Garage Sale","Akron","new","Garage-sale angle"],
+ ["buy, sell, trade akron ind in surrounding areas","Akron","new","BST angle"],
+ ["What's going on in and around Akron, Ohio","Akron","new",""],
+ ["Canton Ohio Garage Sale","Canton","new","Garage-sale angle"],
+ ["What's Happening In North Canton","North Canton","new","2nd NC group. Reword from Talk/Thoughts/Tips"],
+ ["Medina, Ohio News and Street Talk","Medina","new","2nd Medina group. CHECK RULES before assuming the other one's no-ads stance"],
+ ["Northeast Ohio Food Truck Finder","NE Ohio","new","Regional food-truck angle"],
+ ["Youngstown OH Buy Sell Trade","Youngstown","skipped","SKIPPED Jul 9: commercial posts Mondays only + admin registration + one-violation ban"],
+ ["Van Wert Voice","Van Wert","skipped","SKIPPED Jul 9: no rules against us; just passed for now"],
+ ["Talk of Put-in-Bay (uncensored)","Put-in-Bay","skipped","SKIPPED Jul 9: non-PIB biz posts removed after 1 warning; only ~3 PIB events"],
+ ["302 Delaware","Delaware (STATE)","skipped","HARD SKIP: Delaware the STATE, not Delaware OH. Leave the group"],
+];
+
+const KEY = 'll-fb-groups-v1';
+let data = load();
+function load() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(KEY)) || []; } catch { saved = []; }
+  const byName = Object.fromEntries(saved.map((g) => [g.name, g]));
+  // Seed any groups not yet saved; saved edits always win.
+  for (const [name, area, status, rules] of SEED) {
+    if (!byName[name]) saved.push({ name, area, status, rules, why: '', notes: '' });
+  }
+  return saved;
+}
+function save(msg) {
+  localStorage.setItem(KEY, JSON.stringify(data));
+  const m = document.getElementById('savemsg');
+  m.textContent = msg || 'Saved';
+  clearTimeout(save.t); save.t = setTimeout(() => (m.textContent = ''), 1500);
+}
+
+let filter = 'all', query = '';
+const STATUS_LABEL = { posted: 'Posted OK', new: 'Not posted yet', removed: 'REMOVED', skipped: 'Skipped' };
+
+function render() {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  const q = query.toLowerCase();
+  let shown = 0;
+  data.forEach((g, i) => {
+    if (filter !== 'all' && g.status !== filter) return;
+    if (q && !(g.name + ' ' + g.area).toLowerCase().includes(q)) return;
+    shown++;
+    const el = document.createElement('div');
+    el.className = 'g ' + g.status;
+    el.dataset.status = g.status;
+    el.innerHTML = `
+      <div class="top">
+        <div class="name"></div>
+        <span class="area"></span>
+        <select>
+          <option value="new">Not posted yet</option>
+          <option value="posted">Posted OK</option>
+          <option value="removed">Removed / deleted</option>
+          <option value="skipped">Skipped</option>
+        </select>
+      </div>
+      <label>Group rules</label>
+      <textarea placeholder="Paste or summarize the group's rules here..."></textarea>
+      <div class="why">
+        <label>Why was the post removed?</label>
+        <input type="text" placeholder="e.g. admin said no business posts, flagged as spam, no reason given...">
+      </div>
+      <label>Notes</label>
+      <input type="text" class="notes" placeholder="Anything else (best angle, posting day, admin name...)">`;
+    el.querySelector('.name').textContent = g.name;
+    el.querySelector('.area').textContent = g.area;
+    const sel = el.querySelector('select'); sel.value = g.status;
+    const rules = el.querySelector('textarea'); rules.value = g.rules || '';
+    const why = el.querySelector('.why input'); why.value = g.why || '';
+    const notes = el.querySelector('.notes'); notes.value = g.notes || '';
+    sel.onchange = () => { g.status = sel.value; save(); render(); };
+    rules.oninput = () => { g.rules = rules.value; save(); };
+    why.oninput = () => { g.why = why.value; save(); };
+    notes.oninput = () => { g.notes = notes.value; save(); };
+    list.appendChild(el);
+  });
+  const c = (s) => data.filter((g) => g.status === s).length;
+  document.getElementById('counts').textContent =
+    `${shown} shown · ${c('new')} to post · ${c('posted')} posted OK · ${c('removed')} removed · ${c('skipped')} skipped · ${data.length} total`;
+}
+
+document.getElementById('q').oninput = (e) => { query = e.target.value; render(); };
+document.querySelectorAll('.fbtn').forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll('.fbtn').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on'); filter = b.dataset.f; render();
+  };
+});
+document.getElementById('add').onclick = () => {
+  const name = prompt('Group name?'); if (!name) return;
+  const area = prompt('Town / area?') || '';
+  data.unshift({ name, area, status: 'new', rules: '', why: '', notes: '' });
+  save(); render();
+};
+document.getElementById('exp').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.download = 'fb-groups-backup.json'; a.click();
+};
+document.getElementById('imp').onclick = () => document.getElementById('impfile').click();
+document.getElementById('impfile').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { data = JSON.parse(r.result); save('Restored'); render(); } catch { alert('Not a valid backup file.'); } };
+  r.readAsText(f);
+};
+render();
+</script>
+</body>
+</html>
