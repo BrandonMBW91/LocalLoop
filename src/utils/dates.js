@@ -69,6 +69,17 @@ export function relativeDay(value, now = new Date()) {
   return formatShortDate(value);
 }
 
+// True for a multi-day event that is CURRENTLY running but started on an earlier
+// day (exhibitions, month-long specials). Such events otherwise show their past
+// start date, which reads as stale — the card labels them "Happening now" instead.
+export function isOngoing(start, end, now = new Date()) {
+  if (!end) return false;
+  const s = parse(start), e = parse(end);
+  if (isNaN(s) || isNaN(e)) return false;
+  if (!(s < now && e > now)) return false; // must span the present moment
+  return toDateString(s) !== toDateString(now); // and have started before today
+}
+
 // Parts for a small calendar-style date chip: { weekday:'SAT', day:15, month:'Jun' }.
 export function calendarBits(value) {
   const d = parse(value);

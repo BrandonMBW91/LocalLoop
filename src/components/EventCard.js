@@ -8,7 +8,7 @@ import DateChip from './DateChip';
 import Pill from './Pill';
 import { colors, spacing, radius, categoryColor } from '../theme/theme';
 import { useApp } from '../context/AppContext';
-import { relativeDay, timeRange } from '../utils/dates';
+import { relativeDay, timeRange, isOngoing, formatShortDate } from '../utils/dates';
 
 function EventCard({ event }) {
   const router = useRouter();
@@ -29,6 +29,10 @@ function EventCard({ event }) {
     prevSaved.current = saved;
   }, [saved, heartScale]);
 
+  // Multi-day events already running show "Happening now · through <end>" instead
+  // of their (past) start date, which otherwise reads as a stale listing.
+  const ongoing = isOngoing(event.start, event.end);
+
   return (
     <View style={[styles.card, event.featured && styles.cardFeatured]}>
       <Pressable
@@ -40,7 +44,7 @@ function EventCard({ event }) {
         {event.imageUrl ? (
           <FadeInImage source={{ uri: event.imageUrl }} style={[styles.thumb, { width: thumbSize, height: thumbSize }]} resizeMode="cover" />
         ) : (
-          <DateChip date={event.start} accent={accent} scale={scale} />
+          <DateChip date={ongoing ? event.end : event.start} accent={accent} scale={scale} ongoing={ongoing} />
         )}
 
         <View style={styles.body}>
@@ -58,7 +62,9 @@ function EventCard({ event }) {
           <View style={styles.metaRow}>
             <Ionicons name="time-outline" size={15 * scale} color={colors.textMuted} />
             <ThemedText size="small" color={colors.textMuted}>
-              {relativeDay(event.start)} · {timeRange(event.start, event.end)}
+              {ongoing
+                ? `Happening now · through ${formatShortDate(event.end)}`
+                : `${relativeDay(event.start)} · ${timeRange(event.start, event.end)}`}
             </ThemedText>
           </View>
           <View style={styles.metaRow}>

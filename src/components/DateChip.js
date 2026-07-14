@@ -6,7 +6,7 @@ import { colors, radius } from '../theme/theme';
 
 // A small calendar-style date block (echoes the app's calendar-pin logo). Tinted
 // in the caller's accent color so each kind of listing keeps its identity.
-export default function DateChip({ date, accent = colors.primary, scale = 1 }) {
+export default function DateChip({ date, accent = colors.primary, scale = 1, ongoing = false }) {
   const { weekday, day, month } = calendarBits(date);
   // Let the chip (and its big day number) grow with the Text Size setting up to
   // Extra Large, since the date is primary info a low-vision user turns the size
@@ -16,7 +16,7 @@ export default function DateChip({ date, accent = colors.primary, scale = 1 }) {
     <View style={[styles.chip, { width: Math.round(58 * s) }]}>
       <View style={[styles.head, { backgroundColor: accent }]}>
         <ThemedText size="tiny" weight="bold" color={colors.textInverse}>
-          {weekday}
+          {ongoing ? 'NOW' : weekday}
         </ThemedText>
       </View>
       <View style={[styles.body, { backgroundColor: accent + '14' }]}>
