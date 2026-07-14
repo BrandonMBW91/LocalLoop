@@ -8,6 +8,11 @@
 // or native universal links.
 //
 //   npm run deploy:web                # build + `netlify deploy --prod --dir dist --no-build`
+// IMPORTANT: `eas update` ALSO writes a raw expo export into dist/ (its default
+// export dir), silently clobbering this merged build — deploying dist after an
+// OTA without re-running this script shipped a site with no legal pages, no
+// universal-link JSON, and an empty sitemap (2026-07-14). ALWAYS `npm run
+// deploy:web` (which rebuilds first); never `netlify deploy --dir dist` alone.
 // IMPORTANT: deploy with --no-build. Plain `netlify deploy` re-runs the Netlify
 // site's configured `expo export -p web` (a RAW export) and overwrites this merged
 // dist, dropping the legal/deep-link/SEO files. --no-build ships dist as-is.
