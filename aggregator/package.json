@@ -12,7 +12,9 @@
     "@supabase/supabase-js": "^2.108.1",
     "imapflow": "^1.4.3",
     "node-ical": "^0.20.1",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^9.0.3"
+  },
+  "optionalDependencies": {
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

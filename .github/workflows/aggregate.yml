@@ -25,7 +25,11 @@ jobs:
           node-version: '22'
       - name: Install deps
         working-directory: aggregator
-        run: npm ci
+        # --omit=optional: xlsx (desktop-only roster mining, unused by this job)
+        # comes from cdn.sheetjs.com, which intermittently 403s CI runners and
+        # killed the whole nightly at `npm ci` (first hit 2026-07-14). Optional +
+        # omitted = that CDN can never take the nightly down.
+        run: npm ci --omit=optional
       - name: Validate city config (hard gate)
         working-directory: aggregator
         run: node check-cities.mjs
