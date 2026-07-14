@@ -23,9 +23,9 @@ function ctaFor(linkUrl) {
 // "your ad could be here" placeholder (that pitch lives on the Advertise screen).
 // Pass `index` in a list so multiple slots rotate through the available sponsors.
 export default function AdBanner({ index = 0 }) {
-  const { sponsors = [], backendEnabled, isDevWeb } = useApp();
+  const { sponsors = [], backendEnabled, noTrack } = useApp();
   const sponsor = sponsors.length ? sponsors[index % sponsors.length] : null;
-  const track = backendEnabled && !isDevWeb; // real users only — never dev/preview web
+  const track = backendEnabled && !noTrack; // real users only — never admin/dev/opted-out
 
   // Count an impression the first time a real ad is shown this session.
   useEffect(() => {

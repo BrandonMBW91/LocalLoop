@@ -60,6 +60,7 @@ const STORAGE_KEYS = {
   submittedTrucks: '@fe/submittedFoodTrucks',
   rulesAccepted: '@fe/rulesAccepted',
   deviceId: '@fe/deviceId',
+  excludeStats: '@fe/excludeStats',
   onboarded: '@fe/onboarded',
   interests: '@fe/interests',
   follows: '@fe/follows',
@@ -95,6 +96,7 @@ export function AppProvider({ children }) {
   const [editorPick, setEditorPick] = useState(null); // admin "This Week's Pick"
   const [activeCityIds, setActiveCityIds] = useState(null); // town ids with events (null = unknown → show all)
   const [cityCounts, setCityCounts] = useState(null); // { cityId: upcomingCount } for the picker (null until loaded)
+  const [excludeStats, setExcludeStats] = useState(false); // this device opted out of analytics (see ?internal)
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -158,6 +160,13 @@ export function AppProvider({ children }) {
     // Per-town counts (density-aware picker). Purely additive: on failure the
     // picker still renders its list from activeCityIds above.
     fetchActiveCityCounts().then((m) => setCityCounts(m || {}));
+  }, []);
+
+  // Analytics opt-out for this device: ?internal sets it for good; future visits
+  // (no ?internal) read the stored flag. Works on web and native, no sign-in.
+  useEffect(() => {
+    if (urlInternal) AsyncStorage.setItem(STORAGE_KEYS.excludeStats, '1').catch(() => {});
+    AsyncStorage.getItem(STORAGE_KEYS.excludeStats).then((v) => { if (v) setExcludeStats(true); }).catch(() => {});
   }, []);
 
   // ---- Load events + garage sales for the current city ----
@@ -237,16 +246,21 @@ export function AppProvider({ children }) {
   const isDevWeb =
     Platform.OS === 'web' &&
     (__DEV__ || (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)));
+  // Visiting any URL with ?internal (e.g. localloop.io/?internal) opts THIS browser
+  // or device out of analytics permanently — how Michael excludes his own desktop
+  // without signing in. Synchronous so even the first pageview isn't counted.
+  const urlInternal = Platform.OS === 'web' && typeof window !== 'undefined' && /[?&]internal\b/.test(window.location.search);
+  // One switch every tracker checks: admin, dev/preview web, or an opted-out device.
+  const noTrack = isAdmin || isDevWeb || excludeStats || urlInternal;
 
   // Fire-and-forget product analytics, auto-tagged with the anon device + city.
-  // No-op for the admin/owner so their own usage is never counted.
+  // No-op for the admin/owner and any opted-out device, so internal use never counts.
   const logEvent = useCallback(
     (event, props = {}) => {
-      if (isAdmin) return;
-      if (isDevWeb) return; // exclude only dev/preview web, not real localloop.io traffic
+      if (noTrack) return;
       trackEvent({ event, props, deviceId, cityId });
     },
-    [deviceId, cityId, isAdmin]
+    [deviceId, cityId, noTrack]
   );
 
   const setCity = (id) => {
@@ -305,7 +319,7 @@ export function AppProvider({ children }) {
     setupAndroidChannel(); // Android needs a channel to display any notification (no-op on iOS)
     // Skip the admin/owner and dev/preview web; real localloop.io web visitors DO
     // count (they record with platform 'web', a distinct bucket from iOS/Android).
-    if (isSupabaseEnabled && !isAdmin && !isDevWeb && deviceId && cityId) {
+    if (isSupabaseEnabled && !noTrack && deviceId && cityId) {
       recordDeviceActivity(deviceId, cityId, Platform.OS);
       // Log one app_open per launch so daily opens are tracked historically in
       // app_events (device_activity is upsert-only and keeps no per-day history).
@@ -314,7 +328,7 @@ export function AppProvider({ children }) {
         trackEvent({ event: 'app_open', deviceId, cityId });
       }
     }
-  }, [deviceId, cityId, isAdmin]);
+  }, [deviceId, cityId, noTrack]);
 
   // Submit handlers: write to the backend when configured, otherwise keep a
   // local pending copy so the prototype works with no backend. Both throw on
@@ -628,7 +642,7 @@ export function AppProvider({ children }) {
 
     // Auth / backend
     backendEnabled: isSupabaseEnabled,
-    isDevWeb, // true only on dev/localhost web — callers skip analytics when set
+    noTrack, // admin, dev/preview web, or an opted-out device — callers skip analytics
     signedIn: Boolean(session),
     session,
     requestOtp,
