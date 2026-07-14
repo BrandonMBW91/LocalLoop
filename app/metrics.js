@@ -52,7 +52,7 @@ export default function MetricsScreen() {
   const [scope, setScope] = useState('all'); // 'all' towns (default) or the current city
   const [data, setData] = useState(null);
   const [users, setUsers] = useState(0);
-  const [platform, setPlatform] = useState({ ios: 0, android: 0, unknown: 0 });
+  const [platform, setPlatform] = useState({ ios: 0, android: 0, web: 0, unknown: 0 });
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null); // 'featured' | 'ads' | null
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key));
@@ -204,10 +204,11 @@ export default function MetricsScreen() {
       </ThemedText>
       <View style={styles.card}>
         {(() => {
-          const total = platform.ios + platform.android + platform.unknown;
+          const total = platform.ios + platform.android + platform.web + platform.unknown;
           const rows = [
             { key: 'ios', label: 'iPhone / iPad', icon: 'logo-apple', color: colors.text },
             { key: 'android', label: 'Android', icon: 'logo-android', color: colors.success },
+            { key: 'web', label: 'Web (localloop.io)', icon: 'globe-outline', color: colors.primary },
           ];
           if (platform.unknown) rows.push({ key: 'unknown', label: 'Not yet identified', icon: 'help-circle-outline', color: colors.textMuted });
           return rows.map((p, i) => {

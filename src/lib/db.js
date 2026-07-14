@@ -848,14 +848,16 @@ export async function fetchPlatformSplit(cityId) {
         ? await supabase.rpc('platform_split')
         : await supabase.rpc('platform_split', { p_city: cityId });
     if (error) throw error;
-    const out = { ios: 0, android: 0, unknown: 0 };
+    const out = { ios: 0, android: 0, web: 0, unknown: 0 };
     for (const r of data || []) {
-      const key = r.platform === 'ios' || r.platform === 'android' ? r.platform : 'unknown';
+      // Web (localloop.io) is a real platform now, not "unknown" — break it out.
+      // Only legacy rows with no recorded platform fall into unknown.
+      const key = ['ios', 'android', 'web'].includes(r.platform) ? r.platform : 'unknown';
       out[key] += r.users || 0;
     }
     return out;
   } catch (e) {
-    return { ios: 0, android: 0, unknown: 0 };
+    return { ios: 0, android: 0, web: 0, unknown: 0 };
   }
 }
 
