@@ -6,6 +6,7 @@ import ThemedText from '../../src/components/ThemedText';
 import EventCard from '../../src/components/EventCard';
 import CategoryChip from '../../src/components/CategoryChip';
 import EditorPickBanner from '../../src/components/EditorPickBanner';
+import WebInstallBanner from '../../src/components/WebInstallBanner';
 import CityHeaderControl from '../../src/components/CityHeaderControl';
 import SearchBar from '../../src/components/SearchBar';
 import FilterRow from '../../src/components/FilterRow';
@@ -122,6 +123,7 @@ export default function EventsScreen() {
         countLabel={`${filtered.length} ${filtered.length === 1 ? 'event' : 'events'} found`}
         headerExtras={
           <>
+            <WebInstallBanner />
             <EditorPickBanner pick={editorPick} />
             {!loadingData && deals.length > 0 ? (
               <Pressable style={styles.dealsBanner} onPress={() => router.push('/deals')}>

@@ -1,6 +1,10 @@
 // Public links for the app itself (share sheets, prompts).
 // The write-review variant lives in src/lib/review.js.
 export const APP_STORE_URL = 'https://apps.apple.com/app/id6780306721';
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.michaelwilliams.localloop';
+// Android is still in CLOSED TESTING — its public Play listing 404s. Flip to true
+// the moment it goes public, and the web download banner starts offering Android.
+export const ANDROID_LIVE = false;
 export const SITE = 'https://localloop.io';
 
 // Deep link for a specific listing. Opens the app directly when installed
