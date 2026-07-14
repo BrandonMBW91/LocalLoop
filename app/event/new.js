@@ -104,10 +104,10 @@ export default function SubmitScreen() {
 
   const onSubmit = async (opts = {}) => {
     const { skipDupCheck = false, overnightOk = false } = opts;
-    if (!title.trim() || !venue.trim() || !dateValue || !startTimeValue || !endTimeValue) {
+    if (!title.trim() || !address.trim() || !dateValue || !startTimeValue || !endTimeValue) {
       Alert.alert(
         'Almost there',
-        'Please fill in the event name, date, start time, end time, and location.'
+        'Please fill in the event name, date, start time, end time, and street address.'
       );
       return;
     }
@@ -328,7 +328,7 @@ export default function SubmitScreen() {
           <DateTimeField mode="time" value={endTimeValue} onChange={setEndTimeValue} />
         </Field>
 
-        <Field label="Location / venue" required>
+        <Field label="Location / venue" hint="Optional, e.g. the venue or park name">
           <TextInput
             value={venue}
             onChangeText={setVenue}
@@ -338,7 +338,7 @@ export default function SubmitScreen() {
           />
         </Field>
 
-        <Field label="Street address" hint="Start typing, then pick a suggestion">
+        <Field label="Street address" hint="Start typing, then pick a suggestion" required>
           <AddressAutocomplete
             value={address}
             onChangeText={setAddress}
