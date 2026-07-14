@@ -122,6 +122,11 @@ export function AppProvider({ children }) {
         if (map[STORAGE_KEYS.onboarded] === 'true') setOnboarded(true);
         if (map[STORAGE_KEYS.interests]) setInterestsState(JSON.parse(map[STORAGE_KEYS.interests]));
         if (map[STORAGE_KEYS.follows]) setFollows(JSON.parse(map[STORAGE_KEYS.follows]));
+        // Load the analytics opt-out HERE (part of hydration) so it is known
+        // before the first activity record. Read separately it raced the record
+        // effect, so an already-opted-out browser still logged one visit per load
+        // (and kept its row's last_seen fresh, never aging out of the 30d window).
+        if (map[STORAGE_KEYS.excludeStats]) setExcludeStats(true);
         let did = map[STORAGE_KEYS.deviceId];
         if (!did) {
           did = makeDeviceId();
@@ -163,11 +168,15 @@ export function AppProvider({ children }) {
     fetchActiveCityCounts().then((m) => setCityCounts(m || {}));
   }, []);
 
-  // Analytics opt-out for this device: ?internal sets it for good; future visits
-  // (no ?internal) read the stored flag. Works on web and native, no sign-in.
+  // Analytics opt-out for this device: ?internal sets it for good; the stored flag
+  // is read during hydration above so it's ready before the first record. Works on
+  // web and native, no sign-in. Setting it also flips state now so this very
+  // pageview stops counting (urlInternal already blocks it synchronously too).
   useEffect(() => {
-    if (urlInternal) AsyncStorage.setItem(STORAGE_KEYS.excludeStats, '1').catch(() => {});
-    AsyncStorage.getItem(STORAGE_KEYS.excludeStats).then((v) => { if (v) setExcludeStats(true); }).catch(() => {});
+    if (urlInternal) {
+      AsyncStorage.setItem(STORAGE_KEYS.excludeStats, '1').catch(() => {});
+      setExcludeStats(true);
+    }
   }, []);
 
   // ---- Load events + garage sales for the current city ----
@@ -343,7 +352,10 @@ export function AppProvider({ children }) {
     setupAndroidChannel(); // Android needs a channel to display any notification (no-op on iOS)
     // Skip the admin/owner and dev/preview web; real localloop.io web visitors DO
     // count (they record with platform 'web', a distinct bucket from iOS/Android).
-    if (isSupabaseEnabled && !noTrack && deviceId && cityId) {
+    // Gate on `hydrated`: the opt-out flag and deviceId both come from storage, so
+    // recording before hydration could log an opted-out browser (this device's own
+    // owner) before the flag is read. After hydration, noTrack is trustworthy.
+    if (hydrated && isSupabaseEnabled && !noTrack && deviceId && cityId) {
       recordDeviceActivity(deviceId, cityId, Platform.OS);
       // Log one app_open per launch so daily opens are tracked historically in
       // app_events (device_activity is upsert-only and keeps no per-day history).
@@ -352,7 +364,7 @@ export function AppProvider({ children }) {
         trackEvent({ event: 'app_open', deviceId, cityId });
       }
     }
-  }, [deviceId, cityId, noTrack]);
+  }, [hydrated, deviceId, cityId, noTrack]);
 
   // Submit handlers: write to the backend when configured, otherwise keep a
   // local pending copy so the prototype works with no backend. Both throw on
