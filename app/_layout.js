@@ -1,4 +1,5 @@
 import React from 'react';
+import '../src/lib/webPatches'; // web-only: fixes Alert.alert / Share.share no-ops on localloop.io
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
