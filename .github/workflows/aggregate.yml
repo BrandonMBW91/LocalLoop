@@ -132,16 +132,36 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node check-content.mjs --strict --allow=larue,prospect,green-camp
-      - name: Deploy site to Netlify (localloop.io)
+      # localloop.io IS the usable Expo web app, NOT the static marketing site.
+      # This job used to deploy --dir=site (marketing) nightly, which silently
+      # REVERTED every manual web-app deploy the next morning (2026-07-14: the
+      # site served a "Download on the App Store" page with no app bundle, and
+      # Android users — who have no native app — hit a dead end). The fix: build
+      # the web app here and deploy dist. build-web.mjs runs `expo export` for the
+      # app shell, merges the marketing/legal/SEO files this job just regenerated
+      # in site/, and regenerates the per-event SEO pages from live data — so the
+      # app AND the SEO stay fresh in one deploy. See scripts/build-web.mjs.
+      - name: Install web app deps (for the Expo web build)
+        run: npm ci
+      - name: Build the web app (app shell + merged site/ + fresh SEO)
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+        run: npm run build:web
+      - name: Deploy web app to Netlify (localloop.io)
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        # Use the CLI --prod deploy, which explicitly PUBLISHES. The old raw zip POST to
-        # /sites/{id}/deploys uploaded the files but left the deploy "ready" yet
-        # UNPUBLISHED (2026-07-10: an 8.3k-file deploy sat unpublished, so localloop.io
-        # kept serving the previous deploy and the SEO/portal/widget pages 404'd).
-        # --no-build is REQUIRED: without it the CLI runs the Netlify site UI's stale
-        # build command ("expo export -p web", a leftover from the old web-app era),
-        # which has no expo on this runner and fails the whole deploy (first hit
-        # 2026-07-10 late run). site/ is already fully built by the steps above.
-        run: npx --yes netlify-cli deploy --prod --no-build --dir=site --site "$NETLIFY_SITE_ID" --message "aggregate ${{ github.run_id }}"
+        # Guard: only publish if the build produced a real app shell (bundle ref +
+        # the bundle file). A broken build must NOT ship an empty/marketing dist —
+        # Netlify keeps serving the last good deploy until the build is fixed.
+        # --no-build is REQUIRED so the CLI ships dist as-is instead of re-running
+        # the Netlify UI's stale "expo export -p web" build command.
+        run: |
+          BUNDLE=$(grep -oE "/_expo/static/js/web/[^\"']+\.js" dist/index.html | head -1)
+          if [ -z "$BUNDLE" ] || [ ! -f "dist$BUNDLE" ]; then
+            echo "::error::web build produced no app bundle (dist is not the web app) — refusing to deploy; last good deploy stays live"
+            exit 1
+          fi
+          npx --yes netlify-cli deploy --prod --no-build --dir=dist --site "$NETLIFY_SITE_ID" --message "aggregate ${{ github.run_id }} (web app)"
