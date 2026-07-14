@@ -15,6 +15,7 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { buildSeo } from './build-seo.mjs';
 
 const OUT = 'dist';
 const SITE = 'site';
@@ -64,4 +65,7 @@ const BODY_SEO = `<noscript><h1>Local Loop</h1><p>Local events, garage sales, an
 html = html.replace(/<div id="root">/, `${BODY_SEO}\n<div id="root">`);
 fs.writeFileSync(idxPath, html);
 
-console.log(`\nweb build ready in ${OUT}/ (app + preserved legal/deep-link/SEO files + homepage SEO)`);
+// 5. Per-event SEO landing pages + a fresh sitemap (best-effort; see build-seo.mjs).
+await buildSeo(OUT);
+
+console.log(`\nweb build ready in ${OUT}/ (app + preserved files + homepage SEO + event pages)`);
