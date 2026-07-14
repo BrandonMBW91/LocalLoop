@@ -43,4 +43,25 @@ fs.writeFileSync(
   ].join('\n'),
 );
 
-console.log(`\nweb build ready in ${OUT}/ (app + preserved legal/deep-link/SEO files)`);
+// 4. Homepage SEO. The Expo shell ships only a bare <title> and no description,
+// so localloop.io/ is near-invisible to search. Inject real metadata + a WebSite
+// schema and a crawlable <noscript> fallback — none of which change the running
+// app (JS renders over it).
+const idxPath = path.join(OUT, 'index.html');
+let html = fs.readFileSync(idxPath, 'utf8');
+const HEAD_SEO = `<title>Local Loop — Local events, garage sales and food trucks across Ohio</title>
+    <meta name="description" content="Find events, garage sales, and food trucks near you across 130+ Ohio towns. Free, local, and updated daily on Local Loop." />
+    <link rel="canonical" href="https://localloop.io/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://localloop.io/" />
+    <meta property="og:title" content="Local Loop — Ohio's local events, all in one place" />
+    <meta property="og:description" content="Events, garage sales, and food trucks near you across 130+ Ohio towns. Free." />
+    <meta property="og:image" content="https://localloop.io/favicon.ico" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Local Loop","url":"https://localloop.io/","description":"Local events, garage sales, and food trucks across 130+ Ohio towns."}</script>`;
+html = html.replace(/<title>[^<]*<\/title>/, HEAD_SEO);
+const BODY_SEO = `<noscript><h1>Local Loop</h1><p>Local events, garage sales, and food trucks near you across 130+ Ohio towns. Free and updated daily.</p><p>Browse events by town: <a href="/events/columbus.html">Columbus</a>, <a href="/events/cleveland.html">Cleveland</a>, <a href="/events/cincinnati.html">Cincinnati</a>, <a href="/events/akron.html">Akron</a>, <a href="/events/toledo.html">Toledo</a>, <a href="/events/findlay.html">Findlay</a>.</p></noscript>`;
+html = html.replace(/<div id="root">/, `${BODY_SEO}\n<div id="root">`);
+fs.writeFileSync(idxPath, html);
+
+console.log(`\nweb build ready in ${OUT}/ (app + preserved legal/deep-link/SEO files + homepage SEO)`);
