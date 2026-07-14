@@ -7,8 +7,10 @@
 // (or a manual deploy) can never ship an app that breaks App Store legal links
 // or native universal links.
 //
-//   node scripts/build-web.mjs        # -> dist/  (then `netlify deploy --prod --dir dist`)
-// Netlify build command points here so a triggered build produces the same thing.
+//   npm run deploy:web                # build + `netlify deploy --prod --dir dist --no-build`
+// IMPORTANT: deploy with --no-build. Plain `netlify deploy` re-runs the Netlify
+// site's configured `expo export -p web` (a RAW export) and overwrites this merged
+// dist, dropping the legal/deep-link/SEO files. --no-build ships dist as-is.
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
