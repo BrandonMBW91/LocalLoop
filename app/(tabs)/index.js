@@ -14,9 +14,10 @@ import ListBody from '../../src/components/ListBody';
 import { useListState } from '../../src/hooks/useListState';
 import { useApp } from '../../src/context/AppContext';
 import { CATEGORIES } from '../../src/data/events';
-import { daysFromNow, isThisWeekend } from '../../src/utils/dates';
+import { daysFromNow, touchesToday, touchesWeekend } from '../../src/utils/dates';
 import { buildTimeSections } from '../../src/utils/grouping';
 import { shareAppMessage } from '../../src/lib/links';
+import { venueCore } from '../../src/utils/place';
 import { colors, spacing, radius } from '../../src/theme/theme';
 
 export default function EventsScreen() {
@@ -55,11 +56,11 @@ export default function EventsScreen() {
     return events.filter((e) => {
       const matchesFilter =
         activeCat === 'All' ? true
-        : activeCat === 'Today' ? daysFromNow(e.start) === 0
-        : activeCat === 'Weekend' ? isThisWeekend(e.start)
+        : activeCat === 'Today' ? touchesToday(e.start, e.end)
+        : activeCat === 'Weekend' ? touchesWeekend(e.start, e.end)
         : activeCat === 'Free' ? /free/i.test(e.price || '')
         : activeCat === 'For You' ? (interests.length === 0 || interests.includes(e.category))
-        : activeCat === 'Following' ? follows.includes(e.venue)
+        : activeCat === 'Following' ? follows.some((f) => venueCore(f) === venueCore(e.venue))
         : e.category === activeCat;
       const matchesQuery =
         !q ||

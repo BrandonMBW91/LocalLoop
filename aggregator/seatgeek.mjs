@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { cityFromLocation } from './towns.mjs';
 import { dedupeKey, venueKey } from './dedupe.mjs';
+import { joinAddressParts, cleanEventTitle } from './venue.mjs';
 import { ANCHORS } from './geo.mjs';
 
 loadDotEnv();
@@ -55,14 +56,18 @@ function toRow(ev, cityId) {
   const startIso = toIso(ev.datetime_utc || ev.datetime_local);
   if (!title || !startIso) return null;
   const v = ev.venue || {};
-  const address = clean([v.address, v.city, v.state, v.postal_code].filter(Boolean).join(', '));
+  // The lat/radius query spills across state lines (Grand Rapids MI showed under
+  // Defiance, Monroe MI under Toledo). This is an Ohio app: OH venues only.
+  if (v.state && String(v.state).toUpperCase() !== 'OH') return null;
+  // joinAddressParts skips parts v.address already carries (SG packs city/state/zip in too).
+  const address = clean(joinAddressParts([v.address, v.city, v.state, v.postal_code]));
   const assigned = cityFromLocation(`${v.name || ''} ${v.city || ''} ${address}`, cityId);
   if (!assigned) return null;
   const price = ev.stats?.lowest_price != null ? `$${Math.round(ev.stats.lowest_price)}+` : 'See tickets';
   const cat = category(ev);
   return {
-    city_id: assigned, title, category: cat, emoji: EMOJI[cat] || '📅',
-    start_at: startIso, end_at: null, venue: clean(v.name) || 'See venue', address,
+    city_id: assigned, title: cleanEventTitle(title, assigned) || title, category: cat, emoji: EMOJI[cat] || '📅',
+    start_at: startIso, end_at: null, venue: clean(v.name), address, // no 'See venue' placeholder
     price, host: 'SeatGeek', description: clean(ev.description || `${title} — tickets via SeatGeek.`),
     source_uid: createHash('sha1').update(`${assigned}|${title.toLowerCase()}|${startIso}`).digest('hex').slice(0, 24),
     lat: v.location?.lat ?? null, lng: v.location?.lon ?? null,

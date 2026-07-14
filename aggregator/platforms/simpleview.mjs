@@ -13,6 +13,8 @@
 // Recurrence: one doc per event, `date` = first occurrence in range; the daily
 // cron naturally picks up later occurrences as they become "next".
 
+import { joinAddressParts } from '../venue.mjs';
+
 const UA = { 'User-Agent': 'Mozilla/5.0 (LocalLoop aggregator)' };
 const trim = (s) => String(s || '').trim();
 const ET = 'America/New_York';
@@ -74,8 +76,9 @@ export async function pull(source, { floor, cutoff }) {
       const en = /^(\d{2}):(\d{2})/.exec(e.endTime || '');
       const start = st ? etDate(dp.y, dp.mo, dp.d, +st[1], +st[2]) : etDate(dp.y, dp.mo, dp.d, 12, 0);
       const end = en ? etDate(dp.y, dp.mo, dp.d, +en[1], +en[2]) : null;
-      const location = [trim(e.location), trim(e.address1), trim(e.city), `${trim(e.state)} ${trim(e.zip)}`.trim()]
-        .filter(Boolean).join(', ');
+      // The site's `location` field often already contains the full street address —
+      // containment-aware join stops it appearing twice.
+      const location = joinAddressParts([trim(e.location), trim(e.address1), trim(e.city), `${trim(e.state)} ${trim(e.zip)}`.trim()]);
       out.push({
         summary: trim(e.title),
         description: String(e.description || ''),

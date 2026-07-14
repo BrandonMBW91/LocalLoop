@@ -11,7 +11,8 @@ import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
 import { recordView, fetchOneById, toggleRsvp, fetchRsvpCounts } from '../../src/lib/db';
 import { colors, spacing, radius, categoryColor, categoryIcon } from '../../src/theme/theme';
-import { formatLongDate, timeRange } from '../../src/utils/dates';
+import { formatLongDate, timeLabel, isOngoing, formatShortDate, toDateString } from '../../src/utils/dates';
+import { placeLine, placeMultiline, isPlaceholderVenue } from '../../src/utils/place';
 import { addToCalendarUrl } from '../../src/utils/calendar';
 import { shareUrl, shareFooter } from '../../src/lib/links';
 
@@ -120,7 +121,8 @@ export default function EventDetailScreen() {
   };
 
   const openMaps = () => {
-    const loc = (event.address || event.venue || '').trim();
+    // Never launch a maps search for a feed placeholder ("Virtual", "See venue").
+    const loc = (event.address || (isPlaceholderVenue(event.venue) ? '' : event.venue) || '').trim();
     if (!loc) return;
     const q = encodeURIComponent(loc);
     const url = Platform.select({
@@ -133,9 +135,21 @@ export default function EventDetailScreen() {
     );
   };
 
+  // One "when" everywhere (When field, share text). A multi-day event shows its
+  // full span — "Mon, Jul 13 through Fri, Jul 17 · 7 AM to 2:30 PM" — instead of
+  // start-day clock times that read like a finished single-day event.
+  const whenLabel = () => {
+    const multiDay = event.end && toDateString(event.start) !== toDateString(event.end);
+    if (!multiDay) return `${formatLongDate(event.start)} · ${timeLabel(event.start, event.end)}`;
+    const span = `${formatShortDate(event.start)} through ${formatShortDate(event.end)}`;
+    return isOngoing(event.start, event.end)
+      ? `Happening now · ${span}`
+      : `${span} · ${timeLabel(event.start, event.end)}`;
+  };
+
   const onShare = () => {
     Share.share({
-      message: `${event.title}\n${formatLongDate(event.start)} · ${timeRange(event.start, event.end)}\n${[event.venue, event.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('event', id))}`,
+      message: `${event.title}\n${whenLabel()}\n${placeLine(event.venue, event.address)}${shareFooter(shareUrl('event', id))}`,
       url: shareUrl('event', id), // iOS uses this to unfurl a rich preview card
     }).catch(() => {});
   };
@@ -145,7 +159,7 @@ export default function EventDetailScreen() {
       title: event.title,
       start: event.start,
       end: event.end,
-      location: [event.venue, event.address].filter(Boolean).join(', '),
+      location: placeLine(event.venue, event.address),
       details: event.description,
     });
     Linking.openURL(url).catch(() => {});
@@ -279,13 +293,13 @@ export default function EventDetailScreen() {
           <InfoRow
             icon="calendar"
             label="When"
-            value={`${formatLongDate(event.start)}\n${timeRange(event.start, event.end)}`}
+            value={whenLabel().replace(' · ', '\n')}
           />
           <View style={styles.divider} />
           <InfoRow
             icon="location"
             label="Where (tap for directions)"
-            value={`${event.venue}\n${event.address}`}
+            value={placeMultiline(event.venue, event.address)}
             onPress={openMaps}
           />
           <View style={styles.divider} />
@@ -294,8 +308,9 @@ export default function EventDetailScreen() {
           <InfoRow icon="people" label="Hosted by" value={event.host} />
         </View>
 
-        {/* Follow this venue — surfaces its events under the "Following" filter */}
-        {event.venue ? (
+        {/* Follow this venue — surfaces its events under the "Following" filter.
+            Hidden for feed placeholders — "Follow Virtual" is meaningless. */}
+        {event.venue && !isPlaceholderVenue(event.venue) ? (
           <Pressable
             style={({ pressed }) => [styles.followBtn, following && styles.followingBtn, pressed && { opacity: 0.85 }]}
             onPress={() => toggleFollow(event.venue)}

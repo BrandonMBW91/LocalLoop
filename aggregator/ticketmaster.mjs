@@ -11,6 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { cityFromLocation } from './towns.mjs';
 import { ANCHORS, geohash } from './geo.mjs';
+import { joinAddressParts, cleanEventTitle } from './venue.mjs';
 
 loadDotEnv();
 
@@ -61,7 +62,15 @@ async function fetchAnchor(a) {
   return out;
 }
 
+// TM's info/pleaseNote fields often carry venue TICKET TERMS (bag policy, will
+// call, 'Place Order'), or the cancellation/refund notice — none of which is an
+// event description a reader should see.
+const TICKET_TERMS_RE = /valid (?:photo )?ID|Place Order|bag policy|will call|CASHLESS|clear bags?|no re-?entry|box office (?:opens|hours)|refund/i;
+
 function toRow(ev, cityId) {
+  // Cancelled shows must not list as upcoming (their info is the refund notice).
+  const statusCode = ev.dates?.status?.code;
+  if (statusCode === 'cancelled' || statusCode === 'canceled') return null;
   const title = clean(ev.name);
   const startIso = ev.dates?.start?.dateTime
     || (ev.dates?.start?.localDate ? new Date(`${ev.dates.start.localDate}T${ev.dates.start.localTime || '19:00'}:00`).toISOString() : null);
@@ -69,7 +78,8 @@ function toRow(ev, cityId) {
 
   const venue = ev._embedded?.venues?.[0];
   const venueName = clean(venue?.name);
-  const address = clean([venue?.address?.line1, venue?.city?.name, venue?.state?.stateCode, venue?.postalCode].filter(Boolean).join(', '));
+  // joinAddressParts skips parts line1 already carries (TM often packs city/state/zip in).
+  const address = clean(joinAddressParts([venue?.address?.line1, venue?.city?.name, venue?.state?.stateCode, venue?.postalCode]));
   const seg = ev.classifications?.[0]?.segment?.name;
   const isFamily = ev.classifications?.[0]?.family === true;
   const category = isFamily ? 'Family' : (SEGMENT_CAT[seg] || 'Community');
@@ -87,13 +97,17 @@ function toRow(ev, cityId) {
     .digest('hex').slice(0, 24);
 
   const priceRange = ev.priceRanges?.[0];
-  const price = priceRange ? `$${Math.round(priceRange.min)}${priceRange.max > priceRange.min ? '+' : ''}` : 'See tickets';
+  // A $0 minimum is a free event — every other free listing says 'Free'.
+  const price = priceRange
+    ? (Math.round(priceRange.min) === 0 ? 'Free' : `$${Math.round(priceRange.min)}${priceRange.max > priceRange.min ? '+' : ''}`)
+    : 'See tickets';
 
   return {
-    city_id: assignedCity, title, category, emoji: EMOJI[category] || '📅',
-    start_at: startIso, end_at: null, venue: venueName || 'See venue',
+    city_id: assignedCity, title: cleanEventTitle(title, assignedCity) || title, category, emoji: EMOJI[category] || '📅',
+    start_at: startIso, end_at: null, venue: venueName, // no 'See venue' placeholder — a blank venue hides Follow/directions cleanly
     address, price, host: 'Ticketmaster',
-    description: clean(ev.info || ev.pleaseNote || `${title} — tickets via Ticketmaster.`),
+    // pleaseNote is ALWAYS policy text; info only when it isn't ticket terms.
+    description: (() => { const i = clean(ev.info || ''); return i && !TICKET_TERMS_RE.test(i) ? i : `${title} — tickets via Ticketmaster.`; })(),
     source_uid, lat, lng, image_url: pickImage(ev.images),
     ticket_url: /^https:\/\//i.test(ev.url || '') ? ev.url : null,
   };

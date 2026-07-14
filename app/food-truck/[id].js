@@ -12,6 +12,7 @@ import { recordView, fetchOneById } from '../../src/lib/db';
 import { CUISINE_EMOJI } from '../../src/data/foodTrucks';
 import { colors, spacing, radius } from '../../src/theme/theme';
 import { formatLongDate } from '../../src/utils/dates';
+import { placeLine, placeMultiline } from '../../src/utils/place';
 import { shareUrl, shareFooter } from '../../src/lib/links';
 import { addToCalendarUrl } from '../../src/utils/calendar';
 
@@ -94,7 +95,7 @@ export default function FoodTruckDetailScreen() {
 
   const onShare = () => {
     Share.share({
-      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime} to ${truck.endTime}\n${[truck.locationName, truck.address].filter(Boolean).join(', ')}${shareFooter(shareUrl('food-truck', truck.id))}`,
+      message: `${truck.name} (${truck.cuisine})\n${formatLongDate(truck.date)} · ${truck.startTime} to ${truck.endTime}\n${placeLine(truck.locationName, truck.address)}${shareFooter(shareUrl('food-truck', truck.id))}`,
       url: shareUrl('food-truck', truck.id), // iOS uses this to unfurl a rich preview card
     }).catch(() => {});
   };
@@ -103,7 +104,9 @@ export default function FoodTruckDetailScreen() {
     const url = addToCalendarUrl({
       title: truck.name,
       start: truck.date,
-      location: [truck.locationName, truck.address].filter(Boolean).join(', '),
+      startTime: truck.startTime, // real posted hours -> a correctly timed entry
+      endTime: truck.endTime,
+      location: placeLine(truck.locationName, truck.address),
       details: `${truck.startTime} to ${truck.endTime}${truck.note ? '. ' + truck.note : ''}`,
     });
     Linking.openURL(url).catch(() => {});
@@ -182,7 +185,7 @@ export default function FoodTruckDetailScreen() {
           <InfoRow
             icon="location"
             label="Where (tap for directions)"
-            value={`${truck.locationName}\n${truck.address}`}
+            value={placeMultiline(truck.locationName, truck.address)}
             onPress={openMaps}
           />
           <View style={styles.divider} />

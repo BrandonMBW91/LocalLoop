@@ -62,10 +62,16 @@ async function main() {
 
     let sendOk = true;
     if (tokens.length) {
+// '2026-07-15' -> 'Wed, Jul 15' (the push used to show the raw ISO date).
+function friendlyDay(ymd) {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return ymd;
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(d);
+}
       const title = `${s.name} has a new stop`;
       const body = s.location_name
-        ? `${s.location_name} on ${s.date}`
-        : `New stop posted for ${s.date}`;
+        ? `${s.location_name} on ${friendlyDay(s.date)}${s.start_time ? ` at ${s.start_time}` : ''}`
+        : `New stop posted for ${friendlyDay(s.date)}`;
       wouldPush += tokens.length;
       if (!DRY) {
         const messages = tokens.map((to) => ({ to, title, body, sound: 'default' }));

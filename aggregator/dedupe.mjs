@@ -93,6 +93,21 @@ export function isTicketedTwin(a, b) {
   return titleSubset(sigTitleTokens(a.title), sigTitleTokens(b.title));
 }
 
+
+// Same venue, same exact start INSTANT, and one title is a prefix of the other
+// ('Tuesdays at the Park' vs 'Tuesdays at the Park: Indiana Wild', 'BGSU Men's
+// Soccer vs Wright State' with a network suffix appended). The subtitle carries
+// no separate event — one feed just truncates or decorates the title.
+export function isPrefixTwin(a, b) {
+  if (a.start_at !== b.start_at) return false;
+  const va = venueSig(a.venue), vb = venueSig(b.venue);
+  if (!va || va !== vb) return false;
+  const norm = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const ta = norm(a.title), tb = norm(b.title);
+  const [shorter, longer] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  return shorter.length >= 12 && longer.startsWith(shorter);
+}
+
 const jaccard = (a, b) => { let i = 0; for (const x of a) if (b.has(x)) i++; return i / ((a.size + b.size - i) || 1); };
 
 // The SAME real event listed by two DIFFERENT sources at different clock times —
@@ -157,6 +172,7 @@ async function sweep(apply) {
     for (let a = 0; a < idxs.length; a++) {
       for (let b = a + 1; b < idxs.length; b++) {
         if (isTicketedTwin(all[idxs[a]], all[idxs[b]])) union(idxs[a], idxs[b]);
+        else if (isPrefixTwin(all[idxs[a]], all[idxs[b]])) union(idxs[a], idxs[b]);
       }
     }
   }

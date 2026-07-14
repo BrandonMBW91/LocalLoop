@@ -5,6 +5,7 @@
 //   node truck-calendars.mjs --dry-run  # report only
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
 import { loadDotEnv } from './env.mjs';
 import { wallParts } from './et.mjs';
 import { safeFetch } from './safe-fetch.mjs';
@@ -98,6 +99,68 @@ function whenET(field) {
 
 const todayET = (() => { const p = wallParts(new Date()); return `${p.y}-${String(p.mo).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`; })();
 
+// StreetFoodFinder profile pages (streetfoodfinder.com/<slug>) have no public
+// iCal — the .ics endpoints sit behind a bot wall (HTTP 403) while the page
+// itself serves fine. The page's own calendar loads via a form-POST to
+// /api/v3/vendor/fetch/calendar with a vtok embedded in the page, returning an
+// HTML fragment. Fetch page -> extract vtok -> POST -> parse the fragment.
+// Cloudflare 403s Node's TLS fingerprint outright (any UA) while curl passes,
+// so these two requests shell out to curl. The URL is an admin-approved
+// truck_calendars row, not raw user input.
+function curlText(args) {
+  return new Promise((resolve, reject) => {
+    execFile('curl', ['-sL', '--max-time', '25', ...args], { maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
+      if (err) reject(new Error(`curl: ${err.message.split(String.fromCharCode(10))[0]}`));
+      else resolve(stdout);
+    });
+  });
+}
+
+async function fetchSffStops(cal) {
+  const html = await curlText(['-A', 'Mozilla/5.0 (LocalLoop aggregator)', '-H', 'Accept: text/html,application/xhtml+xml', cal.ical_url]);
+  const vm = /vtok['"]?\s*[:=]\s*['"]([^'"]+)['"]/.exec(html);
+  if (!vm) throw new Error('no vtok on page (SFF layout changed?)');
+  const body = await curlText([
+    '-A', 'Mozilla/5.0 (LocalLoop aggregator)', '-H', 'Accept: application/json', '-H', `Referer: ${cal.ical_url}`,
+    '--data-urlencode', `vtok=${vm[1]}`,
+    'https://streetfoodfinder.com/api/v3/vendor/fetch/calendar',
+  ]);
+  let j;
+  try { j = JSON.parse(body); } catch { throw new Error('calendar API returned non-JSON (bot wall?)'); }
+  const frag = j?.data?.jax?.['vendor-calendar'] || '';
+  if (!frag) throw new Error('no calendar fragment (SFF response changed?)');
+  const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
+  const nowP = wallParts(new Date());
+  const rows = [];
+  const stopRe = /lt="([-0-9.]+)" ln="([-0-9.]+)" ad="([^"]*)" tx="([^"]*)"[\s\S]*?txt-mdl txt-sb">\s*([^<]+)[\s\S]*?<small class="txt-gray[^"]*">([^<]+)<\/small>/g;
+  let m;
+  while ((m = stopRe.exec(frag))) {
+    const [, , , adEnc, tx, nameRaw, timeRaw] = m;
+    const dm = /([A-Za-z]+)\s+(\d{1,2})/.exec(String(tx).split('-').pop() || '');
+    if (!dm) continue;
+    const mo = MONTHS[dm[1].toLowerCase()];
+    if (!mo) continue;
+    // Year inference: SFF prints no year; a month far behind today's is next year.
+    let y = nowP.y;
+    if (mo < nowP.mo - 1) y += 1;
+    const date = `${y}-${String(mo).padStart(2, '0')}-${String(+dm[2]).padStart(2, '0')}`;
+    if (date < todayET) continue;
+    const times = String(timeRaw).split(/\s+to\s+/i).map((t) => t.trim());
+    const loc = nameRaw.trim().slice(0, 200) || cal.name;
+    let address = '';
+    try { address = decodeURIComponent(adEnc).slice(0, 300); } catch { address = ''; }
+    rows.push({
+      city_id: cal.city_id, name: cal.name, cuisine: cal.cuisine,
+      date, start_time: times[0] || null, end_time: times[1] || null,
+      location_name: loc, address: address || null,
+      host: cal.host || cal.name, note: null,
+      featured: false, status: 'approved',
+      source_uid: sha1(`${cal.id}|${date}|${loc}`),
+    });
+  }
+  return rows;
+}
+
 const { data: cals, error: calErr } = await sb.from('truck_calendars').select('*').eq('enabled', true);
 if (calErr) { console.error(calErr.message); process.exit(1); }
 console.log(`${cals.length} enabled truck calendar(s).`);
@@ -106,12 +169,15 @@ let totalStops = 0;
 for (const cal of cals) {
   let stops = 0, skipped = 0, error = null;
   try {
+    let rows = [];
+    let rruleCount = 0;
+    if (/streetfoodfinder\.com/i.test(cal.ical_url)) {
+      rows = await fetchSffStops(cal);
+    } else {
     const res = await safeFetch(cal.ical_url, UA);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error('not iCal (bot wall or moved feed?)');
-    const rows = [];
-    let rruleCount = 0;
     for (const ev of parseICS(text)) {
       // RRULE recurring stops are NOT expanded by this minimal parser — only the
       // master DTSTART ingests, and once that's past the series silently yields
@@ -135,6 +201,7 @@ for (const cal of cals) {
         featured: false, status: 'approved',
         source_uid: sha1(`${cal.id}|${start.date}|${loc}`),
       });
+    }
     }
     // De-dup the payload by source_uid: two same-day events with the same
     // summary/location hash identically, and Postgres aborts the ENTIRE upsert

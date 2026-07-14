@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { textScaleOptions } from '../theme/theme';
 import {
@@ -42,6 +42,7 @@ import {
 import { trackEvent } from '../lib/analytics';
 import { maybePromptReview } from '../lib/review';
 import { isOver } from '../utils/dates';
+import { venueCore } from '../utils/place';
 
 // The email that gets moderator powers (matches is_admin() in the database).
 const ADMIN_EMAIL = (process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'michabw91@gmail.com').toLowerCase();
@@ -223,6 +224,29 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // Refresh on foreground: phones keep the app alive for days, and nothing else
+  // re-ran the fetch — a list loaded at 9 AM still showed long-ended events at
+  // 10 PM (and yesterday's events after midnight). On every return to the
+  // foreground, instantly drop anything now over from the in-memory list; after
+  // 15+ minutes away, also refetch from the server (and refresh the picker's
+  // active-town counts, frozen since launch for the same reason).
+  const lastActiveRef = useRef(Date.now());
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') { lastActiveRef.current = Date.now(); return; }
+      const awayMs = Date.now() - lastActiveRef.current;
+      setEvents((prev) => prev.filter((e) => !isOver(e.start, e.end)));
+      if (awayMs > 15 * 60 * 1000) {
+        loadData();
+        if (isSupabaseEnabled) {
+          fetchActiveCities().then((ids) => { if (ids) setActiveCityIds(new Set(ids)); });
+          fetchActiveCityCounts().then((m) => setCityCounts(m || {}));
+        }
+      }
+    });
+    return () => sub.remove();
   }, [loadData]);
 
   // After the app has settled (and the user has opened it a few times), ask once
@@ -415,12 +439,20 @@ export function AppProvider({ children }) {
   // push token so a followed TRUCK can ping its followers when it posts a new
   // stop. Passing the town + token is what turns this from a local bookmark into
   // the notify flywheel.
-  const isFollowing = useCallback((venue) => follows.includes(venue), [follows]);
+  // Follows match on venueCore (the leading place name), not the exact string —
+  // feeds reformat venue strings between runs and cleanups rewrite them, which
+  // used to orphan existing follows and fragment a venue across its room names.
+  const isFollowing = useCallback(
+    (venue) => { const c = venueCore(venue); return !!c && follows.some((f) => venueCore(f) === c); },
+    [follows]
+  );
   const toggleFollow = (venue) => {
     if (!venue) return;
     setFollows((prev) => {
-      const has = prev.includes(venue);
-      const next = has ? prev.filter((v) => v !== venue) : [...prev, venue];
+      const c = venueCore(venue);
+      const has = prev.some((f) => venueCore(f) === c);
+      // Unfollow removes every stored variant of the place (legacy blobs included).
+      const next = has ? prev.filter((v) => venueCore(v) !== c) : [...prev, venue];
       AsyncStorage.setItem(STORAGE_KEYS.follows, JSON.stringify(next)).catch(() => {});
       logEvent(has ? 'unfollow_venue' : 'follow_venue', { venue: venue.slice(0, 40) });
       return next;
@@ -428,7 +460,7 @@ export function AppProvider({ children }) {
     // Server sync (fire-and-forget). On a NEW follow, attach the push token so
     // notifications can reach this device; toggling is idempotent server-side.
     if (isSupabaseEnabled && deviceId && Platform.OS !== 'web' && !isAdmin) {
-      const wasFollowing = follows.includes(venue);
+      const wasFollowing = follows.some((f) => venueCore(f) === venueCore(venue));
       (async () => {
         let token = null;
         if (!wasFollowing && (await hasPermission())) token = await getPushToken();

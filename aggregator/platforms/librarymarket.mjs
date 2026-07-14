@@ -44,7 +44,8 @@ export async function pull(source, { floor, cutoff }) {
     const room = first(e.room);
     const offsite = clean(e.offsite_address || '');
     const isOff = /off ?site/i.test(branch);
-    // "Venue (room), address" — deriveVenue in makeRow splits venue/address back out.
+    // "Venue (room), address" — deriveVenue in makeRow splits the address back out
+    // at the first street-number segment (name-led strings keep the room text).
     const location = isOff && offsite ? offsite : `${branch || source.name}${room ? ` (${room})` : ''}`;
     out.push({
       summary: title,

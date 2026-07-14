@@ -79,11 +79,27 @@ function dayLabel(key, todayKey, tomorrowKey, sampleIso) {
   const p = etParts(sampleIso);
   return `${p.dow}, ${p.mon} ${p.day}`;
 }
-function timeRange(e) {
+// All-day/time-unknown anchors (noon ET no-end, or midnight ET spanning its own
+// day) must read "All day", not the literal "12 PM" — mirrors the app's
+// isAllDayAnchor in src/utils/dates.js.
+function isAllDayIso(e) {
   const s = etParts(e.start_at);
-  if (!e.end_at) return s.time;
+  if (s.time === '12 PM' && !e.end_at) return true;
+  if (s.time !== '12 AM') return false;
+  if (!e.end_at) return true;
+  const span = new Date(e.end_at) - new Date(e.start_at);
+  return span >= 23.5 * 3600e3 && span <= 24.5 * 3600e3;
+}
+function timeRange(e) {
+  const allDay = isAllDayIso(e);
+  const s = etParts(e.start_at);
+  if (!e.end_at) return allDay ? 'All day' : s.time;
   const en = etParts(e.end_at);
-  return etDayKey(e.start_at) === etDayKey(e.end_at) ? `${s.time} - ${en.time}` : s.time;
+  if (etDayKey(e.start_at) === etDayKey(e.end_at)) {
+    return allDay ? 'All day' : `${s.time} - ${en.time}`;
+  }
+  // Multi-day: a bare start clock read like a finished single-day event.
+  return `${allDay ? 'All day' : s.time} through ${en.mon} ${en.day}`;
 }
 // Food-truck/garage-sale dates are bare YYYY-MM-DD strings (no time/zone). Format
 // at noon UTC so the calendar day never shifts, and compare as plain date strings.
@@ -363,7 +379,9 @@ async function main() {
         .from('events')
         .select('id,title,start_at,end_at,venue,address,host,description,category')
         .eq('city_id', id).eq('status', 'approved')
-        .gte('start_at', backIso).lte('start_at', cutoff)
+        // Started recently OR still running (a festival on day 3 must stay on
+        // the page); the lte keeps the horizon bounded either way.
+        .or(`start_at.gte.${backIso},end_at.gte.${nowIso}`).lte('start_at', cutoff)
         .order('start_at', { ascending: true }).order('id', { ascending: true })
         .range(from, from + 999);
       if (page.error) { error = page.error; break; }
@@ -387,10 +405,24 @@ async function main() {
     counts[id] = events.length;
     grandTotal += events.length;
 
-    // Group by Eastern calendar day, app-style.
+    // Group by Eastern calendar day, app-style. A still-running event whose
+    // start day already passed files under TODAY (it is happening today), after
+    // today's fresh starts — not under a stale week-old date heading.
+    const displayKey = (e) => {
+      const k = etDayKey(e.start_at);
+      return k < todayKey ? todayKey : k;
+    };
+    events.sort((a, b) => {
+      const ka = displayKey(a), kb = displayKey(b);
+      if (ka !== kb) return ka < kb ? -1 : 1;
+      const ca = etDayKey(a.start_at) < todayKey ? 1 : 0; // carry-overs after fresh starts
+      const cb = etDayKey(b.start_at) < todayKey ? 1 : 0;
+      if (ca !== cb) return ca - cb;
+      return a.start_at < b.start_at ? -1 : a.start_at > b.start_at ? 1 : 0;
+    });
     const groups = [];
     for (const e of events) {
-      const k = etDayKey(e.start_at);
+      const k = displayKey(e);
       const g = groups[groups.length - 1];
       if (g && g.key === k) g.items.push(e);
       else groups.push({ key: k, items: [e] });

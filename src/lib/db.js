@@ -6,6 +6,23 @@ import { nyDateKey } from '../utils/dates.js';
 // Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
 // chronologically), used to expire past garage sales and food trucks. Uses the
 // Hermes-safe nyDateKey (no Intl/timeZone) so Android and iOS agree on "today".
+// "3 PM" / "10:30 AM" clock text -> minutes since midnight, or null. Used to
+// drop a truck stop / garage sale's FINAL day once its posted end time passes
+// (they used to sit under a green TODAY badge until midnight).
+function clockMinutes(s) {
+  const m = /(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?/i.exec(String(s || ''));
+  if (!m) return null;
+  let h = parseInt(m[1], 10) % 12;
+  if (/p/i.test(m[3])) h += 12;
+  return h * 60 + (m[2] ? parseInt(m[2], 10) : 0);
+}
+function nowMinutesET() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
+  const get = (t) => Number((parts.find((x) => x.type === t) || {}).value || 0);
+  return (get('hour') % 24) * 60 + get('minute');
+}
+
 function todayKeyET() {
   return nyDateKey();
 }
@@ -274,10 +291,17 @@ export async function fetchGarageSales(cityId) {
     rows.push(...(data || []));
     if ((data || []).length < 1000) break;
   }
-  // Drop sales that have already ended (no date filter exists in the query).
+  // Drop sales that have already ended (no date filter exists in the query),
+  // including a final day whose posted daily end time has passed.
   const today = todayKeyET();
   return rows
-    .filter((r) => (r.end_date || r.start_date || today) >= today)
+    .filter((r) => {
+      const last = r.end_date || r.start_date || today;
+      if (last > today) return true;
+      if (last < today) return false;
+      const endMin = clockMinutes(r.daily_end);
+      return endMin == null || nowMinutesET() <= endMin;
+    })
     .map(rowToSale);
 }
 
@@ -297,9 +321,18 @@ export async function fetchFoodTrucks(cityId) {
     rows.push(...(data || []));
     if ((data || []).length < 1000) break;
   }
-  // Drop food trucks whose date has passed (no date filter exists in the query).
+  // Drop food trucks whose date has passed, and today's stops once their posted
+  // end time is behind us (they used to show TODAY until midnight).
   const today = todayKeyET();
-  return rows.filter((r) => (r.date || today) >= today).map(rowToTruck);
+  return rows
+    .filter((r) => {
+      const day = r.date || today;
+      if (day > today) return true;
+      if (day < today) return false;
+      const endMin = clockMinutes(r.end_time);
+      return endMin == null || nowMinutesET() <= endMin;
+    })
+    .map(rowToTruck);
 }
 
 // ---- Writes (RLS forces status='pending' and stamps created_by) ----
@@ -735,12 +768,16 @@ export async function recordDeviceActivity(deviceId, cityId, platform) {
 // as you widen. Small projection, capped, soonest-first.
 export async function fetchEventsInBounds({ w, s, e, n }, limit = 250) {
   try {
-    const nowIso = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+    // Current or upcoming only: a real end still ahead, or (no end) started
+    // within the last 3 hours. The old start-only 12h window pinned events that
+    // ended hours ago while HIDING still-running multi-day festivals entirely.
+    const nowIso = new Date().toISOString();
+    const graceIso = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('events')
       .select('id, title, lat, lng, category')
       .eq('status', 'approved')
-      .gte('start_at', nowIso)
+      .or(`end_at.gte.${nowIso},and(end_at.is.null,start_at.gte.${graceIso})`)
       .not('lat', 'is', null)
       .gte('lat', s)
       .lte('lat', n)

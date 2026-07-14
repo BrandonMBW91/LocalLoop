@@ -14,7 +14,7 @@ import { colors, spacing, radius } from '../src/theme/theme';
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { completeOnboarding, backendEnabled } = useApp();
+  const { completeOnboarding, backendEnabled, activeCityIds } = useApp();
 
   // Live social proof: how much is already in the app across Ohio.
   const [eventCount, setEventCount] = useState(null);
@@ -24,7 +24,9 @@ export default function WelcomeScreen() {
     fetchUpcomingEventCount().then((n) => { if (ok) setEventCount(n); }).catch(() => {});
     return () => { ok = false; };
   }, [backendEnabled]);
-  const townCount = CITIES.length;
+  // Match the picker: count towns that actually have events right now (the
+  // static catalog says 133, but the picker one tap later lists the live set).
+  const townCount = activeCityIds && activeCityIds.size ? activeCityIds.size : CITIES.length;
   const stat = eventCount
     ? `${(Math.floor(eventCount / 100) * 100).toLocaleString()}+ events across ${townCount} Ohio towns`
     : `${townCount} Ohio towns and growing`;

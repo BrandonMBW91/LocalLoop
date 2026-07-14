@@ -27,13 +27,24 @@ export default function CalendarScreen() {
   // Bucket all loaded events by their local day key. Uses the shared timezone-
   // safe parse() so date-only events land on the right day, and skips any event
   // with a missing/invalid start rather than bucketing it under "NaN".
+  // A multi-day event lands on EVERY day it runs (start through end) — before,
+  // day two of a festival said "Nothing on this day" and an already-running
+  // event's only dot sat on a week-old cell. Capped at 60 dotted days so a
+  // months-long exhibition doesn't blanket the whole grid.
   const byDay = useMemo(() => {
     const map = {};
     for (const e of events) {
       const d = parse(e.start);
       if (isNaN(d)) continue;
-      const k = dayKey(d);
-      (map[k] = map[k] || []).push(e);
+      (map[dayKey(d)] = map[dayKey(d)] || []).push(e);
+      const end = e.end ? parse(e.end) : null;
+      if (!end || isNaN(end)) continue;
+      const cur = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      for (let i = 0; i < 60; i++) {
+        cur.setDate(cur.getDate() + 1);
+        if (cur > end) break;
+        (map[dayKey(cur)] = map[dayKey(cur)] || []).push(e);
+      }
     }
     return map;
   }, [events]);

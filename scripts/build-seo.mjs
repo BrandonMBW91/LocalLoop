@@ -26,6 +26,43 @@ function loadEnv() {
 const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const clean = (s) => String(s || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
+// ET formatting + the aggregator's all-day anchors (noon ET no-end / midnight ET
+// spanning its day). Anchors say "All day"; multi-day events show their span —
+// matching the app, so a Google result never disagrees with the screen.
+const ET = 'America/New_York';
+const etFmt = (iso, opts) => new Date(iso).toLocaleString('en-US', { timeZone: ET, ...opts });
+const etHM = (iso) => etFmt(iso, { hour: 'numeric', minute: '2-digit', hour12: true });
+function isAllDay(ev) {
+  const hm = etHM(ev.start_at);
+  if (hm === '12:00 PM' && !ev.end_at) return true;
+  if (hm !== '12:00 AM') return false;
+  if (!ev.end_at) return true;
+  const span = new Date(ev.end_at) - new Date(ev.start_at);
+  return span >= 23.5 * 3600e3 && span <= 24.5 * 3600e3;
+}
+function whenText(ev) {
+  const day = etFmt(ev.start_at, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const allDay = isAllDay(ev);
+  const sameDay = !ev.end_at
+    || etFmt(ev.start_at, { dateStyle: 'short' }) === etFmt(ev.end_at, { dateStyle: 'short' });
+  if (sameDay) return allDay ? `${day} · All day` : `${day} · ${etHM(ev.start_at).replace(':00 ', ' ')} ET`;
+  const endDay = etFmt(ev.end_at, { month: 'long', day: 'numeric' });
+  return `${day} through ${endDay}${allDay ? '' : ` · ${etHM(ev.start_at).replace(':00 ', ' ')} ET`}`;
+}
+
+// venue/address dedupe (mirrors src/utils/place.js): most aggregated rows once
+// carried the identical string in both fields; keep the more complete one.
+const normPlace = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function placeParts(venue, address) {
+  const v = clean(venue); const a = clean(address);
+  if (!v) return a ? [a] : [];
+  if (!a) return [v];
+  const nv = normPlace(v); const na = normPlace(a);
+  if (nv === na || na.includes(nv)) return [a];
+  if (nv.includes(na)) return [v];
+  return [v, a];
+}
+
 export async function buildSeo(OUT) {
   loadEnv();
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -75,10 +112,16 @@ export async function buildSeo(OUT) {
     const town = cityName[ev.city_id] || { name: clean(ev.city_id) || 'Ohio', state: 'OH' };
     const full = clean(ev.description);
     const desc = (full.slice(0, 300) || `${title} in ${town.name}, ${town.state}.`);
-    const venue = clean(ev.venue);
-    const dateStr = new Date(ev.start_at).toLocaleString('en-US', {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
-    });
+    // Deduped venue/address (a majority of aggregated rows once carried the same
+    // string in both fields — the raw values doubled the address in schema.org).
+    const [placeName, streetAddr] = (() => {
+      const parts = placeParts(ev.venue, ev.address);
+      if (parts.length === 2) return parts;
+      const only = parts[0] || '';
+      return /\d/.test(only) && /,/.test(only) ? ['', only] : [only, ''];
+    })();
+    const venue = placeName;
+    const dateStr = whenText(ev);
     const rel = `/e/${ev.id}.html`;
     eventUrls.push(rel);
 
@@ -89,7 +132,7 @@ export async function buildSeo(OUT) {
       eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       location: {
         '@type': 'Place', name: venue || `${town.name}, ${town.state}`,
-        address: { '@type': 'PostalAddress', addressLocality: town.name, addressRegion: town.state, addressCountry: 'US', ...(ev.address ? { streetAddress: clean(ev.address) } : {}) },
+        address: { '@type': 'PostalAddress', addressLocality: town.name, addressRegion: town.state, addressCountry: 'US', ...(streetAddr ? { streetAddress: streetAddr } : {}) },
       },
       description: desc, url: `${SITE}${rel}`,
       organizer: { '@type': 'Organization', name: 'Local Loop', url: SITE },
@@ -107,7 +150,7 @@ export async function buildSeo(OUT) {
 <style>body{margin:0;background:#FBF8F1;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.55}.wrap{max-width:640px;margin:0 auto;padding:24px 16px}.hero{background:#15315B;color:#fff;border-radius:20px;padding:22px}.hero h1{margin:0 0 6px;font-size:26px;line-height:1.15}.kick{font-size:12px;letter-spacing:1px;opacity:.75;text-transform:uppercase}.btn{display:inline-block;background:#15315B;color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:12px 20px;margin-top:6px}.meta{color:#5B5B5B;margin:14px 0}a{color:#15315B}</style>
 </head><body><div class="wrap">
 <p><a href="/events/${esc(ev.city_id)}.html">&larr; All ${esc(town.name)} events</a></p>
-<div class="hero"><div class="kick">${esc(town.name)}, ${esc(town.state)}</div><h1>${esc(title)}</h1><div>${esc(dateStr)} ET${venue ? ` &middot; ${esc(venue)}` : ''}</div></div>
+<div class="hero"><div class="kick">${esc(town.name)}, ${esc(town.state)}</div><h1>${esc(title)}</h1><div>${esc(dateStr)}${venue ? ` &middot; ${esc(venue)}` : ''}</div></div>
 <p class="meta">${esc(full.slice(0, 600) || desc)}</p>
 <a class="btn" href="/event/${esc(ev.id)}">Open in Local Loop</a>
 <p class="meta" style="font-size:14px;margin-top:18px">Free local events, garage sales, and food trucks across Ohio. <a href="/">Get Local Loop</a>.</p>

@@ -16,7 +16,7 @@ import { safeFetch } from './safe-fetch.mjs';
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 import { classifyEvents, emojiFor } from './classify.mjs';
-import { deriveVenue } from './venue.mjs';
+import { deriveVenue, cleanEventTitle } from './venue.mjs';
 import { extractJsonLdEvents } from './jsonld.mjs';
 import { PLATFORMS } from './platforms/index.mjs';
 import { etToDate, etNoon, etWallToDate, wallParts } from './et.mjs';
@@ -77,7 +77,13 @@ const CLOSURE_RE = /\b(offices?|city hall|building|library|branch|facilit)\w*\b[
 // cluttered every college town after the .edu feeds went live (Jul 2026 review).
 // Kept tight to admin phrasing so real attendable events (exam-prep, advising
 // sessions, orientations) are NOT caught.
-const ACADEMIC_RE = /\b(?:last day to (?:add|drop|withdraw|register|enroll|apply|pay|cancel)|add\/drop|drop\/add|withdraw(?:al)? (?:deadline|period|without)|last day for (?:removing|filing)|incomplete grades?|tuition(?: and fees)? (?:due|payment)|fees? due|payment due|balance due|bill due|registration (?:deadline|opens|closes)|enrollment deadline|deadline:\s|application (?:for|deadline)[^.]{0,24}(?:graduation|degree)|graduation application|grades? (?:due|posted)|census date|semester (?:begins|ends|start|deadline)|term (?:begins|ends)|classes (?:begin|end|resume|start)|first day of (?:class|classes|the semester)|last day of class(?:es)?)\b/i;
+// Literal feed test rows ('test', 'test 2') that sailed through university
+// calendars into production, and national certification-mill lead-gen listings
+// (PMP/SAFe/Salesforce 'Classroom Training') auto-posted to every metro.
+const TEST_TITLE_RE = /^test(?:ing)?\s*\d*$/i;
+const CERT_SPAM_RE = /(?:PMP|SAFe|CISSP|Scrum Master|ITIL|Six Sigma|Salesforce|CompTIA)[^|]{0,40}(?:Certification|Training)|Classroom Training|\d+\s*-?\s*Days?\s+(?:Classroom\s+|Virtual\s+)?(?:Workshop|Training)/i;
+
+const ACADEMIC_RE = /\b(?:last day to (?:add|drop|withdraw|register|enroll|apply|pay|cancel)|add\/drop|drop\/add|withdraw(?:al)? (?:deadline|period|without)|last day for (?:removing|filing)|incomplete grades?|tuition(?: and fees)? (?:due|payment)|fees? due|payment due|balance due|bill due|registration (?:deadline|opens|closes)|enrollment deadline|deadline:\s|application (?:for|deadline)[^.]{0,24}(?:graduation|degree)|graduation application|grades? (?:due|posted)|census date|semester (?:begins|ends|start|deadline)|term (?:begins|ends)|classes (?:begin|end|resume|start)|first day of (?:class|classes|the semester)|last day of class(?:es)?|last day to (?:remove|check out|submit|request|return|complete)|deadline for|residence hall|housing\/dining refund|conditional readmission)\b/i;
 
 // Only keep https links (no javascript:/http: etc.) for the "Get Tickets" button.
 function httpsUrl(raw) {
@@ -261,14 +267,35 @@ const METRO_ROLLUP = new Set([
 
 function makeRow(ev, source, start, end) {
   const { venue: rawVenue, address: rawAddress } = deriveVenue(txt(ev.location), source.name);
-  const venue = cleanLocation(rawVenue);
-  const address = cleanLocation(rawAddress);
+  let venue = cleanLocation(rawVenue);
+  let address = cleanLocation(rawAddress);
   const title = cleanText(txt(ev.summary) || 'Untitled').slice(0, 200);
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
   if (WEATHER_RE.test(title)) return null; // skip NWS/weather alerts (not events)
   if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
   if (ACADEMIC_RE.test(title)) return null; // skip academic-calendar admin (add/drop, tuition due, deadlines)
+  if (TEST_TITLE_RE.test(title)) return null; // literal feed test rows
+  if (CERT_SPAM_RE.test(title)) return null; // certification-mill lead-gen spam
   const description = cleanDescription(txt(ev.description)) || `From ${source.name}.`;
+  // Multi-branch library feeds (WhoFi) name the BRANCH only in the description's
+  // first line while the feed's location carries the MAIN library — which pointed
+  // directions/map/share at the wrong building, sometimes a town away. When that
+  // first line reads like a branch name the venue doesn't already carry, promote
+  // it to the venue and drop the main building's street address.
+  const firstLine = (description.split('\n').map((l) => l.trim()).find(Boolean) || '');
+  // Whole line is the branch, or the branch name runs straight into the first
+  // sentence ("Convoy Branch Gather at the Convoy Branch for…").
+  const branchM = /^((?:[A-Z][A-Za-z.'&-]*\s+){1,4}Branch(?:\s+Library)?)(?=\s|$)/.exec(firstLine);
+  const branchName = branchM ? branchM[1].trim() : '';
+  const branchStem = branchName.toLowerCase().replace(/\s+branch(?:\s+library)?$/, '').trim();
+  if (
+    branchName
+    && !['the', 'a', 'an', 'our', 'this'].includes(branchStem)
+    && !venue.toLowerCase().includes(branchStem)
+  ) {
+    venue = branchName;
+    address = '';
+  }
   if (UNSAFE_RE.test(title)) return null; // drop profane/adult feed content (title only) before it auto-publishes
   // Not an event people attend, even though the title reads like a holiday.
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
@@ -283,6 +310,9 @@ function makeRow(ev, source, start, end) {
     cityId = source.city_id;
   }
   if (!cityId) return null;
+  // Strip ticketing-feed title junk (own-city suffixes, ALL-CAPS) now that the
+  // town is known. Happens BEFORE hashing so the clean title is the identity.
+  const finalTitle = cleanEventTitle(title, cityId) || title;
   const startIso = start.toISOString();
   // Dedup key from the event's stable IDENTITY (town + title + start), not the
   // feed's UID — many feeds (WhoFi) hand out a fresh UID on every fetch, which
@@ -290,12 +320,12 @@ function makeRow(ev, source, start, end) {
   // reformat location strings between runs, which would mint a new hash and
   // reintroduce duplicates of the same event.
   const source_uid = createHash('sha1')
-    .update(`${cityId}|${title.toLowerCase()}|${startIso}`)
+    .update(`${cityId}|${title.toLowerCase()}|${startIso}`) // RAW title: keeps identity stable with existing rows
     .digest('hex')
     .slice(0, 24);
   return {
     city_id: cityId,
-    title,
+    title: finalTitle,
     category: source.default_category || 'Community',
     emoji: EMOJI[source.default_category] || '📅',
     start_at: startIso,

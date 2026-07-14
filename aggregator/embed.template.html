@@ -131,7 +131,10 @@
       }
       var html = items.map(function(e){
         var f = fmt(e.start_at);
-        var meta = [f.dow + " · " + f.t, e.venue].filter(Boolean).join(" · ");
+        // Aggregator all-day anchors (noon ET, no end / midnight ET) say "All day",
+        // not a literal "12 PM" clock — matches the app and town pages.
+        var allDay = (f.t === "12 PM" && !e.end_at) || f.t === "12 AM";
+        var meta = [f.dow + " · " + (allDay ? "All day" : f.t), e.venue].filter(Boolean).join(" · ");
         return '<a class="ev" href="https://localloop.io/event/' + encodeURIComponent(e.id) + '" target="_blank" rel="noopener">' +
                '<div class="chip"><div class="d">' + esc(f.d) + '</div><div class="m">' + esc(f.m) + '</div></div>' +
                '<div class="bd"><h4>' + esc(e.title) + '</h4><div class="meta">' + esc(meta) + '</div></div></a>';

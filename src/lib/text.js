@@ -61,10 +61,17 @@ export function cleanText(input) {
 }
 
 // Venue / address: also strip trailing/leading separators (" -", stray commas
-// and periods) that scraped location fields tend to carry.
+// and periods) that scraped location fields tend to carry, plus two classes of
+// pure feed noise: room-capacity annotations ("(Capacity : 65)") no user needs
+// (they also break geocoding), and a trailing ", USA" / ", United States"
+// country suffix (every listing here is in the US).
 export function cleanLocation(input) {
-  const s = normalizeText(input);
+  let s = normalizeText(input);
   if (!s) return '';
+  s = s
+    .replace(/\(\s*capacity\s*:?\s*\d+\s*\)/gi, ' ')
+    .replace(/,?\s*(?:USA|U\.S\.A\.|United States(?: of America)?)\s*$/i, '')
+    .replace(/[ \t]{2,}/g, ' ');
   // Strip stray separators (" -", trailing commas/semicolons) but keep legit
   // trailing periods on abbreviations like "Ind." or "Blvd.".
   return s.replace(/^[\s,;:\-]+/, '').replace(/[\s,;:\-]+$/, '').trim();
@@ -81,5 +88,10 @@ export function cleanDescription(input) {
     .replace(/<\s*li\s*>/gi, '• ')
     .replace(/<[^>]+>/g, ' ');
   s = normalizeText(s);
-  return s.replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').trim();
+  s = s.replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').trim();
+  // Trailing feed-plumbing URLs (WhoFi appends its own '?method=ical' link;
+  // some feeds end with a bare URL line) are noise everywhere they render —
+  // the app, share sheets, and the SEO pages' meta/og descriptions.
+  while (/\s*https?:\/\/\S+$/i.test(s)) s = s.replace(/\s*https?:\/\/\S+$/i, '').trim();
+  return s;
 }

@@ -29,6 +29,13 @@ export function buildTimeSections({ items, getDays, isFeatured, toRenderItem, in
     else buckets[bucketForDays(getDays(it))].push(it);
   });
 
+  // Within Today, things STARTING today lead; ongoing carry-overs (multi-day
+  // runs already in progress, whose start is days or months old) follow. The
+  // list arrives sorted by start time, which put a February-started promo above
+  // today's real events every single day. Stable sort keeps time order inside
+  // each group.
+  buckets.Today.sort((a, b) => (getDays(a) === 0 ? 0 : 1) - (getDays(b) === 0 ? 0 : 1));
+
   let adIndex = 0;
   const withAds = (arr) => {
     const out = [];

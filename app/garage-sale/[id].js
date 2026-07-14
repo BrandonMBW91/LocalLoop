@@ -104,6 +104,8 @@ export default function GarageSaleDetailScreen() {
       title: sale.title,
       start: sale.start,
       end: sale.end,
+      startTime: sale.dailyStart, // real posted hours -> a correctly timed entry
+      endTime: sale.dailyEnd,
       location: sale.address,
       details: `${sale.dailyStart} to ${sale.dailyEnd}${sale.note ? '. ' + sale.note : ''}`,
     });

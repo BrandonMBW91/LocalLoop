@@ -8,7 +8,7 @@ import DateChip from './DateChip';
 import Pill from './Pill';
 import { colors, spacing, radius, categoryColor } from '../theme/theme';
 import { useApp } from '../context/AppContext';
-import { relativeDay, timeRange, isOngoing, formatShortDate } from '../utils/dates';
+import { relativeDay, timeLabel, isOngoing, isAllDayAnchor, formatShortDate, formatTime, toDateString } from '../utils/dates';
 
 function EventCard({ event }) {
   const router = useRouter();
@@ -30,8 +30,11 @@ function EventCard({ event }) {
   }, [saved, heartScale]);
 
   // Multi-day events already running show "Happening now · through <end>" instead
-  // of their (past) start date, which otherwise reads as a stale listing.
+  // of their (past) start date, which otherwise reads as a stale listing. A
+  // multi-day event that hasn't hit day two yet ("Dino-Mite Kids WEEK", Mon–Fri)
+  // shows its span too — bare clock times read like a finished single-day event.
   const ongoing = isOngoing(event.start, event.end);
+  const multiDay = !!event.end && toDateString(event.start) !== toDateString(event.end);
 
   return (
     <View style={[styles.card, event.featured && styles.cardFeatured]}>
@@ -64,7 +67,9 @@ function EventCard({ event }) {
             <ThemedText size="small" color={colors.textMuted}>
               {ongoing
                 ? `Happening now · through ${formatShortDate(event.end)}`
-                : `${relativeDay(event.start)} · ${timeRange(event.start, event.end)}`}
+                : multiDay
+                  ? `${relativeDay(event.start)}${isAllDayAnchor(event.start, null) ? '' : ` ${formatTime(event.start)}`} · through ${formatShortDate(event.end)}`
+                  : `${relativeDay(event.start)} · ${timeLabel(event.start, event.end)}`}
             </ThemedText>
           </View>
           <View style={styles.metaRow}>

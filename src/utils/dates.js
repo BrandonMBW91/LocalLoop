@@ -108,6 +108,33 @@ export function toDateString(value) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+// All-day/time-unknown detection, shared by every RENDERER. The aggregator
+// anchors these at NOON ET with no end (older data: midnight ET spanning to
+// ~23:59 ET). isOver() and estimatedEndMs() already detect the anchors to time
+// events OUT correctly, but the display paths were printing the literal anchor —
+// "12 PM", or "12 AM to 11:59 PM" — so an all-day farmers market read like a
+// noon meeting. Same rules as those two functions so filters and labels agree.
+export function isAllDayAnchor(start, end) {
+  const s = parse(start);
+  if (isNaN(s) || s.getUTCMinutes() !== 0) return false;
+  const h = nyHour(s);
+  if (h === 12 && !end) return true; // noon-ET anchor, end unknown
+  if (h === 0) {
+    if (!end) return true; // midnight-ET anchor, end unknown
+    const e = parse(end);
+    if (isNaN(e)) return false;
+    const span = e.getTime() - s.getTime();
+    return span >= 23.5 * 3600 * 1000 && span <= 24.5 * 3600 * 1000; // ~23:59 same ET day
+  }
+  return false;
+}
+
+// The clock part of an event label: "All day" for anchor events, else the
+// real time or range. Use this instead of raw timeRange on display surfaces.
+export function timeLabel(start, end) {
+  return isAllDayAnchor(start, end) ? 'All day' : timeRange(start, end);
+}
+
 // True once an event has finished and should drop off the lists. Uses the end
 // time when it's known; for events with no end time it keeps a few hours of
 // grace (so a happening-now event doesn't vanish), and keeps all-day events
@@ -144,6 +171,23 @@ export function isThisWeekend(value, now = new Date()) {
   const t = parse(value).getTime();
   const [a, b] = thisWeekendRange(now);
   return t >= a.getTime() && t <= b.getTime();
+}
+
+// Chip filters were start-only, so a running festival vanished from "Today" and
+// a Fri–Sun fair never matched "Weekend" after Friday. These treat an event as
+// matching when any part of its run touches the window.
+export function touchesToday(start, end, now = new Date()) {
+  const ds = daysFromNow(start, now);
+  if (ds === 0) return true;
+  if (ds > 0 || !end) return false;
+  return daysFromNow(end, now) >= 0 && !isOver(start, end, now);
+}
+
+export function touchesWeekend(start, end, now = new Date()) {
+  const [a, b] = thisWeekendRange(now);
+  const s = parse(start).getTime();
+  const e = end ? parse(end).getTime() : s;
+  return s <= b.getTime() && e >= a.getTime();
 }
 
 // Number of whole days from `now` to a date (0 = today, 1 = tomorrow).
