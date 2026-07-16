@@ -105,6 +105,18 @@ export function AppProvider({ children }) {
   const [session, setSession] = useState(null);
   const [pendingCount, setPendingCount] = useState(0); // submissions awaiting review (admin)
 
+  // Ad clicks and shared links can name a town: localloop.io/?city=canton lands
+  // straight in that town's events instead of the generic town-picker — the
+  // difference between a paid click browsing and a paid click bouncing.
+  // Validated against the real town list, so a junk value just falls through.
+  const urlCity = useMemo(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+    const m = /[?&](?:city|town)=([a-z0-9-]+)/i.exec(window.location.search || '');
+    if (!m) return null;
+    const slug = m[1].toLowerCase();
+    return CITIES.some((c) => c.id === slug) ? slug : null;
+  }, []);
+
   // ---- Load persisted preferences once on startup ----
   useEffect(() => {
     (async () => {
@@ -112,6 +124,14 @@ export function AppProvider({ children }) {
         const entries = await AsyncStorage.multiGet(Object.values(STORAGE_KEYS));
         const map = Object.fromEntries(entries);
         if (map[STORAGE_KEYS.city]) setCityId(map[STORAGE_KEYS.city]);
+        // A ?city= in the URL beats the stored town and skips the picker: the
+        // visitor asked for this town by clicking an ad/link for it.
+        if (urlCity) {
+          setCityId(urlCity);
+          setOnboarded(true);
+          AsyncStorage.setItem(STORAGE_KEYS.city, urlCity).catch(() => {});
+          AsyncStorage.setItem(STORAGE_KEYS.onboarded, 'true').catch(() => {});
+        }
         if (map[STORAGE_KEYS.textScale]) setTextScaleKey(map[STORAGE_KEYS.textScale]);
         if (map[STORAGE_KEYS.saved]) setSavedIds(JSON.parse(map[STORAGE_KEYS.saved]));
         if (map[STORAGE_KEYS.savedSales]) setSavedSaleIds(JSON.parse(map[STORAGE_KEYS.savedSales]));

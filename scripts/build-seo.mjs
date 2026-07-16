@@ -14,7 +14,7 @@ const SITE = 'https://localloop.io';
 const HORIZON_DAYS = 60;   // how far ahead to generate event pages
 const MAX_PAGES = 4000;    // cap the deploy size; soonest events win
 
-function loadEnv() {
+export function loadEnv() {
   try {
     for (const line of fs.readFileSync('.env', 'utf8').split('\n')) {
       const m = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
