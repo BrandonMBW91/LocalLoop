@@ -92,6 +92,15 @@ export function deriveVenue(rawLocation, sourceName) {
     return { venue: m[1].trim(), address: m[2].trim() };
   }
 
+  // Place name followed only by its TOWN and state, with no street address:
+  // "Weathervane Playhouse, Newark, OH". Split the town off so the venue stays
+  // the venue. Runs AFTER the street-number rule, so a real address still wins,
+  // and requires the 2-letter state (or "Ohio") plus an optional ZIP so a venue
+  // whose own name contains a comma ("Main Library - Room A, Garage Level") is
+  // never split.
+  const t = /^(.*?),\s*([A-Za-z][A-Za-z .'-]{1,28},\s*(?:OH|Ohio)(?:[ ,]+\d{5})?)\s*$/i.exec(loc);
+  if (t) return { venue: t[1].trim(), address: t[2].trim() };
+
   // Pure place name ("Toledo Museum of Art") — venue only, NEVER duplicated
   // into the address (that rendered the same string twice on detail screens).
   return { venue: loc, address: '' };

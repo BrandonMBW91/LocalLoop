@@ -14,6 +14,7 @@ import * as bibliocommons from './bibliocommons.mjs';
 import * as communico from './communico.mjs';
 import * as simpleview from './simpleview.mjs';
 import * as baselocal from './baselocal.mjs';
+import * as explorelc from './explorelc.mjs';
 
 export const PLATFORMS = {
   librarymarket,
@@ -21,4 +22,5 @@ export const PLATFORMS = {
   communico,
   simpleview,
   baselocal,
+  explorelc,
 };
