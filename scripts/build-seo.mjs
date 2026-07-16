@@ -132,6 +132,24 @@ export async function buildSeo(OUT) {
     const priceNum = priceMatch ? Number(priceMatch[1]) : null;
     const img = ev.image_url || '';
 
+    // image_url and ticket_url are user-writable and skip moderation (which only
+    // reads the text fields), so they are the one place attacker-controlled bytes
+    // reach this generator. Everything else here goes through esc(); these two land
+    // inside the ld+json <script> below, where esc() is the wrong tool.
+    //
+    // encodeURI first, then require plain https. Normalising rather than rejecting
+    // matters: library feeds emit real URLs with literal spaces (".../LGBTQIA
+    // Header.jpg"), and dropping those silently costs real events their image. It
+    // also neutralises injection by construction, since any < > " ' comes back
+    // percent-encoded and can no longer close the <script> tag. Requiring https://
+    // after encoding still keeps `javascript:` and `data:` out of offers.url.
+    // Quotes need no special handling here: JSON.stringify escapes them and ld+json
+    // is parsed as JSON, not JS. The < escaping on the JSON below is the backstop.
+    const safeUrl = (u) => {
+      const s = encodeURI(String(u || '').trim());
+      return /^https:\/\/[^\s<>]{1,500}$/.test(s) ? s : '';
+    };
+
     const ld = {
       '@context': 'https://schema.org', '@type': 'Event', name: title,
       startDate: ev.start_at, ...(ev.end_at ? { endDate: ev.end_at } : {}),
@@ -146,10 +164,10 @@ export async function buildSeo(OUT) {
       // image + offers are what Google's Event rich results actually want. 41%
       // of upcoming events carry a real image; the rest fall back to the social
       // card so the property is never missing.
-      image: [ev.image_url || `${SITE}/og-image.png`],
+      image: [safeUrl(ev.image_url) || `${SITE}/og-image.png`],
       offers: {
         '@type': 'Offer',
-        url: ev.ticket_url || `${SITE}${rel}`,
+        url: safeUrl(ev.ticket_url) || `${SITE}${rel}`,
         availability: 'https://schema.org/InStock',
         ...(isFree
           ? { price: '0', priceCurrency: 'USD' }
@@ -169,7 +187,7 @@ export async function buildSeo(OUT) {
 <meta property="og:site_name" content="Local Loop"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="${esc(img || `${SITE}/og-image.png`)}"/>
-<script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <style>body{margin:0;background:#FBF8F1;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.55}.wrap{max-width:640px;margin:0 auto;padding:24px 16px}.hero{background:#15315B;color:#fff;border-radius:20px;padding:22px}.hero h1{margin:0 0 6px;font-size:26px;line-height:1.15}.kick{font-size:12px;letter-spacing:1px;opacity:.75;text-transform:uppercase}.btn{display:inline-block;background:#15315B;color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:12px 20px;margin-top:6px}.meta{color:#5B5B5B;margin:14px 0}.shot{width:100%;height:auto;border-radius:16px;margin-top:16px;display:block;background:#E9E4DA}a{color:#15315B}</style>
 </head><body><div class="wrap">
 <p><a href="/events/${esc(ev.city_id)}.html">&larr; All ${esc(town.name)} events</a></p>
