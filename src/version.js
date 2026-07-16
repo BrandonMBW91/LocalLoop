@@ -4,9 +4,9 @@
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
 export const APP_VERSION = '1.0.4';
-export const BUILD = 108;
+export const BUILD = 109;
 
 // One-line "what's new" shown once in a dismissible banner after an update (see
 // WhatsNewBanner). Update it alongside BUILD each release so returning users get a
 // gentle heads-up about what changed. Keep it short and user-facing.
-export const WHATS_NEW = "Fixed a crash on Android. Use my location now works in every town too.";
+export const WHATS_NEW = "Dark mode is easier to read throughout, and a few rough edges are smoothed out.";

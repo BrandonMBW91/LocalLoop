@@ -36,6 +36,13 @@
       "android": {
         "serviceAccountKeyPath": "./.gcp/play-service-account.json"
       }
+    },
+    "alpha": {
+      "extends": "production",
+      "android": {
+        "serviceAccountKeyPath": "./.gcp/play-service-account.json",
+        "track": "alpha"
+      }
     }
   }
 }
