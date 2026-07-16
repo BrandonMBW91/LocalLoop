@@ -304,7 +304,18 @@ export function AppProvider({ children }) {
   // without signing in. Synchronous so even the first pageview isn't counted.
   const urlInternal = Platform.OS === 'web' && typeof window !== 'undefined' && /[?&]internal\b/.test(window.location.search);
   // One switch every tracker checks: admin, dev/preview web, or an opted-out device.
-  const noTrack = isAdmin || isDevWeb || excludeStats || urlInternal;
+  // Automated clients must never count as people. robots.txt now keeps crawlers
+  // out of the app routes, but anything that ignores it still boots the app, and
+  // because a bot persists no localStorage it mints a NEW anonymous device on
+  // EVERY page — 125 fake 'active users' + 144 fake event views appeared in the
+  // ad-pricing metric within a day (all sharing one seeded Math.random suffix,
+  // all parked on the default town). navigator.webdriver catches headless
+  // automation; the UA list catches the honest self-identifying crawlers.
+  const isBot = Platform.OS === 'web' && typeof navigator !== 'undefined' && (
+    navigator.webdriver === true
+    || /bot|crawler|spider|crawling|headless|phantom|puppeteer|playwright|slurp|bingpreview|lighthouse|pagespeed|gtmetrix|pingdom|uptime|monitor|preview|scrap|fetch|curl|wget|python-requests|axios|http-client|facebookexternalhit|whatsapp|telegram|discord|embedly|quora|pinterest|semrush|ahrefs|mj12|dotbot|petal|yandex|baidu|duckduck|applebot|amazonbot|gptbot|ccbot|claudebot|perplexity|bytespider/i.test(navigator.userAgent || '')
+  );
+  const noTrack = isAdmin || isDevWeb || excludeStats || urlInternal || isBot;
 
   // Fire-and-forget product analytics, auto-tagged with the anon device + city.
   // No-op for the admin/owner and any opted-out device, so internal use never counts.

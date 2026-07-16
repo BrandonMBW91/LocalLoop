@@ -176,7 +176,7 @@ export async function buildSeo(OUT) {
 <div class="hero"><div class="kick">${esc(town.name)}, ${esc(town.state)}</div><h1>${esc(title)}</h1><div>${esc(dateStr)}${venue ? ` &middot; ${esc(venue)}` : ''}</div></div>
 ${img ? `<img class="shot" src="${esc(img)}" alt="${esc(title)}" width="640" height="360" loading="lazy"/>` : ''}
 <p class="meta">${esc(full.slice(0, 600) || desc)}</p>
-<a class="btn" href="/event/${esc(ev.id)}">Open in Local Loop</a>
+<a class="btn" rel="nofollow" href="/event/${esc(ev.id)}">Open in Local Loop</a>
 <p class="meta" style="font-size:14px;margin-top:18px">Free local events, garage sales, and food trucks across Ohio. <a href="/">Get Local Loop</a>.</p>
 </div></body></html>`;
     fs.writeFileSync(path.join(eDir, `${ev.id}.html`), html);

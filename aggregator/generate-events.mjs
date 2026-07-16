@@ -544,7 +544,20 @@ ${urls.map((u) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).joi
 </urlset>`;
   const siteRoot = join(here, '..', 'site');
   writeFileSync(join(siteRoot, 'sitemap.xml'), sitemap);
-  writeFileSync(join(siteRoot, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE}/sitemap.xml\n`);
+  // Crawlers must stay on the STATIC pages (/e/, /events/) and off the JS app
+  // routes. Those routes duplicate the static pages AND every render booted the
+  // app: a JS-rendering crawler followed /e/<id>.html's "Open in Local Loop" link
+  // into /event/<id>, and since a bot keeps no localStorage it minted a NEW
+  // anonymous device on every hit — 125 fake "active users" and 144 fake event
+  // views by 2026-07-16, in the very metric that prices ads. Blocking them also
+  // removes the duplicate-content problem. '/' stays crawlable.
+  const DISALLOW = ['/event/', '/garage-sale/', '/food-truck/', '/map', '/calendar', '/saved',
+    '/sign-in', '/ads', '/metrics', '/moderate', '/city', '/welcome', '/interests',
+    '/claim', '/route', '/editor-pick', '/manage-deals', '/promote'];
+  writeFileSync(
+    join(siteRoot, 'robots.txt'),
+    `User-agent: *\nAllow: /\n${DISALLOW.map((d) => `Disallow: ${d}`).join('\n')}\nSitemap: ${SITE}/sitemap.xml\n`,
+  );
 
   console.log(`\nDone. ${grandTotal} events across ${APP_CITIES.length} town pages + ${eventUrls.length} event pages + ${truckPages} food-truck + ${salePages} garage-sale share pages + hub + sitemap.`);
 }
