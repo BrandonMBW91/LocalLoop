@@ -4,9 +4,9 @@
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
 export const APP_VERSION = '1.0.4';
-export const BUILD = 104;
+export const BUILD = 105;
 
 // One-line "what's new" shown once in a dismissible banner after an update (see
 // WhatsNewBanner). Update it alongside BUILD each release so returning users get a
 // gentle heads-up about what changed. Keep it short and user-facing.
-export const WHATS_NEW = "New: Columbus, Cleveland, Cincinnati and more towns, with thousands more local events near you.";
+export const WHATS_NEW = "You can now edit anything you post. Newark and New Albany just joined too.";
