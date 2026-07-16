@@ -4,8 +4,19 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 84 revs, newest first.
+// secret. 85 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 111,
+    "date": "2026-07-16",
+    "whatsNew": null,
+    "changes": [
+      "rev 111: record what build each device runs, so OTA adoption is visible",
+      "Add the ll-android-live routine: notice the day Android can go public",
+      "Ready the Android-public flip as a guarded script",
+      "rev 110: regenerate the release log, document the ordering constraint"
+    ]
+  },
   {
     "rev": 110,
     "date": "2026-07-16",
