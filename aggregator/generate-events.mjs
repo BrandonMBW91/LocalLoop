@@ -127,6 +127,14 @@ const LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 1024 1024" aria-hidde
 // hex hash keeps it valid as a bare data URI in every modern browser.
 const FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2315315B'/><path d='M50 20c-11 0-20 9-20 20 0 15 20 35 20 35s20-20 20-35c0-11-9-20-20-20zm0 28a8 8 0 110-16 8 8 0 010 16z' fill='white'/></svg>";
 
+// og:image matters more on these pages than anywhere else on the site: the FB routine
+// posts town links into community groups 3x/week, and with no image Facebook renders
+// them as a bare grey link, the lowest-engagement unit on the main distribution
+// channel. Mirrors what scripts/build-web.mjs already sets for the homepage. The width
+// and height are required: FB will not render a card without them.
+//
+// Keep prose like this OUTSIDE the template literal below. A comment written inside it
+// is EMITTED, and this one shipped onto all 134 public town pages before it was caught.
 const HEAD = (title, desc, path, noindex = false) => `<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="icon" href="${FAVICON}"/>
@@ -139,11 +147,6 @@ const HEAD = (title, desc, path, noindex = false) => `<!DOCTYPE html><html lang=
 <meta property="og:description" content="${esc(desc)}"/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="${SITE}${esc(path)}"/>
-<!-- og:image matters more here than anywhere else on the site: the FB routine posts
-     these town links into community groups 3x/week, and with no image Facebook
-     renders them as a bare grey link, the lowest-engagement unit on our main
-     distribution channel. Mirrors what scripts/build-web.mjs already sets for the
-     homepage. Dimensions are required — FB will not render a card without them. -->
 <meta property="og:image" content="${SITE}/og-image.png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
