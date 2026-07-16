@@ -84,7 +84,7 @@ export async function buildSeo(OUT) {
       const cutoff = new Date(now.getTime() + HORIZON_DAYS * 86400000);
       for (let from = 0; from < MAX_PAGES; from += 1000) {
         const { data, error } = await sb.from('events')
-          .select('id,title,description,venue,address,start_at,end_at,city_id,ticket_url')
+          .select('id,title,description,venue,address,start_at,end_at,city_id,ticket_url,image_url,price')
           .eq('status', 'approved')
           .gte('start_at', now.toISOString()).lte('start_at', cutoff.toISOString())
           .order('start_at', { ascending: true }).range(from, from + 999);
@@ -125,6 +125,13 @@ export async function buildSeo(OUT) {
     const rel = `/e/${ev.id}.html`;
     eventUrls.push(rel);
 
+    // 87% of the catalog is free; the rest stores display text like '$25+'.
+    const priceRaw = String(ev.price || '').trim();
+    const isFree = /^free$/i.test(priceRaw);
+    const priceMatch = /\$\s*(\d+(?:\.\d{2})?)/.exec(priceRaw);
+    const priceNum = priceMatch ? Number(priceMatch[1]) : null;
+    const img = ev.image_url || '';
+
     const ld = {
       '@context': 'https://schema.org', '@type': 'Event', name: title,
       startDate: ev.start_at, ...(ev.end_at ? { endDate: ev.end_at } : {}),
@@ -136,6 +143,18 @@ export async function buildSeo(OUT) {
       },
       description: desc, url: `${SITE}${rel}`,
       organizer: { '@type': 'Organization', name: 'Local Loop', url: SITE },
+      // image + offers are what Google's Event rich results actually want. 41%
+      // of upcoming events carry a real image; the rest fall back to the social
+      // card so the property is never missing.
+      image: [ev.image_url || `${SITE}/og-image.png`],
+      offers: {
+        '@type': 'Offer',
+        url: ev.ticket_url || `${SITE}${rel}`,
+        availability: 'https://schema.org/InStock',
+        ...(isFree
+          ? { price: '0', priceCurrency: 'USD' }
+          : (priceNum != null ? { price: String(priceNum), priceCurrency: 'USD' } : {})),
+      },
     };
 
     const html = `<!DOCTYPE html><html lang="en"><head>
@@ -146,11 +165,16 @@ export async function buildSeo(OUT) {
 <meta property="og:type" content="event"/><meta property="og:url" content="${SITE}${rel}"/>
 <meta property="og:title" content="${esc(title)} — ${esc(town.name)}, ${esc(town.state)}"/>
 <meta property="og:description" content="${esc(desc)}"/>
+<meta property="og:image" content="${esc(img || `${SITE}/og-image.png`)}"/>
+<meta property="og:site_name" content="Local Loop"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="${esc(img || `${SITE}/og-image.png`)}"/>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
-<style>body{margin:0;background:#FBF8F1;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.55}.wrap{max-width:640px;margin:0 auto;padding:24px 16px}.hero{background:#15315B;color:#fff;border-radius:20px;padding:22px}.hero h1{margin:0 0 6px;font-size:26px;line-height:1.15}.kick{font-size:12px;letter-spacing:1px;opacity:.75;text-transform:uppercase}.btn{display:inline-block;background:#15315B;color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:12px 20px;margin-top:6px}.meta{color:#5B5B5B;margin:14px 0}a{color:#15315B}</style>
+<style>body{margin:0;background:#FBF8F1;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.55}.wrap{max-width:640px;margin:0 auto;padding:24px 16px}.hero{background:#15315B;color:#fff;border-radius:20px;padding:22px}.hero h1{margin:0 0 6px;font-size:26px;line-height:1.15}.kick{font-size:12px;letter-spacing:1px;opacity:.75;text-transform:uppercase}.btn{display:inline-block;background:#15315B;color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:12px 20px;margin-top:6px}.meta{color:#5B5B5B;margin:14px 0}.shot{width:100%;height:auto;border-radius:16px;margin-top:16px;display:block;background:#E9E4DA}a{color:#15315B}</style>
 </head><body><div class="wrap">
 <p><a href="/events/${esc(ev.city_id)}.html">&larr; All ${esc(town.name)} events</a></p>
 <div class="hero"><div class="kick">${esc(town.name)}, ${esc(town.state)}</div><h1>${esc(title)}</h1><div>${esc(dateStr)}${venue ? ` &middot; ${esc(venue)}` : ''}</div></div>
+${img ? `<img class="shot" src="${esc(img)}" alt="${esc(title)}" width="640" height="360" loading="lazy"/>` : ''}
 <p class="meta">${esc(full.slice(0, 600) || desc)}</p>
 <a class="btn" href="/event/${esc(ev.id)}">Open in Local Loop</a>
 <p class="meta" style="font-size:14px;margin-top:18px">Free local events, garage sales, and food trucks across Ohio. <a href="/">Get Local Loop</a>.</p>
