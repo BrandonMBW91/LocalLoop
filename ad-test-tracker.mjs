@@ -57,7 +57,14 @@ if (process.argv.includes('--reset')) {
 const PAIRS = [
   { size: 'Large', test: 'canton', control: 'youngstown' },
   { size: 'Mid', test: 'sandusky', control: 'ashland' },
-  { size: 'Small', test: 'tiffin', control: 'bucyrus' },
+  // Swapped off tiffin/bucyrus 2026-07-16 BEFORE any baseline: Tiffin had only 9
+  // events in the next 7 days against Bucyrus's 14, so the test town was thinner
+  // than its own control and could have lost for reasons nothing to do with ads
+  // (and 9 events is a thin thing to pay to send people to). New Philadelphia
+  // slots into the same small-town population band (17,677 vs Tiffin's 17,568)
+  // and pairs with Fremont at ratio 1.11 - the tightest pair in the test - with
+  // 56 events each in the next 7 days and 0 MAU on both sides.
+  { size: 'Small', test: 'new-philadelphia', control: 'fremont' },
 ];
 const TEST = PAIRS.map((p) => p.test);
 const CONTROL = PAIRS.map((p) => p.control);

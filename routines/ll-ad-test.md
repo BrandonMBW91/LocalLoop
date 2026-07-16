@@ -4,7 +4,7 @@
 
 Run the Local Loop Facebook ad test/control tracker and report the result.
 
-Context: this routine measures a paired baseline test to decide whether $5/day Facebook ads are worth scaling. Three TEST towns (Canton, Sandusky, Tiffin) each run a $5/day Traffic ad plus a free community post; three matched CONTROL towns (Youngstown, Ashland, Bucyrus) get the free post only. The metric is per-town 30-day MAU (the same number the in-app Metrics screen shows). Net ad lift = test MAU gain minus control MAU gain, which cancels ordinary organic growth. Michael runs the ads manually; this routine only measures.
+Context: this routine measures a paired baseline test to decide whether $5/day Facebook ads are worth scaling. Three TEST towns (Canton, Sandusky, New Philadelphia) each run a $5/day Traffic ad plus a free community post; three matched CONTROL towns (Youngstown, Ashland, Fremont) get the free post only. (Tiffin/Bucyrus was the original small-town pair, swapped out 2026-07-16 before any baseline: Tiffin had 9 events in the next 7 days against Bucyrus's 14, so the test town was thinner than its own control.) The pairs live in ad-test-tracker.mjs; that file is the source of truth if this ever disagrees. The metric is per-town 30-day MAU (the same number the in-app Metrics screen shows). Net ad lift = test MAU gain minus control MAU gain, which cancels ordinary organic growth. Michael runs the ads manually; this routine only measures.
 
 Steps:
 1. From the repo root C:\Users\micha\New\FindlayEvents run:  node ad-test-tracker.mjs --email
