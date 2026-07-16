@@ -153,6 +153,8 @@ export const NAMES = [
   ['columbus', "Columbus"],
   ['cleveland', "Cleveland"],
   ['cincinnati', "Cincinnati"],
+  ['newark', "Newark"],
+  ['new-albany', "New Albany"],
 ];
 
 const STREET = '(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|way|ct|court|pl|place|cir|circle|pike|hwy|highway|trail|ter|terrace|pkwy|parkway|sq|square)';
@@ -186,7 +188,7 @@ export function outOfArea(loc) {
     if (NON_OH_STATE.has(m[1].toUpperCase())) return true;
   }
   // Spelled-out states/country that don't collide with any Ohio town name.
-  return /\b(?:canada|michigan|indiana|kentucky|pennsylvania|illinois|wisconsin|minnesota|new york)\b/i.test(loc);
+  return /\b(?:canada|new jersey|new york|new mexico|new hampshire|north carolina|north dakota|south carolina|south dakota|west virginia|rhode island|puerto rico|alabama|alaska|arizona|arkansas|california|colorado|connecticut|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|oklahoma|oregon|pennsylvania|tennessee|texas|utah|vermont|virginia|wisconsin|wyoming)\b/i.test(loc);
 }
 
 // Returns the town id for an event's location. Falls back to `fallback` (the

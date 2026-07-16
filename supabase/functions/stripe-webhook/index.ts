@@ -68,7 +68,9 @@ const CATALOG_CITY_IDS = [
   'paulding', // added by add-city.mjs,
   'columbus', // added by add-city.mjs,
   'cleveland', // added by add-city.mjs,
-  'cincinnati', // added by add-city.mjs
+  'cincinnati', // added by add-city.mjs,
+  'newark', // added by add-city.mjs,
+  'new-albany', // added by add-city.mjs
 ];
 async function knownCityIds(): Promise<string[]> {
   const ids = new Set(CATALOG_CITY_IDS);

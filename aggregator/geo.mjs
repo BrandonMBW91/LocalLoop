@@ -10,7 +10,9 @@ export const ANCHORS = [
   { name: 'Findlay / Hancock', city: 'findlay', lat: 41.044, lng: -83.650, radius: 26 }, // Findlay, Fostoria, Arlington, N. Baltimore, Carey, Bluffton, Ada
   { name: 'Lima / Allen', city: 'lima', lat: 40.743, lng: -84.105, radius: 28 },      // Lima, Bluffton, Ada
   { name: 'Van Wert', city: 'van-wert', lat: 40.869, lng: -84.585, radius: 20 },
-  { name: 'Tiffin / Seneca', city: 'tiffin', lat: 41.115, lng: -83.178, radius: 24 },   // Tiffin, Fostoria, Carey, Upper Sandusky
+  { name: 'Tiffin / Seneca', city: 'tiffin', lat: 41.115, lng: -83.178, radius: 24 },
+  { name: 'Newark / Licking', city: 'newark', lat: 40.0581, lng: -82.4013, radius: 18 },   // Newark, Heath, Granville
+  { name: 'New Albany', city: 'new-albany', lat: 40.0812, lng: -82.8088, radius: 8 },      // tight: Columbus is 12mi west   // Tiffin, Fostoria, Carey, Upper Sandusky
   { name: 'Sandusky / Erie', city: 'sandusky', lat: 41.449, lng: -82.708, radius: 26 },
   { name: 'Bellefontaine / Logan', city: 'bellefontaine', lat: 40.361, lng: -83.760, radius: 30 }, // Bellefontaine, Kenton, Richwood, LaRue, Prospect
   // --- Northeast Ohio ---

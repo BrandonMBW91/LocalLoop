@@ -73,6 +73,8 @@ export const CITIES = [
   { id: 'mount-vernon', name: "Mount Vernon", state: 'OH', region: CENTRAL, pop: 16956, tagline: "Knox County's historic seat" },
   { id: 'fredericktown', name: "Fredericktown", state: 'OH', region: CENTRAL, pop: 2533, tagline: "Home of the Tomato Show" },
   { id: 'columbus', name: "Columbus", state: 'OH', region: CENTRAL, pop: 905748, tagline: "Ohio's capital city" },
+  { id: 'newark', name: "Newark", state: 'OH', region: CENTRAL, pop: 49934, tagline: "Home of the Great Circle Earthworks" },
+  { id: 'new-albany', name: "New Albany", state: 'OH', region: CENTRAL, pop: 10825, tagline: "Rocky Fork Metro Park and the Village Center" },
   // --- Northeast Ohio (Akron & Canton metros) ---
   // All carry live content from the local-feed aggregator (libraries, city
   // calendars, universities, parks, downtowns) plus Ticketmaster.
