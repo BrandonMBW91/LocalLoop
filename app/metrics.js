@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchMetrics, fetchCityUsers, fetchPlatformSplit } from '../src/lib/db';
+import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity } from '../src/lib/db';
 import { CITIES } from '../src/data/cities';
 import { colors, spacing, radius } from '../src/theme/theme';
 
@@ -55,6 +55,7 @@ export default function MetricsScreen() {
   const [data, setData] = useState(null);
   const [users, setUsers] = useState(0);
   const [platform, setPlatform] = useState({ ios: 0, android: 0, web: 0, unknown: 0 });
+  const [usersByCity, setUsersByCity] = useState([]); // [{cityId, users}] every town, desc
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null); // 'featured' | 'ads' | null
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key));
@@ -63,14 +64,18 @@ export default function MetricsScreen() {
     setLoading(true);
     try {
       const target = scope === 'all' ? null : cityId; // null => every town
-      const [m, u, p] = await Promise.all([
+      const [m, u, p, byCity] = await Promise.all([
         fetchMetrics(target),
         fetchCityUsers(target),
         fetchPlatformSplit(target),
+        // Always every town, regardless of scope: the point of the breakdown is to
+        // compare towns, so scoping it to one town would make it a single row.
+        fetchUsersByCity(),
       ]);
       setData(m);
       setUsers(u);
       setPlatform(p);
+      setUsersByCity(byCity);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -139,7 +144,14 @@ export default function MetricsScreen() {
 
       {/* Headline numbers */}
       <View style={styles.grid}>
-        <StatCard icon="people" value={users} label="Active users (30d)" color={colors.success} />
+        <StatCard
+          icon="people"
+          value={users}
+          label="Active users (30d)"
+          color={colors.success}
+          onPress={usersByCity.length ? () => toggle('users') : undefined}
+          expanded={expanded === 'users'}
+        />
         <StatCard icon="eye" value={m.totalViews ?? 0} label="Total views" color={colors.primary} />
         <StatCard icon="list" value={m.totalListings ?? 0} label="Live listings" color={colors.text} />
         <StatCard
@@ -159,6 +171,40 @@ export default function MetricsScreen() {
           expanded={expanded === 'ads'}
         />
       </View>
+
+      {/* Active users, per town. Always every town even when the scope chip is set to
+          one city — the whole point is comparing towns against each other. */}
+      {expanded === 'users' && usersByCity.length ? (
+        <View style={[styles.card, { marginTop: spacing.sm }]}>
+          {usersByCity.map((row, i) => {
+            const town = CITIES.find((c) => c.id === row.cityId);
+            const share = users > 0 ? Math.round((row.users / users) * 100) : 0;
+            return (
+              <Pressable
+                key={`u-${row.cityId}`}
+                style={[styles.detailRow, i > 0 && styles.rowBorder]}
+                onPress={() => router.push({ pathname: '/city', params: { from: 'metrics' } })}
+                accessibilityRole="button"
+                accessibilityLabel={`${town?.name || row.cityId}, ${row.users} active users, ${share} percent of the total`}
+              >
+                <Ionicons name="people" size={16} color={colors.success} style={{ marginRight: spacing.sm }} />
+                <ThemedText size="body" style={{ flex: 1 }} numberOfLines={1}>
+                  {town?.name || row.cityId}
+                </ThemedText>
+                <ThemedText size="small" color={colors.textMuted} style={{ marginRight: spacing.sm }}>
+                  {share}%
+                </ThemedText>
+                <ThemedText size="body" weight="bold" style={styles.userCount}>
+                  {row.users}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+          <ThemedText size="tiny" color={colors.textMuted} style={styles.byCityFoot}>
+            {usersByCity.length} towns with activity in the last 30 days. Towns with none are not listed.
+          </ThemedText>
+        </View>
+      ) : null}
 
       {/* Expanded detail for Featured / Active ads */}
       {expanded === 'featured' && (m.featuredItems?.length ?? 0) > 0 ? (
@@ -344,6 +390,9 @@ export default function MetricsScreen() {
 }
 
 const styles = StyleSheet.create({
+  // tabular-nums so the counts line up in a column instead of jittering by digit width
+  userCount: { minWidth: 34, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  byCityFoot: { padding: spacing.sm, paddingTop: spacing.xs },
   screen: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,

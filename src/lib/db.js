@@ -930,6 +930,21 @@ export async function fetchPlatformSplit(cityId) {
   }
 }
 
+// Active users for EVERY town in one call, for the admin metrics breakdown.
+// city_active_users answers one town at a time, which would be 135 round trips.
+// Aggregate counts only — device_activity itself stays private behind the RPC.
+// Returns [] on failure, NOT null: the caller renders a list, and a failed fetch
+// showing "no towns" is less wrong than crashing the metrics screen.
+export async function fetchUsersByCity() {
+  try {
+    const { data, error } = await supabase.rpc('users_by_city');
+    if (error) throw error;
+    return (data || []).map((r) => ({ cityId: r.city_id, users: r.users || 0 }));
+  } catch (e) {
+    return [];
+  }
+}
+
 // Monthly active users in a town — drives ad pricing by actual users.
 // Pass null or 'all' to count active users across every town.
 export async function fetchCityUsers(cityId) {
