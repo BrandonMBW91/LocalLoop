@@ -289,7 +289,16 @@ function recentlySuggested(log) {
 // skipped. NOT capped here — the caller drafts down the list until it has
 // DAILY_TARGET usable drafts, so a format-restricted group never wastes a slot.
 function orderCandidates(groups, excludeNames) {
-  const pending = groups.filter((gr) => gr.status === 'new' && !excludeNames.has(gr.name));
+  // AD-TEST BLACKOUT (through 2026-07-23): the paired FB ad test needs the ad to
+  // be the ONLY difference between test and control towns. A free group post in any
+  // of the six would contaminate the read, so never suggest them while the flight
+  // runs. Delete this block after Jul 23 and the towns come back automatically.
+  const AD_TEST_BLACKOUT = { until: '2026-07-23', towns: ['canton', 'sandusky', 'new philadelphia', 'new phila', 'youngstown', 'ashland', 'fremont'] };
+  const inBlackout = new Date().toISOString().slice(0, 10) <= AD_TEST_BLACKOUT.until;
+  const isBlackedOut = (gr) => inBlackout && AD_TEST_BLACKOUT.towns.some((t) =>
+    `${gr.area || ''} ${gr.name || ''}`.toLowerCase().includes(t));
+
+  const pending = groups.filter((gr) => gr.status === 'new' && !excludeNames.has(gr.name) && !isBlackedOut(gr));
   const ordered = [];
   const usedAreas = new Set();
   for (const gr of pending) { if (usedAreas.has(gr.area)) continue; ordered.push(gr); usedAreas.add(gr.area); }
