@@ -27,52 +27,13 @@ create table if not exists public.event_sources (
 alter table public.event_sources enable row level security;
 -- (No public policies — only the aggregator's service-role key reads this.)
 
--- Re-create the moderator trigger to ALSO auto-approve aggregated events.
-create or replace function public.moderate_submission()
-returns trigger
-language plpgsql
-as $$
-declare content text;
-begin
-  -- Trusted moderators publish instantly.
-  if public.is_admin() then
-    NEW.status := 'approved';
-    return NEW;
-  end if;
-
-  if TG_TABLE_NAME = 'events' then
-    -- The aggregator runs as the SERVICE ROLE (no auth.uid, bypasses RLS).
-    -- Only it can reach an events insert with a null uid, so only it is
-    -- trusted to set source_uid + auto-publish. Regular signed-in users have
-    -- a non-null uid: we strip any source_uid they try to send so they can't
-    -- self-approve, and run them through normal moderation.
-    if auth.uid() is null then
-      NEW.status := 'approved';
-      return NEW;
-    end if;
-    NEW.source_uid := null;
-    content := lower(concat_ws(' ', NEW.title, NEW.description, NEW.venue, NEW.address));
-  elsif TG_TABLE_NAME = 'garage_sales' then
-    content := lower(concat_ws(' ', NEW.title, NEW.note, NEW.address));
-  elsif TG_TABLE_NAME = 'food_trucks' then
-    content := lower(concat_ws(' ', NEW.name, NEW.note, NEW.location_name, NEW.address));
-  else
-    content := '';
-  end if;
-
-  if content ~* '(https?://|www\.|[a-z0-9-]+\.(com|net|org|info|biz|xyz|shop|io))'
-     or content ~ '(\+?\d[ .\-]?){10,}'
-     or content ~* '\m(fuck|shit|bitch|asshole|cunt|nigger|faggot|slut|whore|retard)\M'
-     or content ~* '(make money|free money|work from home|crypto|bitcoin|viagra|casino|click here|get rich|buy now|limited offer)'
-  then
-    NEW.status := 'pending';
-  else
-    NEW.status := 'approved';
-  end if;
-
-  return NEW;
-end;
-$$;
+-- moderate_submission() previously had a copy here that added the aggregator
+-- auto-approval branch, trusting any events insert with a null auth.uid() as the
+-- service-role aggregator and stripping source_uid from signed-in users.
+-- REMOVED 2026-07-16: it was one of seven competing definitions, and re-running this
+-- file would have reverted newer fixes in production.
+-- The authoritative definition now lives in supabase/moderate_submission.sql.
+-- Its history section records what this file contributed.
 
 -- ---------------------------------------------------------------------------
 -- Seed feeds — all verified returning live iCal events (June 2026).

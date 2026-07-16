@@ -15,64 +15,13 @@ alter policy events_insert on public.events
 alter policy trucks_insert on public.food_trucks
   with check (created_by = auth.uid() and source_uid is null);
 
-create or replace function public.moderate_submission()
- returns trigger
- language plpgsql
-as $function$
-declare content text;
-begin
-  if public.is_admin() then
-    NEW.status := 'approved';
-    return NEW;
-  end if;
-
-  -- Auto-approve trusted-source rows ONLY when the insert comes from the
-  -- service-role aggregator. An authenticated user who sets source_uid themselves
-  -- must NOT skip the content filter below (security fix 2026-07-11).
-  if TG_TABLE_NAME in ('events', 'food_trucks') then
-    if NEW.source_uid is not null and auth.role() = 'service_role' then
-      NEW.status := 'approved';
-      return NEW;
-    end if;
-  end if;
-
-  if TG_TABLE_NAME = 'events' then
-    NEW.title := left(NEW.title, 200);
-    NEW.description := left(NEW.description, 5000);
-    NEW.venue := left(NEW.venue, 200);
-    NEW.address := left(NEW.address, 300);
-    NEW.host := left(NEW.host, 120);
-    content := lower(concat_ws(' ', NEW.title, NEW.description, NEW.venue, NEW.address));
-  elsif TG_TABLE_NAME = 'garage_sales' then
-    NEW.title := left(NEW.title, 200);
-    NEW.note := left(NEW.note, 5000);
-    NEW.address := left(NEW.address, 300);
-    NEW.neighborhood := left(NEW.neighborhood, 120);
-    content := lower(concat_ws(' ', NEW.title, NEW.note, NEW.address));
-  elsif TG_TABLE_NAME = 'food_trucks' then
-    NEW.name := left(NEW.name, 200);
-    NEW.note := left(NEW.note, 5000);
-    NEW.location_name := left(NEW.location_name, 200);
-    NEW.address := left(NEW.address, 300);
-    NEW.cuisine := left(NEW.cuisine, 80);
-    content := lower(concat_ws(' ', NEW.name, NEW.note, NEW.location_name, NEW.address));
-  else
-    content := '';
-  end if;
-
-  if content ~* '(https?://|www\.|[a-z0-9-]+\.(com|net|org|info|biz|xyz|shop|io))'
-     or content ~ '(\+?\d[ .\-]?){10,}'
-     or content ~* '\m(fuck|shit|bitch|asshole|cunt|nigger|faggot|slut|whore|retard)\M'
-     or content ~* '(make money|free money|work from home|crypto|bitcoin|viagra|casino|click here|get rich|buy now|limited offer)'
-  then
-    NEW.status := 'pending';
-  else
-    NEW.status := 'approved';
-  end if;
-
-  return NEW;
-end;
-$function$;
+-- moderate_submission() previously had a copy here that introduced the 2026-07-11
+-- source_uid fix (auto-approve of source_uid rows gated on auth.role() =
+-- 'service_role'), alongside the admin branch and the 14 field length caps.
+-- REMOVED 2026-07-16: it was one of seven competing definitions, and re-running this
+-- file would have reverted newer fixes in production.
+-- The authoritative definition now lives in supabase/moderate_submission.sql.
+-- Its history section records what this file contributed.
 
 -- =====================================================================
 -- 2) REPORT-BOMB STATEWIDE TAKEDOWN (high). reports_insert was WITH CHECK true for

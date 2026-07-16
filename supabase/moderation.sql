@@ -18,46 +18,13 @@ as $$
   select coalesce(lower(auth.jwt() ->> 'email') = lower('michabw91@gmail.com'), false);
 $$;
 
--- ---------------------------------------------------------------------------
--- Auto-moderator: decides approved vs pending from the submission's text.
--- Runs server-side so the client can never force 'approved'.
--- ---------------------------------------------------------------------------
-create or replace function public.moderate_submission()
-returns trigger
-language plpgsql
-as $$
-declare content text;
-begin
-  -- Trusted moderators (you) publish instantly, no holding.
-  if public.is_admin() then
-    NEW.status := 'approved';
-    return NEW;
-  end if;
-
-  if TG_TABLE_NAME = 'events' then
-    content := lower(concat_ws(' ', NEW.title, NEW.description, NEW.venue, NEW.address));
-  elsif TG_TABLE_NAME = 'garage_sales' then
-    content := lower(concat_ws(' ', NEW.title, NEW.note, NEW.address));
-  elsif TG_TABLE_NAME = 'food_trucks' then
-    content := lower(concat_ws(' ', NEW.name, NEW.note, NEW.location_name, NEW.address));
-  else
-    content := '';
-  end if;
-
-  -- Hold for human review if anything looks risky; otherwise auto-approve.
-  if content ~* '(https?://|www\.|[a-z0-9-]+\.(com|net|org|info|biz|xyz|shop|io))'   -- web links
-     or content ~ '(\+?\d[ .\-]?){10,}'                                              -- phone numbers
-     or content ~* '\m(fuck|shit|bitch|asshole|cunt|nigger|faggot|slut|whore|retard)\M'  -- profanity
-     or content ~* '(make money|free money|work from home|crypto|bitcoin|viagra|casino|click here|get rich|buy now|limited offer)' -- spam
-  then
-    NEW.status := 'pending';
-  else
-    NEW.status := 'approved';
-  end if;
-
-  return NEW;
-end;
-$$;
+-- moderate_submission() previously had a copy here that introduced the admin
+-- fast-path branch (is_admin() publishes instantly) on top of the original
+-- link/phone/profanity/spam text screen.
+-- REMOVED 2026-07-16: it was one of seven competing definitions, and re-running this
+-- file would have reverted newer fixes in production.
+-- The authoritative definition now lives in supabase/moderate_submission.sql.
+-- Its history section records what this file contributed.
 
 drop trigger if exists events_moderate on public.events;
 create trigger events_moderate before insert on public.events

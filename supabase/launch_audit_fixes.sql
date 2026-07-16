@@ -53,49 +53,12 @@ begin
 end;
 $$;
 
--- 3) moderate_submission: pin search_path. LOGIC UNCHANGED from aggregator.sql
---    (admins publish instantly; the aggregator/service role auto-publishes feed
---    events; signed-in users are screened and cannot self-approve or set source_uid).
-create or replace function public.moderate_submission()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-declare content text;
-begin
-  if public.is_admin() then
-    NEW.status := 'approved';
-    return NEW;
-  end if;
-
-  if TG_TABLE_NAME = 'events' then
-    if auth.uid() is null then
-      NEW.status := 'approved';
-      return NEW;
-    end if;
-    NEW.source_uid := null;
-    content := lower(concat_ws(' ', NEW.title, NEW.description, NEW.venue, NEW.address));
-  elsif TG_TABLE_NAME = 'garage_sales' then
-    content := lower(concat_ws(' ', NEW.title, NEW.note, NEW.address));
-  elsif TG_TABLE_NAME = 'food_trucks' then
-    content := lower(concat_ws(' ', NEW.name, NEW.note, NEW.location_name, NEW.address));
-  else
-    content := '';
-  end if;
-
-  if content ~* '(https?://|www\.|[a-z0-9-]+\.(com|net|org|info|biz|xyz|shop|io))'
-     or content ~ '(\+?\d[ .\-]?){10,}'
-     or content ~* '\m(fuck|shit|bitch|asshole|cunt|nigger|faggot|slut|whore|retard)\M'
-     or content ~* '(make money|free money|work from home|crypto|bitcoin|viagra|casino|click here|get rich|buy now|limited offer)'
-  then
-    NEW.status := 'pending';
-  else
-    NEW.status := 'approved';
-  end if;
-
-  return NEW;
-end;
-$$;
+-- 3) moderate_submission() previously had a copy here that pinned `set search_path = public`
+-- on the function (its stated logic was otherwise unchanged from aggregator.sql).
+-- REMOVED 2026-07-16: it was one of seven competing definitions, and re-running this
+-- file would have reverted newer fixes in production.
+-- The authoritative definition now lives in supabase/moderate_submission.sql.
+-- Its history section records what this file contributed.
 
 -- 4) sponsors: make the Stripe webhook insert idempotent against Stripe's retries
 --    and replays (the webhook now upserts on stripe_session_id + city_id). NULLs
