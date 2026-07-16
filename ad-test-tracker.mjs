@@ -1,15 +1,35 @@
 // Local Loop — Facebook ad test/control tracker.
 //
-// Measures the paired baseline test (see memory: ad-baseline-test): 3 TEST towns
-// each running a $5/day Traffic ad + free community post, vs 3 matched CONTROL
-// towns that get the free post only. The metric is per-town 30-day MAU — distinct
-// devices seen in device_activity in the last 30 days, the SAME number the in-app
-// Metrics screen shows. Net ad lift = test MAU gain minus control MAU gain, which
-// cancels ordinary organic growth. Cost per acquired user = ad spend / net lift,
-// judged against the decision rule below.
+// WHAT THIS ACTUALLY MEASURES: **ad vs NOTHING.** 3 TEST towns run a $5/day Traffic
+// ad; 3 matched CONTROL towns get nothing at all. NOBODY gets a community post —
+// there is a no-post blackout on all six towns for the duration, enforced by
+// fb-daily-plan.mjs.
 //
-//   Decision rule (at day 7+):  < $3/user = SCALE ·  $3-5 = one more round
-//                               > $5/user or net lift <= 0 = free posting wins
+// This header used to describe the ORIGINAL design (ad + free post vs free post
+// only), which was abandoned before launch because group coverage runs backwards:
+// New Philadelphia has zero Facebook groups and Sandusky's one group removed the
+// post, while all three CONTROLS have live posted groups. The stale text was not
+// harmless — the verdict below inherited it and would have declared "free posting
+// wins" about an arm that never ran, off a live $105 experiment.
+//
+// Ad-vs-nothing is arguably the more useful question anyway: for any town we expand
+// into cold, "what does $5/day buy from zero" is exactly the number needed, and for
+// towns like New Philadelphia free posting is not even available.
+//
+// The metric is per-town 30-day MAU — distinct devices in device_activity over 30
+// days, the SAME number the in-app Metrics screen shows. Net lift = test MAU gain
+// minus control MAU gain, which cancels ordinary organic growth. With the controls
+// at zero, net lift is essentially the test gain, and the controls' job is to prove
+// there is no organic baseline to confuse it with. Cost per user = spend / net lift.
+//
+//   Decision rule (at day 7+), an ABSOLUTE cost bar — NOT a comparison against
+//   free posting, which this test does not measure:
+//     < $3/user = scale paid · $3-5 = one more round · > $5 or no lift = do not scale
+//
+// COUNTING: this reads device_activity AFTER purge-bot-activity.mjs has run (7 AM
+// via local-refresh.cmd, ahead of this task's 8:15). That ordering matters. On
+// 2026-07-16 two automated agents were inflating the ad towns badly (sandusky 16
+// reported vs 8 real) and any cost-per-user off the raw numbers was ~30% optimistic.
 //
 // Runs daily via the ll-ad-test scheduled task:
 //   node ad-test-tracker.mjs --email   send the report to the owner + update state
@@ -126,12 +146,16 @@ const spend = DAILY_BUDGET * TEST.length * Math.min(Math.max(day, 0), RUN_DAYS);
 const costPerUser = netLift > 0 ? spend / netLift : null;
 const done = day > RUN_DAYS + SETTLE_DAYS;
 
+// The labels are an ABSOLUTE cost-per-user bar. They must never claim anything about
+// free posting: no town in this test got a post, so any "free posting wins" verdict
+// would be a conclusion about an experiment that does not exist. That is what these
+// said until 2026-07-16, inherited from the abandoned original design.
 function verdict() {
   if (day < RUN_DAYS) return { label: 'In progress', detail: `Day ${day} of ${RUN_DAYS}, provisional.` };
-  if (netLift <= 0) return { label: 'Free posting wins', detail: 'Ads did not beat the free-post control. Do not scale paid.' };
+  if (netLift <= 0) return { label: 'DO NOT scale paid', detail: 'The ads produced no measurable lift over the untouched control towns.' };
   if (costPerUser < 3) return { label: 'SCALE paid acquisition', detail: `about $${costPerUser.toFixed(2)} per user, under the $3 bar.` };
   if (costPerUser <= 5) return { label: 'One more round', detail: `about $${costPerUser.toFixed(2)} per user, in the $3 to $5 grey zone.` };
-  return { label: 'Free posting wins', detail: `about $${costPerUser.toFixed(2)} per user, over the $5 ceiling.` };
+  return { label: 'DO NOT scale paid', detail: `about $${costPerUser.toFixed(2)} per user, over the $5 ceiling.` };
 }
 const v = verdict();
 const sign = (n) => (n >= 0 ? '+' + n : String(n));
@@ -170,14 +194,17 @@ function buildHtml() {
       <td style="padding:7px 6px;font-size:14px;color:#191919;">${esc(nm(p.test))} ${chip(gain[p.test])} <span style="color:#8a8a8a;">(${mau[p.test]})</span></td>
       <td style="padding:7px 6px;font-size:14px;color:#191919;">${esc(nm(p.control))} ${chip(gain[p.control])} <span style="color:#8a8a8a;">(${mau[p.control]})</span></td>
     </tr>`).join('');
-  const vColor = v.label.startsWith('SCALE') ? '#256B29' : v.label.startsWith('One') ? '#9A6B00' : v.label.startsWith('Free') ? '#B22234' : '#15315B';
+  // Keyed off the CURRENT labels. This said startsWith('Free') until 2026-07-16, so
+  // renaming the verdict silently dropped the red banner to default navy — a "do not
+  // scale" result would have arrived looking like neutral information.
+  const vColor = v.label.startsWith('SCALE') ? '#256B29' : v.label.startsWith('One') ? '#9A6B00' : v.label.startsWith('DO NOT') ? '#B22234' : '#15315B';
   return `<div style="background:#f4f2ee;padding:16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">`
     + `<tr><td style="background:#15315B;padding:20px 18px;"><div style="color:#c9d4e8;font-size:12px;letter-spacing:1.5px;font-weight:700;">LOCAL LOOP &middot; FACEBOOK AD TEST</div><div style="color:#fff;font-size:20px;font-weight:800;margin-top:3px;">Day ${day} of ${RUN_DAYS}</div><div style="color:#9db0cf;font-size:13px;margin-top:4px;">Started ${esc(state.startDate)} &middot; spend so far $${spend} &middot; metric: 30-day MAU</div></td></tr>`
     + (firstRun ? `<tr><td style="padding:12px 18px;background:#eef4ee;font-size:14px;color:#256B29;">Baseline captured. Launch the 3 ads and post the 6 free community posts today.</td></tr>` : '')
     + `<tr><td style="padding:12px 18px 4px;"><div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:#15315B;margin-bottom:4px;">PER-TOWN LIFT &middot; +change (current)</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-size:11px;color:#8a8a8a;padding:0 6px;">PAIR</td><td style="font-size:11px;color:#8a8a8a;padding:0 6px;">TEST (ad)</td><td style="font-size:11px;color:#8a8a8a;padding:0 6px;">CONTROL</td></tr>${rowsHtml}</table></td></tr>`
     + `<tr><td style="padding:10px 18px;border-top:1px solid #efede8;font-size:15px;color:#333;line-height:1.9;">Test towns gain: <b>${esc(sign(testGain))}</b><br>Control towns gain: <b>${esc(sign(controlGain))}</b><br>Net ad lift: <b style="font-size:18px;color:${netLift > 0 ? '#256B29' : '#B22234'};">${esc(sign(netLift))}</b> <span style="color:#8a8a8a;font-size:13px;">(test minus control)</span><br>Cost per net user: <b>${costPerUser != null ? '$' + costPerUser.toFixed(2) : 'n/a'}</b></td></tr>`
     + `<tr><td style="padding:14px 18px;background:${vColor};"><div style="color:#fff;font-size:12px;letter-spacing:.8px;font-weight:700;opacity:.85;">VERDICT ${day < RUN_DAYS ? '(provisional)' : ''}</div><div style="color:#fff;font-size:18px;font-weight:800;margin-top:2px;">${esc(v.label)}</div><div style="color:#e8eef6;font-size:14px;margin-top:3px;">${esc(v.detail)}</div></td></tr>`
-    + `<tr><td style="padding:12px 18px;background:#faf9f6;font-size:12px;color:#9a9a9a;line-height:1.6;">Read from device_activity, the same source as the in-app Metrics screen. Late installs can take a day or two to open the app, so the routine keeps reporting through day ${RUN_DAYS + SETTLE_DAYS}. Decision rule: under $3/user scale, $3-5 one more round, over $5 or no lift the free posting wins.</td></tr>`
+    + `<tr><td style="padding:12px 18px;background:#faf9f6;font-size:12px;color:#9a9a9a;line-height:1.6;">Read from device_activity, the same source as the in-app Metrics screen. Late installs can take a day or two to open the app, so the routine keeps reporting through day ${RUN_DAYS + SETTLE_DAYS}. This measures ads against untouched control towns, not against free posting: no town in the test got a community post. Decision rule: under $3/user scale, $3-5 one more round, over $5 or no lift do not scale.</td></tr>`
     + `</table></div>`;
 }
 
