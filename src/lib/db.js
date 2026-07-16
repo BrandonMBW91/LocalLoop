@@ -655,12 +655,6 @@ export async function setFeatured(kind, id, days) {
 
 // ---- Sponsors / ads ----
 
-// The columns `authenticated` is actually granted on sponsors / deals. The stripe_*
-// columns are intentionally excluded from the client grant, so any SELECT * against
-// these two tables 403s. Keep these lists in step with the grants if either changes.
-const SPONSOR_COLS = 'id,city_id,title,body,image_url,link_url,weight,active,starts_at,ends_at,impressions,clicks,product,paused_reason,created_at';
-const DEAL_COLS = 'id,city_id,business_name,title,description,address,link_url,image_url,active,featured,starts_at,ends_at,view_count,paused_reason,created_at';
-
 function rowToSponsor(r) {
   return {
     id: r.id,
@@ -752,9 +746,9 @@ export async function insertDeal(d) {
       starts_at: d.startsAt || null,
       ends_at: d.endsAt || null,
     })
-    // Explicit columns for the same reason as insertSponsor: deals has 18 columns,
-    // `authenticated` may read 15, and SELECT * hits the withheld stripe_* ones and
-    // 403s, rolling the insert back.
+    // DEAL_COLS, not a bare .select(), for the reason its own definition already
+    // gives: SELECT * hits the withheld stripe_* columns and 403s, which here also
+    // rolled the insert back, so creating a deal failed every time.
     .select(DEAL_COLS)
     .single();
   if (error) throw error;
@@ -956,6 +950,10 @@ export async function fetchCityUsers(cityId) {
 // Columns the anon role may read (see supabase/sponsors_hardening.sql — Stripe
 // ids and metrics are column-restricted, so `select *` would be denied).
 const SPONSOR_PUBLIC_COLS = 'id, city_id, title, body, image_url, link_url, weight, active, starts_at, ends_at';
+// The admin view adds the owner-only counters. Still an explicit list, never '*':
+// sponsors has 19 columns but `authenticated` may read 15 — the stripe_* ones are
+// withheld — so a SELECT * 403s and, on an insert, rolls the row back.
+const SPONSOR_ADMIN_COLS = `${SPONSOR_PUBLIC_COLS}, created_at, impressions, clicks, product, paused_reason`;
 
 // Live ads for a city (RLS already restricts to active + in-window for non-admins).
 export async function fetchSponsors(cityId) {
@@ -977,7 +975,7 @@ export async function fetchSponsors(cityId) {
 export async function fetchAllSponsors() {
   const { data, error } = await supabase
     .from('sponsors')
-    .select(`${SPONSOR_PUBLIC_COLS}, created_at, impressions, clicks, product, paused_reason`)
+    .select(SPONSOR_ADMIN_COLS)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map(rowToSponsor);
@@ -997,12 +995,10 @@ export async function insertSponsor(s) {
       starts_at: s.startsAt || null,
       ends_at: s.endsAt || null,
     })
-    // Explicit columns, NOT a bare .select(). sponsors has 19 columns but
-    // `authenticated` may only read 15 — the stripe_* ones are deliberately
-    // withheld from clients. A bare .select() means SELECT *, which touches them,
-    // 403s, and rolls the insert back: creating a sponsor failed every time. This
-    // list is exactly the grant, and covers everything rowToSponsor reads.
-    .select(SPONSOR_COLS)
+    // Same explicit list fetchAllSponsors uses, NOT a bare .select(). A bare one
+    // means SELECT *, which touches the withheld stripe_* columns, 403s, and rolls
+    // the insert back — creating a sponsor failed every single time.
+    .select(SPONSOR_ADMIN_COLS)
     .single();
   if (error) throw error;
   return rowToSponsor(data);
