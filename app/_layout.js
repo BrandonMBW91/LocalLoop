@@ -114,6 +114,10 @@ export default function RootLayout() {
               options={{ title: 'Reach & Metrics', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="changelog"
+              options={{ title: 'Release Log', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="city"
               options={{ title: 'Choose Your City', headerBackTitle: 'Back' }}
             />

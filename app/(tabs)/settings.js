@@ -289,6 +289,14 @@ export default function SettingsScreen() {
               </ThemedText>
               <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
             </Pressable>
+            <Pressable style={[styles.row, styles.rowBorder]} onPress={() => router.push('/changelog')}>
+              <Ionicons name="git-commit" size={24} color={colors.primary} />
+              <ThemedText size="body" style={{ flex: 1, marginLeft: spacing.sm }}>
+                Release log
+              </ThemedText>
+              <ThemedText size="small" color={colors.textMuted}>rev {BUILD}</ThemedText>
+              <Ionicons name="chevron-forward" size={22} color={colors.textMuted} style={{ marginLeft: spacing.xs }} />
+            </Pressable>
           </View>
         </>
       ) : null}

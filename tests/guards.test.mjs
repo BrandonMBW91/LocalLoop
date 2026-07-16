@@ -107,6 +107,23 @@ t('deploy:web pins --site (a parent-folder link once aimed this repo at another 
     'deploy:web must pin the local-loop site id; config alone is not enough (.netlify/ is gitignored).');
 });
 
+// --- GUARD 6: the release log matches the current rev --------------------------
+// src/data/changelog.js is generated from git. If BUILD moves and nobody regenerates,
+// the Settings > Release Log screen quietly stops listing the rev the device is on —
+// a doc that lies, which is the failure mode this whole file exists to prevent.
+// Fix by running: node scripts/build-changelog.mjs
+// Deliberately SYNCHRONOUS. t() is a sync harness: it calls fn() inside try/catch, so
+// an async fn returns a promise, never throws into the catch, and the check passes even
+// when it should fail. That is not hypothetical — the first version of this guard was
+// async and reported PASS with BUILD set to 99999. A guard that cannot fail is worse
+// than no guard, because it reads as coverage.
+t('the release log includes the rev this build actually is', () => {
+  const build = Number(/export const BUILD = (\d+)/.exec(readFileSync(join(ROOT, 'src/version.js'), 'utf8'))[1]);
+  const revs = [...readFileSync(join(ROOT, 'src/data/changelog.js'), 'utf8').matchAll(/"rev":\s*(\d+)/g)].map((m) => Number(m[1]));
+  assert.ok(revs.includes(build),
+    `changelog.js has no entry for rev ${build} (newest is ${Math.max(...revs)}). Run: node scripts/build-changelog.mjs`);
+});
+
 // --- normalizeLinkUrl ----------------------------------------------------------
 // An advertiser types "joespizza.com". Stored raw the paid banner's tap is dead while
 // clicks still counts it, so the CTR reported back to them counts taps that never landed.
