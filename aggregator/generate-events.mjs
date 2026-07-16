@@ -139,6 +139,19 @@ const HEAD = (title, desc, path, noindex = false) => `<!DOCTYPE html><html lang=
 <meta property="og:description" content="${esc(desc)}"/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="${SITE}${esc(path)}"/>
+<!-- og:image matters more here than anywhere else on the site: the FB routine posts
+     these town links into community groups 3x/week, and with no image Facebook
+     renders them as a bare grey link, the lowest-engagement unit on our main
+     distribution channel. Mirrors what scripts/build-web.mjs already sets for the
+     homepage. Dimensions are required — FB will not render a card without them. -->
+<meta property="og:image" content="${SITE}/og-image.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:type" content="image/png"/>
+<meta property="og:image:alt" content="Local Loop — everything happening in your town"/>
+<meta property="og:site_name" content="Local Loop"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="${SITE}/og-image.png"/>
 <style>
 :root{--green:${GREEN};--green-d:#0E2444;--green-l:#E8EDF5;--orange:#B22234;--bg:#FBF8F1;--surface:#fff;--ink:#1A1A1A;--muted:#5B5B5B;--line:#E4DED4;}
 *{box-sizing:border-box;}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;}

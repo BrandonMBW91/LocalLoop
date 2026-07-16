@@ -6,6 +6,7 @@ import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { CITIES } from '../src/data/cities';
 import { fetchUpcomingEventCount } from '../src/lib/db';
+import { formatCount } from '../src/utils/dates';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 // One-time first-launch welcome. Explains what the app is in a single sentence
@@ -27,8 +28,13 @@ export default function WelcomeScreen() {
   // Match the picker: count towns that actually have events right now (the
   // static catalog says 133, but the picker one tap later lists the live set).
   const townCount = activeCityIds && activeCityIds.size ? activeCityIds.size : CITIES.length;
+  // formatCount, never toLocaleString: that is Intl-backed, and Hermes's Android Intl
+  // backend has already rendered a wrong value in this app (a Wednesday printed as
+  // "Thursday", commit da39608). A divergence audit closed 2026-07-08 with "ZERO
+  // Intl/toLocale* calls remain on-device"; this line reintroduced one five days
+  // later, on the first screen a new user ever sees.
   const stat = eventCount
-    ? `${(Math.floor(eventCount / 100) * 100).toLocaleString()}+ events across ${townCount} Ohio towns`
+    ? `${formatCount(Math.floor(eventCount / 100) * 100)}+ events across ${townCount} Ohio towns`
     : `${townCount} Ohio towns and growing`;
 
   const chooseTown = () => router.push({ pathname: '/city', params: { onboarding: '1' } });

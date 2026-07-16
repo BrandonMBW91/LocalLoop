@@ -1,5 +1,6 @@
 import { Alert, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SITE } from './links';
 
 // Rating prompt policy — GOLD STANDARD: use the OS-native in-app review card
 // (expo-store-review, SDK 54) when the running build has the native module. It
@@ -38,6 +39,16 @@ function nativeReview() {
 }
 
 export function openReview() {
+  // Web FIRST, before the android/else split. localloop.io serves this same code to
+  // desktop and Android browsers, and an `else` that means "Apple" sent all of them
+  // to an iOS listing they cannot rate from. This file already refuses to show the
+  // automatic prompt on web for that exact reason (see below), and WebInstallBanner
+  // refuses to show Android visitors an Apple link — only this manual Settings
+  // button missed the gate. A browser visitor has nothing to rate, so send them home.
+  if (Platform.OS === 'web') {
+    Linking.openURL(SITE).catch(() => {});
+    return;
+  }
   if (Platform.OS === 'android') {
     // market:// opens the Play Store app directly; fall back to the web listing.
     Linking.openURL(PLAY_MARKET_URL).catch(() => Linking.openURL(PLAY_WEB_URL).catch(() => {}));
