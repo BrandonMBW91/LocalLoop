@@ -62,12 +62,20 @@ export default function RootLayout() {
               options={{ title: 'Post a Garage Sale', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="garage-sale/edit"
+              options={{ title: 'Edit Garage Sale', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="food-truck/[id]"
               options={{ title: 'Food Truck', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
               name="food-truck/new"
               options={{ title: 'Post a Food Truck', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="food-truck/edit"
+              options={{ title: 'Edit Food Truck', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
               name="sign-in"

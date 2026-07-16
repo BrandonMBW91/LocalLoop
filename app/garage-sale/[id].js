@@ -37,7 +37,7 @@ export default function GarageSaleDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findGarageSaleById, backendEnabled, isAdmin, noTrack, toggleSavedSale, isSaleSaved } = useApp();
+  const { findGarageSaleById, backendEnabled, isAdmin, noTrack, session, toggleSavedSale, isSaleSaved } = useApp();
   const cached = findGarageSaleById(id);
   const [fetched, setFetched] = useState(null);
   const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
@@ -53,6 +53,9 @@ export default function GarageSaleDetailScreen() {
     setFetching(false);
   }, [cached, backendEnabled, id]);
   const sale = cached || fetched;
+  // The poster can edit their own listing; the server enforces it for real
+  // (update_own_* checks created_by = auth.uid()).
+  const isOwner = !!(session?.user?.id && sale?.createdBy && session.user.id === sale.createdBy);
 
   // Record the view once per id, but only AFTER the sale has resolved, so a deep
   // link to a deleted/invalid sale (which renders "not found") and remounts don't
@@ -237,6 +240,21 @@ export default function GarageSaleDetailScreen() {
       </View>
 
       <FeatureButton kind="garage_sale" id={sale.id} featured={sale.featured} featuredUntil={sale.featuredUntil} />
+      {/* Admin, or the person who posted it. Server-side the owner path goes
+          through update_own_garage_sale, which cannot touch status/featured and
+          re-pends the row for review. */}
+      {(isAdmin || isOwner) ? (
+        <Pressable
+          style={({ pressed }) => [styles.adminEditBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push({ pathname: '/garage-sale/edit', params: { id: sale.id } })}
+          accessibilityRole="button"
+          accessibilityLabel="Edit this Sale"
+        >
+          <Ionicons name="create-outline" size={20} color={colors.primary} />
+          <ThemedText size="body" weight="bold" color={colors.primary}>Edit Sale</ThemedText>
+        </Pressable>
+      ) : null}
+
       <ReportButton kind="garage_sale" id={sale.id} />
       <AdBanner />
     </ScrollView>
@@ -244,6 +262,17 @@ export default function GarageSaleDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  adminEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 12,
+    marginTop: spacing.md,
+  },
   screen: { flex: 1, backgroundColor: colors.background },
   hero: {
     alignItems: 'center',

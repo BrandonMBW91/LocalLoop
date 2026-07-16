@@ -38,7 +38,7 @@ export default function FoodTruckDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findFoodTruckById, backendEnabled, isAdmin, noTrack, toggleFollow, isFollowing } = useApp();
+  const { findFoodTruckById, backendEnabled, isAdmin, noTrack, session, toggleFollow, isFollowing } = useApp();
   const cached = findFoodTruckById(id);
   const [fetched, setFetched] = useState(null);
   const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
@@ -54,6 +54,9 @@ export default function FoodTruckDetailScreen() {
     setFetching(false);
   }, [cached, backendEnabled, id]);
   const truck = cached || fetched;
+  // The poster can edit their own listing; the server enforces it for real
+  // (update_own_* checks created_by = auth.uid()).
+  const isOwner = !!(session?.user?.id && truck?.createdBy && session.user.id === truck.createdBy);
 
   // Record the view once per id, but only AFTER the truck has resolved, so a deep
   // link to a deleted/invalid truck (which renders "not found") and remounts don't
@@ -216,6 +219,21 @@ export default function FoodTruckDetailScreen() {
         <ThemedText size="small" weight="bold" color={colors.textMuted}>Is this your truck? Claim it</ThemedText>
       </Pressable>
 
+      {/* Admin, or the person who posted it. Server-side the owner path goes
+          through update_own_food_truck, which cannot touch status/featured and
+          re-pends the row for review. */}
+      {(isAdmin || isOwner) && truck.source !== 'calendar' ? (
+        <Pressable
+          style={({ pressed }) => [styles.adminEditBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push({ pathname: '/food-truck/edit', params: { id: truck.id } })}
+          accessibilityRole="button"
+          accessibilityLabel="Edit this Stop"
+        >
+          <Ionicons name="create-outline" size={20} color={colors.primary} />
+          <ThemedText size="body" weight="bold" color={colors.primary}>Edit Stop</ThemedText>
+        </Pressable>
+      ) : null}
+
       <ReportButton kind="food_truck" id={truck.id} />
       <AdBanner />
     </ScrollView>
@@ -223,6 +241,17 @@ export default function FoodTruckDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  adminEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 12,
+    marginTop: spacing.md,
+  },
   claimBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
     paddingVertical: spacing.md, marginTop: spacing.xs,

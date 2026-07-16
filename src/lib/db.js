@@ -110,6 +110,7 @@ function rowToSale(r) {
     host: cleanText(r.host) || 'Community submission',
     pending: r.status !== 'approved',
     note: cleanDescription(r.note),
+    createdBy: r.created_by || null, // lets the poster see Edit on their own sale
   };
 }
 
@@ -153,6 +154,7 @@ function rowToTruck(r) {
     pending: r.status !== 'approved',
     note: cleanDescription(r.note),
     imageUrl: r.image_url || null,
+    createdBy: r.created_by || null, // lets the poster see Edit on their own stop
   };
 }
 
@@ -371,6 +373,43 @@ export async function updateOwnEvent(id, patch) {
   });
   if (error) throw error;
   return Array.isArray(data) ? rowToEvent(data[0]) : rowToEvent(data);
+}
+
+// Owner edits for the other two listing types. Same contract as
+// updateOwnEvent: ownership checked server-side, status/featured untouchable,
+// row re-pends for review. Photos are not editable here yet.
+export async function updateOwnGarageSale(id, patch) {
+  const { data, error } = await supabase.rpc('update_own_garage_sale', {
+    p_id: id,
+    p_title: patch.title,
+    p_type: patch.type,
+    p_start_date: patch.start,
+    p_end_date: patch.end || null,
+    p_daily_start: patch.dailyStart || '',
+    p_daily_end: patch.dailyEnd || '',
+    p_address: patch.address,
+    p_neighborhood: patch.neighborhood || '',
+    p_note: patch.note || '',
+    p_items: Array.isArray(patch.items) ? patch.items : null,
+  });
+  if (error) throw error;
+  return rowToSale(Array.isArray(data) ? data[0] : data);
+}
+
+export async function updateOwnFoodTruck(id, patch) {
+  const { data, error } = await supabase.rpc('update_own_food_truck', {
+    p_id: id,
+    p_name: patch.name,
+    p_cuisine: patch.cuisine,
+    p_date: patch.date,
+    p_start_time: patch.startTime || '',
+    p_end_time: patch.endTime || '',
+    p_location_name: patch.locationName || '',
+    p_address: patch.address || '',
+    p_note: patch.note || '',
+  });
+  if (error) throw error;
+  return rowToTruck(Array.isArray(data) ? data[0] : data);
 }
 
 export async function updateEvent(id, patch) {

@@ -67,7 +67,8 @@ create or replace function public.update_own_garage_sale(
   p_daily_end text,
   p_address text,
   p_neighborhood text,
-  p_note text
+  p_note text,
+  p_items text[] default null
 ) returns public.garage_sales
 language plpgsql
 security definer
@@ -86,6 +87,7 @@ begin
     address = left(coalesce(nullif(btrim(p_address), ''), address), 300),
     neighborhood = left(coalesce(p_neighborhood, ''), 120),
     note = left(coalesce(p_note, ''), 2000),
+    items = coalesce(p_items, items),
     status = 'pending'
   where id = p_id
     and created_by = auth.uid()
@@ -147,7 +149,7 @@ $$;
 -- This just closes the surface.)
 revoke execute on function public.update_own_event(uuid, text, text, timestamptz, timestamptz, text, text, text, text, text) from public, anon;
 grant execute on function public.update_own_event(uuid, text, text, timestamptz, timestamptz, text, text, text, text, text) to authenticated;
-revoke execute on function public.update_own_garage_sale(uuid, text, text, date, date, text, text, text, text, text) from public, anon;
-grant execute on function public.update_own_garage_sale(uuid, text, text, date, date, text, text, text, text, text) to authenticated;
+revoke execute on function public.update_own_garage_sale(uuid, text, text, date, date, text, text, text, text, text, text[]) from public, anon;
+grant execute on function public.update_own_garage_sale(uuid, text, text, date, date, text, text, text, text, text, text[]) to authenticated;
 revoke execute on function public.update_own_food_truck(uuid, text, text, date, text, text, text, text, text) from public, anon;
 grant execute on function public.update_own_food_truck(uuid, text, text, date, text, text, text, text, text) to authenticated;
