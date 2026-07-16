@@ -304,6 +304,21 @@ export function AppProvider({ children }) {
   // without signing in. Synchronous so even the first pageview isn't counted.
   const urlInternal = Platform.OS === 'web' && typeof window !== 'undefined' && /[?&]internal\b/.test(window.location.search);
   // One switch every tracker checks: admin, dev/preview web, or an opted-out device.
+  // The decisive signal: a real person INTERACTS. The crawler that faked 127
+  // users renders pages and leaves — it never taps, scrolls, or types. UA and
+  // webdriver checks are an arms race a headless browser wins (this one spoofs
+  // both), and robots.txt only binds crawlers that honour it. So on web nothing
+  // counts until a genuine user gesture happens. Native has no bot problem, so
+  // it starts true and behaves exactly as before.
+  const [interacted, setInteracted] = useState(Platform.OS !== 'web');
+  useEffect(() => {
+    if (Platform.OS !== 'web' || interacted || typeof window === 'undefined') return undefined;
+    const on = () => setInteracted(true);
+    const evs = ['pointerdown', 'keydown', 'touchstart', 'wheel', 'scroll'];
+    evs.forEach((e) => window.addEventListener(e, on, { once: true, passive: true }));
+    return () => evs.forEach((e) => window.removeEventListener(e, on));
+  }, [interacted]);
+
   // Automated clients must never count as people. robots.txt now keeps crawlers
   // out of the app routes, but anything that ignores it still boots the app, and
   // because a bot persists no localStorage it mints a NEW anonymous device on
@@ -315,7 +330,7 @@ export function AppProvider({ children }) {
     navigator.webdriver === true
     || /bot|crawler|spider|crawling|headless|phantom|puppeteer|playwright|slurp|bingpreview|lighthouse|pagespeed|gtmetrix|pingdom|uptime|monitor|preview|scrap|fetch|curl|wget|python-requests|axios|http-client|facebookexternalhit|whatsapp|telegram|discord|embedly|quora|pinterest|semrush|ahrefs|mj12|dotbot|petal|yandex|baidu|duckduck|applebot|amazonbot|gptbot|ccbot|claudebot|perplexity|bytespider/i.test(navigator.userAgent || '')
   );
-  const noTrack = isAdmin || isDevWeb || excludeStats || urlInternal || isBot;
+  const noTrack = isAdmin || isDevWeb || excludeStats || urlInternal || isBot || !interacted;
 
   // Fire-and-forget product analytics, auto-tagged with the anon device + city.
   // No-op for the admin/owner and any opted-out device, so internal use never counts.

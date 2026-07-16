@@ -22,3 +22,9 @@ rem stamp above: an SFF hiccup must not mark the Eventbrite refresh FAILED (the
 rem morning brief health-checks that done line). Trucks get their own stamp.
 rem Pushing at 7 AM is also far kinder to followers than the 4:36 AM cloud run.
 node truck-calendars.mjs >> local-refresh.log 2>&1 && node notify-truck-followers.mjs --send >> local-refresh.log 2>&1 && (echo trucks done %date% %time% >> local-refresh.log) || (echo trucks FAILED %date% %time% >> local-refresh.log)
+
+rem Scrub crawler-minted 'users' from the ad-pricing metric. Bots keep no
+rem localStorage, so each page mints a new device; a seeded Math.random makes
+rem every one of a given bot's ids share one 8-char suffix, which no human set
+rem can do. Conservative (groups of 5+ only) and idempotent. Own stamp.
+node purge-bot-activity.mjs --apply >> local-refresh.log 2>&1 && (echo purge done %date% %time% >> local-refresh.log) || (echo purge FAILED %date% %time% >> local-refresh.log)
