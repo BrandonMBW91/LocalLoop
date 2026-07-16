@@ -6,6 +6,7 @@ import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { CITIES, REGION_ORDER } from '../src/data/cities';
 import { nearMeAvailable, suggestTownFromLocation } from '../src/lib/nearMe';
+import { formatCount } from '../src/utils/dates';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 
 const CITY_NAME_SET = new Set(CITIES.map((c) => c.id));
@@ -126,7 +127,7 @@ export default function CityPickerScreen() {
               // Density-aware label: a real count once a town has enough, else a
               // friendly "just getting started" so a tiny number never discourages.
               const n = cityCounts ? cityCounts[c.id] : undefined;
-              const countLabel = n == null ? null : n >= 25 ? `${n.toLocaleString()} events` : 'Just getting started';
+              const countLabel = n == null ? null : n >= 25 ? `${formatCount(n)} events` : 'Just getting started';
               return (
                 <Pressable
                   key={c.id}
