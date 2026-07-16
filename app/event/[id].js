@@ -40,7 +40,7 @@ export default function EventDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, noTrack, logEvent, deviceId } = useApp();
+  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, noTrack, logEvent, deviceId, session } = useApp();
   const cached = findEventById(id);
   // Deep link (localloop.io/event/<id>) may reference an event outside the
   // loaded city — fetch it directly when the cache misses.
@@ -59,6 +59,10 @@ export default function EventDetailScreen() {
     setFetching(false);
   }, [cached, backendEnabled, id]);
   const event = cached || fetched;
+  // The poster can edit their own listing. Server-side this is enforced by
+  // update_own_event (created_by = auth.uid()); this only decides whether the
+  // button is worth showing.
+  const isOwner = !!(session?.user?.id && event?.createdBy && session.user.id === event.createdBy);
 
   // Record the view once per id, but only after the event has resolved, so the
   // logged category isn't undefined on the first-render race.
@@ -343,13 +347,15 @@ export default function EventDetailScreen() {
         </ThemedText>
       </View>
 
-      {/* Admin: edit this event's fields. Hidden for feed-ingested rows — the
+      {/* Admin OR the person who posted it. Hidden for feed-ingested rows — the
           nightly aggregator upsert would overwrite edits (the edit screen
-          explains this too, and RLS enforces admin-only server-side). */}
+          explains this too). Server-side the two paths differ: admins update the
+          table directly (RLS admin-only), owners go through update_own_event,
+          which cannot touch status/featured and re-pends the row. */}
       {/* `cached` required: the edit screen resolves via findEventById (the
           loaded town), so an out-of-town event reached by deep link would
           dead-end at its not-found guard. */}
-      {isAdmin && cached && !event.sourceUid ? (
+      {(isAdmin || isOwner) && cached && !event.sourceUid ? (
         <Pressable
           style={({ pressed }) => [styles.adminEditBtn, pressed && { opacity: 0.85 }]}
           onPress={() => router.push({ pathname: '/event/edit', params: { id: event.id } })}

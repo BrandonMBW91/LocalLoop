@@ -15,7 +15,7 @@ import ThemedText from '../../src/components/ThemedText';
 import DateTimeField from '../../src/components/DateTimeField';
 import AddressAutocomplete from '../../src/components/AddressAutocomplete';
 import { useApp } from '../../src/context/AppContext';
-import { updateEvent } from '../../src/lib/db';
+import { updateEvent, updateOwnEvent } from '../../src/lib/db';
 import { CATEGORIES } from '../../src/data/events';
 import { formatTime } from '../../src/utils/dates';
 import { colors, spacing, radius, baseFont, categoryColor } from '../../src/theme/theme';
@@ -50,7 +50,7 @@ export default function EditEventScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { isAdmin, scale, refresh, findEventById } = useApp();
+  const { isAdmin, scale, refresh, findEventById, session } = useApp();
   const event = findEventById(id);
 
   // Prefill from the loaded event. State initializers run once, so a background
@@ -88,12 +88,16 @@ export default function EditEventScreen() {
 
   const inputFontSize = Math.round(baseFont.body * scale);
 
-  if (!isAdmin) {
+  // Moderators can edit anything; everyone else only what they posted. The real
+  // gate is server-side (RLS for admins, update_own_event's created_by check for
+  // owners) — this just avoids showing a form that would fail on save.
+  const isOwner = !!(session?.user?.id && event?.createdBy && session.user.id === event.createdBy);
+  if (!isAdmin && !isOwner) {
     return (
       <View style={styles.center}>
         <Ionicons name="lock-closed" size={40} color={colors.textMuted} />
         <ThemedText size="body" color={colors.textMuted} style={{ textAlign: 'center' }}>
-          Editing is for moderators only.
+          You can only edit a listing you posted.
         </ThemedText>
       </View>
     );
@@ -148,7 +152,11 @@ export default function EditEventScreen() {
 
     try {
       setSaving(true);
-      await updateEvent(event.id, {
+      // Admins update the table directly (RLS allows admin only). The person who
+      // posted it goes through update_own_event instead: it verifies ownership,
+      // cannot touch status/featured, and re-pends the row for review.
+      const save = isAdmin ? updateEvent : updateOwnEvent;
+      await save(event.id, {
         title: title.trim(),
         category,
         emoji: EMOJI_BY_CAT[category] || '📅',
@@ -163,7 +171,14 @@ export default function EditEventScreen() {
         clearCoords: venue.trim() !== (event.venue || '') || address.trim() !== (event.address || ''),
       });
       refresh();
-      Alert.alert('Saved', 'The event has been updated.', [
+      // An owner's edit re-pends the row (update_own_event), so say so plainly
+      // rather than letting them wonder why their event vanished from the list.
+      Alert.alert(
+        'Saved',
+        isAdmin
+          ? 'The event has been updated.'
+          : 'Your changes were saved and will show up once a moderator takes a quick look.',
+        [
         { text: 'Done', onPress: () => (router.canGoBack() ? router.back() : router.replace('/')) },
       ]);
     } catch (e) {

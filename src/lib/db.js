@@ -66,6 +66,8 @@ function rowToEvent(r) {
     // re-upserts it nightly, so in-app edits to feed events would be clobbered.
     // Gates the admin Edit button to user/admin-created events only.
     sourceUid: r.source_uid || null,
+    // Who posted it. Lets the app show "Edit" to the owner, not just the admin.
+    createdBy: r.created_by || null,
   };
 }
 
@@ -350,6 +352,27 @@ export async function insertEvent(event) {
 // Admin-only field edit (RLS: the events_update policy is is_admin(), so the
 // server rejects this for anyone else regardless of what the client sends).
 // Only the content fields are patchable — status/featured/created_by stay put.
+// Owner edit. Goes through update_own_event, which verifies created_by =
+// auth.uid(), refuses aggregator rows, ignores status/featured entirely, and
+// returns the row to 'pending' for re-moderation. A plain .update() would be
+// rejected by RLS (admin-only) — that is deliberate.
+export async function updateOwnEvent(id, patch) {
+  const { data, error } = await supabase.rpc('update_own_event', {
+    p_id: id,
+    p_title: patch.title,
+    p_category: patch.category,
+    p_start_at: patch.start,
+    p_end_at: patch.end || null,
+    p_venue: patch.venue || '',
+    p_address: patch.address || '',
+    p_price: patch.price || '',
+    p_description: patch.description || '',
+    p_image_url: patch.imageUrl || null,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? rowToEvent(data[0]) : rowToEvent(data);
+}
+
 export async function updateEvent(id, patch) {
   const row = {
     title: patch.title,
