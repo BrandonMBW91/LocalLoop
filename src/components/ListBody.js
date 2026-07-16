@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, SectionList, RefreshControl, StyleSheet, Platform } from 'react-native';
+import { View, SectionList, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
 import AdBanner from './AdBanner';
@@ -41,7 +41,17 @@ export default function ListBody({
         <SectionHeader title={section.title} count={section.count} accent={accent} unit={sectionUnit} />
       )}
       stickySectionHeadersEnabled
-      removeClippedSubviews={Platform.OS === 'android'}
+      // removeClippedSubviews MUST stay off. It was enabled on Android as a perf
+      // tweak, but under the New Architecture (Fabric, default from SDK 54) view
+      // clipping desyncs the shadow tree from the real view tree and Android dies
+      // on launch with:
+      //   IllegalStateException: addViewAt: failed to insert view into parent
+      //   Caused by: IndexOutOfBoundsException: index=6 count=0
+      //     at ReactClippingViewManager.addView
+      // It was Android-only, which is why iOS never showed it. Confirmed on a
+      // Galaxy A16 (Android 16) via adb: crash on every launch, gone once off.
+      // The windowing props below already do the real virtualization work.
+      removeClippedSubviews={false}
       initialNumToRender={8}
       maxToRenderPerBatch={8}
       windowSize={11}
