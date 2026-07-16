@@ -120,6 +120,7 @@ export default function CalendarScreen() {
                   {cell.d}
                 </ThemedText>
               </View>
+              {/* Bare 6px dot — nothing sits on it, so it keeps the lighter base hues. */}
               <View style={[styles.dot, has && { backgroundColor: isSel ? colors.accent : colors.primary }]} />
             </Pressable>
           );
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center',
   },
   today: { borderWidth: 1.5, borderColor: colors.primary },
-  selected: { backgroundColor: colors.primary },
+  selected: { backgroundColor: colors.primaryFill }, // carries textInverse (the day number)
   dot: { width: 6, height: 6, borderRadius: 3, marginTop: 2, backgroundColor: 'transparent' },
   list: { paddingHorizontal: spacing.md, paddingTop: spacing.lg },
 });

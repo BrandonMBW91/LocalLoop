@@ -73,7 +73,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   btn: {
-    backgroundColor: colors.primary,
+    // primaryFill, not primary: this pill carries white text, and in dark mode the
+    // base primary gives only 3.50:1 against it. This is the CTA every paid ad click
+    // funnels into, so it is the last place to ship an unreadable label.
+    backgroundColor: colors.primaryFill,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

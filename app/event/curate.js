@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     marginTop: spacing.sm,

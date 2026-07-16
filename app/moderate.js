@@ -10,10 +10,12 @@ import { formatShortDate } from '../src/utils/dates';
 
 const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
 const KIND_LABEL = { event: 'EVENT', garage_sale: 'GARAGE SALE', food_truck: 'FOOD TRUCK' };
+// Fill tokens: these hues are only ever used as the kind badge's background, and
+// its label is textInverse.
 const KIND_COLOR = {
-  event: colors.primary,
-  garage_sale: colors.garageSale,
-  food_truck: colors.foodTruck,
+  event: colors.primaryFill,
+  garage_sale: colors.garageSaleFill,
+  food_truck: colors.foodTruckFill,
 };
 
 function itemFields(item) {
@@ -33,7 +35,7 @@ function itemFields(item) {
 // exactly what was posted (full text + photo) before deciding.
 function CardBody({ item, reported, onOpen }) {
   const f = itemFields(item);
-  const accent = KIND_COLOR[item.kind] || colors.primary;
+  const accent = KIND_COLOR[item.kind] || colors.primaryFill;
   return (
     <Pressable onPress={() => onOpen(item, reported)} accessibilityRole="button" accessibilityLabel={`View full ${KIND_LABEL[item.kind] || 'post'}: ${f.title}`}>
       <View style={styles.kindRow}>
@@ -264,7 +266,7 @@ export default function ModerateScreen() {
                 return (
                   <View key={`cal-${cal.id}`} style={styles.card}>
                     <View style={styles.kindRow}>
-                      <View style={[styles.kindBadge, { backgroundColor: colors.accent }]}>
+                      <View style={[styles.kindBadge, { backgroundColor: colors.accentFill }]}>
                         <ThemedText size="tiny" weight="bold" color={colors.textInverse}>CALENDAR</ThemedText>
                       </View>
                       {cal.city_id ? (
@@ -358,7 +360,7 @@ function PreviewModal({ preview, busy, onClose, onApprove, onReject, onKeep, onR
   if (!preview) return null;
   const { item, reported } = preview;
   const f = itemFields(item);
-  const accent = KIND_COLOR[item.kind] || colors.primary;
+  const accent = KIND_COLOR[item.kind] || colors.primaryFill;
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.modalScreen}>
@@ -492,7 +494,7 @@ const styles = StyleSheet.create({
   },
   reject: { borderWidth: 1.5, borderColor: colors.danger, backgroundColor: colors.surface },
   approve: { backgroundColor: colors.success },
-  keep: { backgroundColor: colors.primary },
+  keep: { backgroundColor: colors.primaryFill },
   modalScreen: { flex: 1, backgroundColor: colors.background },
   modalHead: {
     flexDirection: 'row',

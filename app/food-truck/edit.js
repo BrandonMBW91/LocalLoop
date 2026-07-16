@@ -169,7 +169,7 @@ export default function EditFoodTruckScreen() {
               <Pressable
                 key={c}
                 onPress={() => setCuisine(c)}
-                style={[styles.chip, cuisine === c && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.chip, cuisine === c && { backgroundColor: colors.primaryFill, borderColor: colors.primary }]}
               >
                 <ThemedText size="small" weight="bold" color={cuisine === c ? colors.textInverse : colors.text}>
                   {CUISINE_EMOJI[c] ? `${CUISINE_EMOJI[c]} ` : ''}{c}
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     marginTop: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     borderRadius: radius.pill,
     paddingVertical: 14,
     alignItems: 'center',

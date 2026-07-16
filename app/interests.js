@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   primaryBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     alignItems: 'center',

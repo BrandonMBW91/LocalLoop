@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     marginTop: spacing.sm,

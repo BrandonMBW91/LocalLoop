@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   outline: { borderWidth: 1.5, borderColor: colors.accent, backgroundColor: colors.surface },
-  solid: { backgroundColor: colors.accent },
+  solid: { backgroundColor: colors.accentFill },
   remove: { borderWidth: 1.5, borderColor: colors.danger, backgroundColor: colors.surface },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
   deleteBtn: {

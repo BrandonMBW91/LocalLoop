@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
-import { colors, spacing, radius } from '../theme/theme';
+import { colors, spacing, radius, textOn } from '../theme/theme';
 
 // A friendly, consistent "nothing here yet" state with an optional primary
 // action. Used across the lists, the saved screen, etc.
@@ -22,8 +22,8 @@ export default function EmptyState({ icon, title, body, actionLabel, onAction, a
       ) : null}
       {actionLabel && onAction ? (
         <Pressable style={({ pressed }) => [styles.btn, { backgroundColor: accent }, pressed && { opacity: 0.85 }]} onPress={onAction}>
-          <Ionicons name={actionIcon} size={22} color={colors.textInverse} />
-          <ThemedText size="body" weight="bold" color={colors.textInverse}>
+          <Ionicons name={actionIcon} size={22} color={textOn(accent)} />
+          <ThemedText size="body" weight="bold" color={textOn(accent)}>
             {actionLabel}
           </ThemedText>
         </Pressable>

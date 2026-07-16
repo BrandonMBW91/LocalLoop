@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   btn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.pill,

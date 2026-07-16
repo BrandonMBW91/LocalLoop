@@ -447,7 +447,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   scaleBtnSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
+    // Border keeps the lighter base hue: nothing sits on it, and it reads as the
+    // selected ring against the darker fill.
     borderColor: colors.primary,
   },
 });

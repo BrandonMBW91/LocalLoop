@@ -62,7 +62,7 @@ export default function RulesScreen() {
 
         {RULES.map((r, i) => (
           <View key={i} style={[styles.rule, i === 0 && styles.ruleHighlight]}>
-            <View style={[styles.ruleIcon, i === 0 && { backgroundColor: colors.garageSale }]}>
+            <View style={[styles.ruleIcon, i === 0 && { backgroundColor: colors.garageSaleFill }]}>
               <Ionicons name={r.icon} size={22} color={colors.textInverse} />
             </View>
             <View style={{ flex: 1 }}>
@@ -103,12 +103,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
+  // Base hue, not garageSaleFill: nothing sits on a border, so the lighter hue reads
+  // better against the dark surface and there is no contrast to win.
   ruleHighlight: { borderColor: colors.garageSale, borderWidth: 2 },
   ruleIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     minHeight: 56,

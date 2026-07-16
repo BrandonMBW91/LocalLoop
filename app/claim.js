@@ -78,9 +78,11 @@ export default function ClaimScreen() {
           {KINDS.map((k) => {
             const on = kind === k.key;
             return (
+              // Selected: fill carries white, so it needs the Fill token. The border keeps the
+              // lighter base hue — it reads as the chip's outline, not a background for text.
               <Pressable
                 key={k.key}
-                style={[styles.kindChip, on && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.kindChip, on && { backgroundColor: colors.primaryFill, borderColor: colors.primary }]}
                 onPress={() => setKind(k.key)}
               >
                 <Ionicons name={k.icon} size={18} color={on ? colors.textInverse : colors.primary} />
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-    backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: spacing.md,
+    backgroundColor: colors.primaryFill, borderRadius: radius.pill, paddingVertical: spacing.md,
     minHeight: 52, marginTop: spacing.sm,
   },
 });

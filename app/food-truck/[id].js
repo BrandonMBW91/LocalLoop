@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.foodTruckLight,
   },
   typeBadge: {
-    backgroundColor: colors.foodTruck,
+    backgroundColor: colors.foodTruckFill,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.foodTruck,
+    backgroundColor: colors.foodTruckFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     marginTop: spacing.md,
@@ -301,7 +301,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     minHeight: 52,
   },
-  followBtnActive: { backgroundColor: colors.foodTruck, borderColor: colors.foodTruck },
+  // Only the fill flips to the Fill token: the label goes white when following. The
+  // border keeps the base hue so the outline reads the same active or not.
+  followBtnActive: { backgroundColor: colors.foodTruckFill, borderColor: colors.foodTruck },
   infoCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -339,7 +341,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   primaryBtn: {
-    backgroundColor: colors.foodTruck,
+    backgroundColor: colors.foodTruckFill,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,

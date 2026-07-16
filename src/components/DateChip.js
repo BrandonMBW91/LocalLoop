@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import ThemedText from './ThemedText';
 import { calendarBits } from '../utils/dates';
-import { colors, radius } from '../theme/theme';
+import { colors, radius, textOn } from '../theme/theme';
 
 // A small calendar-style date block (echoes the app's calendar-pin logo). Tinted
 // in the caller's accent color so each kind of listing keeps its identity.
@@ -15,7 +15,7 @@ export default function DateChip({ date, accent = colors.primary, scale = 1, ong
   return (
     <View style={[styles.chip, { width: Math.round(58 * s) }]}>
       <View style={[styles.head, { backgroundColor: accent }]}>
-        <ThemedText size="tiny" weight="bold" color={colors.textInverse}>
+        <ThemedText size="tiny" weight="bold" color={textOn(accent)}>
           {ongoing ? 'NOW' : weekday}
         </ThemedText>
       </View>

@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import ThemedText from './ThemedText';
-import { colors, spacing, radius } from '../theme/theme';
+import { colors, spacing, radius, textOn } from '../theme/theme';
 
 // Lets a user attach up to `max` photos. Returns picked photos as an array of
 // { uri, base64 } objects via onChange. base64 is used to upload to the backend
@@ -67,7 +67,7 @@ export default function PhotoPicker({ photos = [], onChange, max = 4, accent = c
             accessibilityLabel="Add a photo"
           >
             <View style={[styles.addIcon, { backgroundColor: accent }]}>
-              <Ionicons name="camera" size={24} color={colors.textInverse} />
+              <Ionicons name="camera" size={24} color={textOn(accent)} />
             </View>
             <ThemedText size="tiny" weight="bold" color={accent}>
               Add photo

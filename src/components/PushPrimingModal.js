@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   body: { textAlign: 'center', marginBottom: spacing.lg, lineHeight: 22 },
   primary: {
     alignSelf: 'stretch',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     alignItems: 'center',

@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     borderRadius: radius.md,
     marginHorizontal: spacing.md,
     marginTop: spacing.lg,

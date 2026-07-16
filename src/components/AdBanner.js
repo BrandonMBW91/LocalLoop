@@ -114,6 +114,8 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.md,
     overflow: 'hidden',
   },
+  // Stays the base hue, not accentFill: nothing renders on this 4px rule, so
+  // darkening it would only dull the signal without buying any contrast.
   accentBar: {
     position: 'absolute',
     left: 0,

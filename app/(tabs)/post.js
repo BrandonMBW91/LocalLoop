@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../../src/components/ThemedText';
 import { useApp } from '../../src/context/AppContext';
-import { colors, spacing, radius } from '../../src/theme/theme';
+import { colors, spacing, radius, textOn } from '../../src/theme/theme';
 
 function ChoiceCard({ icon, accent, title, subtitle, onPress }) {
   return (
@@ -14,8 +14,10 @@ function ChoiceCard({ icon, accent, title, subtitle, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={title}
     >
+      {/* `accent` is also the border and the chevron, where the light brand hue is
+          correct, so it cannot be swapped for a *Fill token just to carry this icon. */}
       <View style={[styles.choiceIcon, { backgroundColor: accent }]}>
-        <Ionicons name={icon} size={34} color={colors.textInverse} />
+        <Ionicons name={icon} size={34} color={textOn(accent)} />
       </View>
       <View style={{ flex: 1 }}>
         <ThemedText size="title" weight="bold">{title}</ThemedText>

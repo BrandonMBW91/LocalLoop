@@ -12,6 +12,8 @@ const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
 
 const KIND_LABEL = { event: 'Events', garage_sale: 'Garage sales', food_truck: 'Food trucks' };
 const KIND_COLOR = { event: colors.primary, garage_sale: colors.garageSale, food_truck: colors.foodTruck };
+// Same hues, but dark enough for the white rank number to clear AA on them.
+const KIND_FILL = { event: colors.primaryFill, garage_sale: colors.garageSaleFill, food_truck: colors.foodTruckFill };
 const KIND_ROUTE = { event: 'event', garage_sale: 'garage-sale', food_truck: 'food-truck' };
 
 function StatCard({ value, label, color, icon, onPress, expanded }) {
@@ -313,7 +315,7 @@ export default function MetricsScreen() {
               style={[styles.topRow, i > 0 && styles.rowBorder]}
               onPress={() => router.push(`/${KIND_ROUTE[t.kind]}/${t.id}`)}
             >
-              <View style={[styles.rank, { backgroundColor: KIND_COLOR[t.kind] }]}>
+              <View style={[styles.rank, { backgroundColor: KIND_FILL[t.kind] }]}>
                 <ThemedText size="small" weight="bold" color={colors.textInverse}>{i + 1}</ThemedText>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  togglePillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  togglePillActive: { backgroundColor: colors.primaryFill, borderColor: colors.primary },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCard: {
     flexGrow: 1,
@@ -389,7 +391,7 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.sm },
   srcBadge: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.sm },
   srcUser: { backgroundColor: colors.success },
-  srcFeed: { backgroundColor: colors.primary },
+  srcFeed: { backgroundColor: colors.primaryFill },
   srcAnon: { backgroundColor: colors.textMuted },
   rank: {
     width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center',

@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: spacing.lg,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingVertical: spacing.sm + 4,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,

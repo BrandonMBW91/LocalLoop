@@ -153,7 +153,7 @@ export default function EditGarageSaleScreen() {
               <Pressable
                 key={t}
                 onPress={() => setType(t)}
-                style={[styles.chip, type === t && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.chip, type === t && { backgroundColor: colors.primaryFill, borderColor: colors.primary }]}
               >
                 <ThemedText size="small" weight="bold" color={type === t ? colors.textInverse : colors.text}>{t}</ThemedText>
               </Pressable>
@@ -187,7 +187,7 @@ export default function EditGarageSaleScreen() {
                 <Pressable
                   key={item}
                   onPress={() => setItems((prev) => (selected ? prev.filter((x) => x !== item) : [...prev, item]))}
-                  style={[styles.chip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  style={[styles.chip, selected && { backgroundColor: colors.primaryFill, borderColor: colors.primary }]}
                 >
                   <ThemedText size="small" weight="bold" color={selected ? colors.textInverse : colors.text}>{item}</ThemedText>
                 </Pressable>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     marginTop: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     borderRadius: radius.pill,
     paddingVertical: 14,
     alignItems: 'center',

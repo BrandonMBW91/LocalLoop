@@ -10,7 +10,7 @@ import ReportButton from '../../src/components/ReportButton';
 import FeatureButton from '../../src/components/FeatureButton';
 import { useApp } from '../../src/context/AppContext';
 import { recordView, fetchOneById, toggleRsvp, fetchRsvpCounts } from '../../src/lib/db';
-import { colors, spacing, radius, categoryColor, categoryIcon } from '../../src/theme/theme';
+import { colors, spacing, radius, categoryColor, categoryIcon, textOn } from '../../src/theme/theme';
 import { formatLongDate, timeLabel, isOngoing, formatShortDate, toDateString } from '../../src/utils/dates';
 import { placeLine, placeMultiline, isPlaceholderVenue } from '../../src/utils/place';
 import { addToCalendarUrl } from '../../src/utils/calendar';
@@ -185,8 +185,12 @@ export default function EventDetailScreen() {
         </View>
       )}
       <View style={styles.heroBadges}>
+        {/* `accent` is the per-category hue, so which text color reads on it is not
+            knowable here — CATEGORY_DARK is deliberately pastel and white sat at
+            1.80-2.39 on all eight. textOn picks by luminance: ink on the dark-mode
+            pastels (7.4-9.9), white on the light-mode hues. */}
         <View style={[styles.catBadge, { backgroundColor: accent }]}>
-          <ThemedText size="small" weight="bold" color={colors.textInverse}>
+          <ThemedText size="small" weight="bold" color={textOn(accent)}>
             {event.category}
           </ThemedText>
         </View>
@@ -403,7 +407,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   followingBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     borderColor: colors.primary,
   },
   hero: {
@@ -452,7 +456,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     marginTop: spacing.md,
@@ -463,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFill,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     marginTop: spacing.md,
@@ -537,7 +541,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   primaryBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,

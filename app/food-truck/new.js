@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.foodTruck,
+    backgroundColor: colors.foodTruckFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     marginTop: spacing.sm,

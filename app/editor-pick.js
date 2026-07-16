@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     color: colors.text, marginTop: 6,
   },
   btn: {
-    backgroundColor: colors.accent, borderRadius: radius.pill, paddingVertical: spacing.md,
+    backgroundColor: colors.accentFill, borderRadius: radius.pill, paddingVertical: spacing.md,
     alignItems: 'center', justifyContent: 'center', minHeight: 54, marginTop: spacing.sm,
   },
   removeBtn: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.sm },

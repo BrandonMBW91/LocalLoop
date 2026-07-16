@@ -22,12 +22,18 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.primary },
+        // primaryFill (not primary) because headerTintColor is white on top of it.
+        headerStyle: { backgroundColor: colors.primaryFill },
         headerTintColor: colors.textInverse,
         headerTitleStyle: { fontWeight: '700', fontSize: Math.round(22 * navScale) },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
+          // React Navigation defaults the tab bar to WHITE. Without this the bar
+          // stayed white under the dark app and dropped inactive labels to 2.5:1 —
+          // nav chrome silently drifting from the palette because it is themed by
+          // the library rather than by src/theme/theme.js.
+          backgroundColor: colors.surface,
           // Add the bottom safe-area inset so the tab bar sits ABOVE the system
           // navigation bar (Android edge-to-edge gesture/3-button bar, iOS home
           // indicator) instead of being covered by it. insets.bottom is 0 on

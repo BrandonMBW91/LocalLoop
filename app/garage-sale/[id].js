@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.garageSaleLight,
   },
   typeBadge: {
-    backgroundColor: colors.garageSale,
+    backgroundColor: colors.garageSaleFill,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.garageSale,
+    backgroundColor: colors.garageSaleFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     marginTop: spacing.md,
@@ -324,7 +324,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     minHeight: 52,
   },
-  saveBtnActive: { backgroundColor: colors.garageSale, borderColor: colors.garageSale },
+  // Saved state flips the outline button solid and its label to textInverse, so the
+  // border tracks the fill — a base-hue edge would ring the darker fill.
+  saveBtnActive: { backgroundColor: colors.garageSaleFill, borderColor: colors.garageSaleFill },
   infoCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   primaryBtn: {
-    backgroundColor: colors.garageSale,
+    backgroundColor: colors.garageSaleFill,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,

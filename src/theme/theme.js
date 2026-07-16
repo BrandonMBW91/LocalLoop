@@ -20,6 +20,14 @@ const CATEGORY_DARK = {
   Arts: '#E58BC0', Community: '#6FC6C7', Market: '#D8C06A', Education: '#9DBBEE',
 };
 
+// *Fill tokens: the SAME hue as their base, but dark enough that white text on top
+// clears WCAG AA (4.5:1). Use `colors.xFill` for a colored BACKGROUND that carries
+// textInverse; use `colors.x` for the hue as text/icon ON a surface. The two roles
+// pull in opposite directions and no single value serves both on dark ground:
+//   #5B8AD1  white-on-it 3.50 FAIL  |  it-on-surface 4.53 pass
+//   #3B5C94  white-on-it 6.68 pass  |  it-on-surface 2.37 FAIL
+// In LIGHT mode every base already passes on white (12.94 / 6.62 / 6.24 / 5.91), so
+// the Fill tokens just alias the base and light mode is unchanged.
 const LIGHT = {
   primary: '#15315B', primaryDark: '#0E2444', primaryLight: '#E8EDF5',
   accent: '#B22234', accentLight: '#FBE7E9', featuredBg: '#FBE7E9',
@@ -29,6 +37,8 @@ const LIGHT = {
   success: '#256B29', successBg: '#E7F1E8', danger: '#C0392B',
   garageSale: '#9A4A18', garageSaleLight: '#FBEFE4',
   foodTruck: '#B5363B', foodTruckLight: '#FBE9EA',
+  primaryFill: '#15315B', accentFill: '#B22234',
+  garageSaleFill: '#9A4A18', foodTruckFill: '#B5363B',
   category: CATEGORY,
 };
 
@@ -39,13 +49,18 @@ const DARK = {
   primary: '#5B8AD1', primaryDark: '#3B5C94', primaryLight: '#1C2A44',
   accent: '#E06A73', accentLight: '#3A1E22', featuredBg: '#2E2029',
   background: '#0F1729', surface: '#182238', surfaceAlt: '#202C46',
-  // textInverse sits on the saturated primary/accent/garageSale/foodTruck fills
-  // (which stay colored in both themes), so it stays white — NOT the dark ground.
+  // textInverse sits on the saturated *Fill colors below (which stay colored in both
+  // themes), so it stays white — NOT the dark ground.
   text: '#E8ECF4', textMuted: '#98A4BA', textInverse: '#FFFFFF',
   border: '#2A3650', shadow: '#000000', skeleton: '#20293C',
   success: '#5BC98A', successBg: '#18301F', danger: '#E06A6A',
   garageSale: '#D89A5A', garageSaleLight: '#2A2116',
   foodTruck: '#E0787C', foodTruckLight: '#2E1A1C',
+  // Darkened so white text clears AA on them (4.66 / 4.60 / 4.63 / 4.72), while
+  // staying light enough to read as a raised fill against the background (3.8:1).
+  // The bases above stay light because they double as on-surface text/icon color.
+  primaryFill: '#4D75B2', accentFill: '#B8575E',
+  garageSaleFill: '#976C3F', foodTruckFill: '#AC5C5F',
   category: CATEGORY_DARK,
 };
 
@@ -96,6 +111,43 @@ export const textScaleOptions = [
 
 export function categoryColor(category) {
   return colors.category[category] || colors.primary;
+}
+
+// Pick the readable text/icon color to sit ON an arbitrary background hue.
+//
+// The *Fill tokens above only work for the four brand colors, which are fixed and
+// known. They cannot help where the hue is DATA-DRIVEN — a category color, or an
+// `accent` prop whose value the caller chooses — because there is no Fill
+// counterpart to reach for. That gap was real: the event-detail category badge
+// painted white on the dark-mode pastels at 1.80-2.39:1, failing all eight
+// categories, because CATEGORY_DARK is deliberately light (it is designed as text
+// on a tint, per the comment on CATEGORY_DARK, not as a solid fill).
+//
+// Choosing by luminance fixes every case with one rule, and was verified across
+// all 28 hues the app can pass here (both themes, both category sets, the brand
+// bases and the Fill tokens): worst case 4.60:1, zero failures. Dark pastels get
+// ink and land at 7.44-9.89; light-mode categories keep white at 5.83-7.53.
+//
+// Use this for any fill whose hue is not statically known. For the four brand
+// colors on a fixed button, prefer the *Fill token + textInverse: that keeps the
+// familiar white-on-brand look rather than flipping the label to ink.
+const INK = '#14181F';
+export function textOn(hue) {
+  // Expand shorthand first: '#FFF'.match(/../g) yields ['FF'], which would fail the
+  // length check below and fall back to white — invisible on a white fill.
+  const raw = String(hue || '').trim().replace('#', '');
+  const hex = /^[0-9a-f]{3}$/i.test(raw) ? raw.split('').map((c) => c + c).join('') : raw;
+  const rgb = /^[0-9a-f]{6}$/i.test(hex) ? hex.match(/../g) : null;
+  if (!rgb) return colors.textInverse;
+  // WCAG relative luminance, then compare contrast against white vs ink.
+  const [r, g, b] = rgb.map((h) => {
+    const v = parseInt(h, 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const onWhite = 1.05 / (L + 0.05);
+  const onInk = (L + 0.05) / 0.0637;
+  return onWhite >= onInk ? '#FFFFFF' : INK;
 }
 
 // Ionicons name per category — used for the event detail hero so it matches the

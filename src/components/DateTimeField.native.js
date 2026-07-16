@@ -3,7 +3,7 @@ import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import ThemedText from './ThemedText';
-import { colors, spacing, radius } from '../theme/theme';
+import { colors, spacing, radius, textOn } from '../theme/theme';
 import { formatLongDate, formatTime } from '../utils/dates';
 
 // Tappable field that opens a native calendar (date) or scroll wheel (time).
@@ -89,7 +89,7 @@ export default function DateTimeField({
               onPress={() => setShow(false)}
               style={[styles.doneBtn, { backgroundColor: accent }]}
             >
-              <ThemedText size="body" weight="bold" color={colors.textInverse}>
+              <ThemedText size="body" weight="bold" color={textOn(accent)}>
                 Done
               </ThemedText>
             </Pressable>

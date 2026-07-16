@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
   btn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     alignItems: 'center',

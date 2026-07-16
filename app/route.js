@@ -74,7 +74,9 @@ export default function RouteScreen() {
               style={[styles.row, on && { borderColor: colors.garageSale, backgroundColor: colors.garageSaleLight }]}
               onPress={() => toggle(s.id)}
             >
-              <View style={[styles.check, on && { backgroundColor: colors.garageSale, borderColor: colors.garageSale }]}>
+              {/* Fill behind the white order number so it clears AA; the ring stays the
+                  base hue — nothing sits on it, and it keeps the circle readable on dark. */}
+              <View style={[styles.check, on && { backgroundColor: colors.garageSaleFill, borderColor: colors.garageSale }]}>
                 {on ? (
                   <ThemedText size="small" weight="bold" color={colors.textInverse}>{order + 1}</ThemedText>
                 ) : null}
@@ -125,6 +127,6 @@ const styles = StyleSheet.create({
   },
   routeBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-    backgroundColor: colors.garageSale, borderRadius: radius.pill, paddingVertical: spacing.md, minHeight: 52,
+    backgroundColor: colors.garageSaleFill, borderRadius: radius.pill, paddingVertical: spacing.md, minHeight: 52,
   },
 });

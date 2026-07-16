@@ -43,7 +43,9 @@ const styles = StyleSheet.create({
   },
   label: { flexShrink: 0 },
   chipSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFill,
+    // Border stays on the base hue: nothing renders on top of it, and the lighter
+    // ring keeps the selected pill readable against the dark surface.
     borderColor: colors.primary,
   },
 });
