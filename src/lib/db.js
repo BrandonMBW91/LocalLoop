@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 import { cleanText, cleanLocation, cleanDescription } from './text.js';
 import { effectiveEndMs } from './eventTime.js';
-import { nyDateKey } from '../utils/dates.js';
+import { nyDateKey, nyOffsetHours } from '../utils/dates.js';
 
 // Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
 // chronologically), used to expire past garage sales and food trucks. Uses the
@@ -16,11 +16,15 @@ function clockMinutes(s) {
   if (/p/i.test(m[3])) h += 12;
   return h * 60 + (m[2] ? parseInt(m[2], 10) : 0);
 }
+// Minutes since ET midnight. Uses the project's own DST math, NOT
+// Intl.DateTimeFormat({ timeZone }) — Android's Hermes has unreliable Intl/ICU
+// (see the note above nyOffsetHours in utils/dates.js), so an Intl timeZone here
+// either throws or silently returns LOCAL time. This runs on every food-truck and
+// garage-sale fetch, so it has to be Hermes-safe.
 function nowMinutesET() {
   const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
-  const get = (t) => Number((parts.find((x) => x.type === t) || {}).value || 0);
-  return (get('hour') % 24) * 60 + get('minute');
+  const shifted = new Date(now.getTime() + nyOffsetHours(now) * 3600 * 1000);
+  return shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
 }
 
 function todayKeyET() {
