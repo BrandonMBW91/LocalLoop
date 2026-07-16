@@ -1,6 +1,19 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before writing any code.
+This project is on **Expo SDK 54** (`expo` 54.0.35, `react-native` 0.81.5,
+`expo-router` 6.0.24, `expo-updates` 29.0.18 — verified against node_modules, not just
+package.json). Read the exact versioned docs before writing any code:
+
+**https://docs.expo.dev/versions/v54.0.0/**
+
+Do not read `latest`, and do not trust a version quoted in prose. This line said v56 and
+README said "SDK 56 · React Native 0.85" until 2026-07-16, while the installed tree was
+54 — so every agent session was being sent to the docs for an SDK the app does not run.
+Confirm with `node -e "console.log(require('expo/package.json').version)"` if in doubt.
+
+The New Architecture (Fabric) is ON — it is the default from SDK 54. That is not
+cosmetic: it is stricter than the old renderer and it is what made `removeClippedSubviews`
+crash every Android launch for five days.
 
 # OTA updates: the runtime rule
 
