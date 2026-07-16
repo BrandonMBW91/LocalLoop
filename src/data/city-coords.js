@@ -1,6 +1,10 @@
 // Town centroids [lat, lng], derived from the Census boundary polygons
-// (aggregator/data/city-polygons.json). Regenerate when towns are added:
-//   the post-time town-mismatch check (src/lib/townFromAddress.js) uses these.
+// (aggregator/data/city-polygons.json). GENERATED — do not hand-edit.
+// Regenerate whenever towns are added:
+//   cd aggregator && node build-polygons.mjs && node build-city-coords.mjs
+// Consumers: src/lib/nearMe.js ("Use my location" in the picker) and
+// src/lib/townFromAddress.js (the wrong-town check when posting). A town missing
+// here is invisible to both.
 export const CITY_COORDS = {
   'findlay': [41.0463, -83.642],
   'fostoria': [41.1591, -83.4115],
@@ -59,6 +63,9 @@ export const CITY_COORDS = {
   'russells-point': [40.4692, -83.8944],
   'mount-vernon': [40.3827, -82.4754],
   'fredericktown': [40.4759, -82.5526],
+  'columbus': [39.9884, -82.989],
+  'newark': [40.0712, -82.4251],
+  'new-albany': [40.0877, -82.7722],
   'akron': [41.1007, -81.5313],
   'cuyahoga-falls': [41.149, -81.5336],
   'kent': [41.1496, -81.3539],
@@ -95,6 +102,7 @@ export const CITY_COORDS = {
   'conneaut': [41.9518, -80.5764],
   'millersburg': [40.5549, -81.9211],
   'carrollton': [40.5785, -81.0924],
+  'cleveland': [41.4792, -81.6802],
   'zanesville': [39.9672, -82.0184],
   'cambridge': [40.0161, -81.5853],
   'coshocton': [40.2631, -81.8556],
@@ -132,4 +140,5 @@ export const CITY_COORDS = {
   'peebles': [38.9438, -83.4083],
   'xenia': [39.6866, -83.9359],
   'beavercreek': [39.732, -84.0403],
+  'cincinnati': [39.1429, -84.5038],
 };

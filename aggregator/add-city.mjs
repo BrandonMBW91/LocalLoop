@@ -144,11 +144,19 @@ catch { die('check-cities failed — review the config above'); }
 console.log(`\nNext (see docs/NEW_CITY.md) — auto-done above: cities.js, towns.mjs, webhook catalog.
   1. Wire a feed for "${id}"  (event_sources iCal/jsonld row OR librarymarket.mjs LIBS)
   2. node build-polygons.mjs     # add "${id}" boundary polygon (geocode assignment)
-  3. node run-all.mjs            # aggregate + build pages
-  4. node check-content.mjs      # confirm "${id}" has events (not a ghost town)
-  5. supabase functions deploy stripe-webhook --project-ref wtaefyspddadcrnovumk --no-verify-jwt
+  3. node build-city-coords.mjs  # add "${id}" to src/data/city-coords.js — WITHOUT this,
+                                 # "Use my location" can never suggest "${id}" and the
+                                 # post-time wrong-town check ignores it (this step was
+                                 # missing, which left Columbus/Cleveland/Cincinnati
+                                 # coordinate-less for weeks). Merge-only: it never moves
+                                 # an existing town.
+  4. node run-all.mjs            # aggregate + build pages
+  5. node check-content.mjs      # confirm "${id}" has events (not a ghost town)
+  6. supabase functions deploy stripe-webhook --project-ref wtaefyspddadcrnovumk --no-verify-jwt
                                  # ships the CATALOG_CITY_IDS add so ad purchases fan out
-  6. cd ../scripts && STRIPE_SECRET_KEY=sk_live_... node stripe-refresh-towns.mjs --apply
+  7. cd ../scripts && STRIPE_SECRET_KEY=sk_live_... node stripe-refresh-towns.mjs --apply
                                  # adds "${id}" to the Stripe checkout town dropdowns
-  7. bump src/version.js BUILD, then: npx eas update --branch production
-  8. git commit + push           # CI regenerates + deploys the website`);
+  8. bump src/version.js BUILD, then: npx eas update --branch production
+                                 # the picker + coords ship in the JS bundle, so a new
+                                 # town is invisible in the app until an OTA
+  9. git commit + push           # CI regenerates + deploys the website`);
