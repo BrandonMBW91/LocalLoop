@@ -71,6 +71,10 @@ async function fallbackPrompt() {
 
 export async function maybePromptReview() {
   try {
+    // Web has nothing to rate: the prompt sends people to the App Store, which
+    // is a dead end for Android/desktop visitors, and on web it rendered as a
+    // blocking browser dialog. Native only.
+    if (Platform.OS === 'web') return;
     if ((await AsyncStorage.getItem(KEY_DONE)) === 'true') return; // already rated (fallback path)
 
     // "Used it a while" gate — stamp the first open once, then require both a few

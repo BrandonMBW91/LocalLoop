@@ -38,6 +38,11 @@ export default function SignInScreen() {
   // (the user copies it from their email and comes back). Best-effort + never
   // throws — if anything fails we just don't show the paste chip.
   const checkClipboard = useCallback(async () => {
+    // Web: navigator.clipboard.readText() raises a browser permission prompt
+    // ('localloop.io wants to see text you copied') right as the user enters
+    // their code. Browsers already have paste + one-time-code autofill, so the
+    // chip buys nothing here. Native only.
+    if (Platform.OS === 'web') return;
     try {
       const s = await Clipboard.getStringAsync();
       const m = (s || '').match(/\b\d{6}\b/);

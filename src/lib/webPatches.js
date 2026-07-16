@@ -9,31 +9,24 @@
 // without touching them. Native (iOS/Android) is untouched — this only runs on
 // web. Imported once, early, from app/_layout.js.
 import { Alert, Share, Platform } from 'react-native';
+import { emitAlert } from './alertBus';
 
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
-  // ---- Alert.alert -> window.confirm/alert, firing the right button ----------
+  // ---- Alert.alert -> a real branded modal rendering the ACTUAL buttons ------
+  // Do NOT map these onto window.confirm: a binary OK/Cancel cannot express the
+  // real dialogs, and inferring a "primary" button silently posted sales to the
+  // wrong town and created duplicate events. WebAlertHost renders every button
+  // with its own label and handler. Fallback below never guesses.
   if (Alert && !Alert.__llPatched) {
     Alert.__llPatched = true;
     Alert.alert = (title, message, buttons) => {
-      const text = [title, message].filter(Boolean).join('\n\n');
+      if (emitAlert({ title, message, buttons })) return;
+      // No host mounted (alert fired before the tree rendered): show the text so
+      // the user is never left in silence, and only auto-run a single-button
+      // dialog's handler — with 2+ buttons there is no safe default to pick.
       const btns = Array.isArray(buttons) ? buttons : [];
-      const cancelBtn = btns.find((b) => b && b.style === 'cancel');
-      const actionable = btns.filter((b) => b && b.style !== 'cancel');
-      // The affirmative action is the last non-cancel button (RN convention).
-      const primary = actionable[actionable.length - 1] || btns[btns.length - 1];
-      const fire = (b) => { if (b && typeof b.onPress === 'function') b.onPress(); };
-
-      // No cancel button => a notice or an all-paths-proceed dialog (e.g. the
-      // post-submit "Tell a friend / View Events"). window.confirm's Cancel would
-      // strand the user, so just show the message and run the primary action.
-      if (!cancelBtn) {
-        window.alert(text);
-        fire(primary);
-        return;
-      }
-      // Real confirm: OK runs the action, Cancel runs the cancel handler (if any).
-      if (window.confirm(text)) fire(primary);
-      else fire(cancelBtn);
+      window.alert([title, message].filter(Boolean).join('\n\n'));
+      if (btns.length === 1 && typeof btns[0].onPress === 'function') btns[0].onPress();
     };
   }
 

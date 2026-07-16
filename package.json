@@ -38,7 +38,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "node scripts/build-web.mjs",
-    "deploy:web": "node scripts/build-web.mjs && npx --no-install netlify deploy --prod --dir dist --no-build"
+    "deploy:web": "npm run seo:towns && node scripts/build-web.mjs && npx --no-install netlify deploy --prod --dir dist --no-build",
+    "seo:towns": "cd aggregator && node generate-events.mjs"
   },
   "private": true,
   "devDependencies": {

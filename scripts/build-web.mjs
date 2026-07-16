@@ -62,8 +62,14 @@ const HEAD_SEO = `<title>Local Loop — Local events, garage sales and food truc
     <meta property="og:url" content="https://localloop.io/" />
     <meta property="og:title" content="Local Loop — Ohio's local events, all in one place" />
     <meta property="og:description" content="Events, garage sales, and food trucks near you across 130+ Ohio towns. Free." />
-    <meta property="og:image" content="https://localloop.io/favicon.ico" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://localloop.io/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="Local Loop — everything happening in your town" />
+    <meta property="og:site_name" content="Local Loop" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://localloop.io/og-image.png" />
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Local Loop","url":"https://localloop.io/","description":"Local events, garage sales, and food trucks across 130+ Ohio towns."}</script>`;
 html = html.replace(/<title>[^<]*<\/title>/, HEAD_SEO);
 const BODY_SEO = `<noscript><h1>Local Loop</h1><p>Local events, garage sales, and food trucks near you across 130+ Ohio towns. Free and updated daily.</p><p>Browse events by town: <a href="/events/columbus.html">Columbus</a>, <a href="/events/cleveland.html">Cleveland</a>, <a href="/events/cincinnati.html">Cincinnati</a>, <a href="/events/akron.html">Akron</a>, <a href="/events/toledo.html">Toledo</a>, <a href="/events/findlay.html">Findlay</a>.</p></noscript>`;
