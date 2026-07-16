@@ -62,23 +62,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node dedupe.mjs --apply
-      - name: Food-truck calendars (auto-ingest stops from registered calendars)
-        working-directory: aggregator
-        continue-on-error: true
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node truck-calendars.mjs
-      - name: Notify truck followers (live, push on new stops)
-        working-directory: aggregator
-        continue-on-error: true
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        # LIVE: --send was deliberately enabled (commit b6b20cf, Jul 2026) after
-        # verifying the match logic on real data. Followers of a truck get one
-        # deduped push when it posts a new stop.
-        run: node notify-truck-followers.mjs --send
+      # Food trucks moved to the DESKTOP (aggregator/local-refresh.cmd, 7:00 AM).
+      # StreetFoodFinder is behind Cloudflare, which serves this runner's
+      # datacenter IP a challenge page with no vtok — the pull failed every night
+      # from 2026-07-14 and logged a false feed error, while the same code from a
+      # residential IP returns 32 stops. The follower push moved with it so the
+      # notification still fires right after the stops land (and at 7 AM, not
+      # 4:36 AM). Same reason Eventbrite already lives there.
       - name: Retention (drop aggregator events older than 60 days)
         working-directory: aggregator
         continue-on-error: true

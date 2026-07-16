@@ -7,6 +7,13 @@
 // notified_followers table records (source_uid) already pushed, so re-runs and
 // re-upserts never double-notify.
 import { createClient } from '@supabase/supabase-js';
+import { loadDotEnv } from './env.mjs';
+
+// Every sibling script loads .env; this one didn't, so it only ever worked in
+// CI where the secrets arrive as real env vars. The moment the truck chain moved
+// to the desktop it died with 'supabaseUrl is required'. loadDotEnv never
+// overwrites values already in the environment, so CI is unaffected.
+loadDotEnv();
 
 const DRY = !process.argv.includes('--send');
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
