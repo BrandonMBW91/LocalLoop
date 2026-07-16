@@ -8,6 +8,14 @@
 //   node scripts/build-changelog.mjs        # rewrite src/data/changelog.js
 //   node scripts/build-changelog.mjs --check # exit 1 if it is out of date (for CI)
 //
+// ORDER MATTERS: run this AFTER committing the release, not before. It reads COMMITTED
+// history, so a rev whose BUILD bump is still sitting in the working tree does not
+// exist yet and will be missing from the log. The release order is:
+//   1. bump BUILD in src/version.js   2. commit the release
+//   3. run this                       4. commit src/data/changelog.js
+// The guard in tests/guards.test.mjs fails if you skip step 3, which is how this
+// constraint was found rather than shipped.
+//
 // The output ships inside the JS bundle so the Settings screen can read it offline.
 // It is admin-gated in the UI, NOT secret: anyone can read the bundle. Keep commit
 // subjects free of anything you would not publish.

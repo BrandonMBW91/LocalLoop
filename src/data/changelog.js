@@ -4,8 +4,21 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 83 revs, newest first.
+// secret. 84 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 110,
+    "date": "2026-07-16",
+    "whatsNew": null,
+    "changes": [
+      "Fix web user counting, then add the per-town breakdown tile",
+      "Settings > Release Log: an admin-only, git-generated changelog",
+      "Rewrite README and fix the SDK version AGENTS.md was sending everyone to",
+      "Add guards that fail when today's bugs come back; wire up npm test",
+      "Consolidate moderate_submission: seven definitions down to one",
+      "Reuse the existing column lists instead of adding parallel ones"
+    ]
+  },
   {
     "rev": 109,
     "date": "2026-07-16",
