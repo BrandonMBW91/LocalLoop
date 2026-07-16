@@ -655,6 +655,12 @@ export async function setFeatured(kind, id, days) {
 
 // ---- Sponsors / ads ----
 
+// The columns `authenticated` is actually granted on sponsors / deals. The stripe_*
+// columns are intentionally excluded from the client grant, so any SELECT * against
+// these two tables 403s. Keep these lists in step with the grants if either changes.
+const SPONSOR_COLS = 'id,city_id,title,body,image_url,link_url,weight,active,starts_at,ends_at,impressions,clicks,product,paused_reason,created_at';
+const DEAL_COLS = 'id,city_id,business_name,title,description,address,link_url,image_url,active,featured,starts_at,ends_at,view_count,paused_reason,created_at';
+
 function rowToSponsor(r) {
   return {
     id: r.id,
@@ -746,7 +752,10 @@ export async function insertDeal(d) {
       starts_at: d.startsAt || null,
       ends_at: d.endsAt || null,
     })
-    .select()
+    // Explicit columns for the same reason as insertSponsor: deals has 18 columns,
+    // `authenticated` may read 15, and SELECT * hits the withheld stripe_* ones and
+    // 403s, rolling the insert back.
+    .select(DEAL_COLS)
     .single();
   if (error) throw error;
   return rowToDeal(data);
@@ -988,7 +997,12 @@ export async function insertSponsor(s) {
       starts_at: s.startsAt || null,
       ends_at: s.endsAt || null,
     })
-    .select()
+    // Explicit columns, NOT a bare .select(). sponsors has 19 columns but
+    // `authenticated` may only read 15 — the stripe_* ones are deliberately
+    // withheld from clients. A bare .select() means SELECT *, which touches them,
+    // 403s, and rolls the insert back: creating a sponsor failed every time. This
+    // list is exactly the grant, and covers everything rowToSponsor reads.
+    .select(SPONSOR_COLS)
     .single();
   if (error) throw error;
   return rowToSponsor(data);

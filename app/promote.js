@@ -136,8 +136,14 @@ export default function PromoteScreen() {
           {known ? `${rate.name} tier` : 'Checking your town…'}
         </ThemedText>
         <ThemedText size="small" color={colors.textMuted}>
+          {/* Same call as site/advertise.html: under a real sample, "0 active
+              neighbors in Canton" is a true fact stated the worst possible way,
+              right above a price. Not hidden — a buyer deserves it — just told as
+              the thing it actually is, with the town-wide reach still shown. */}
           {known
-            ? `· ${formatCount(users)} active ${users === 1 ? 'neighbor' : 'neighbors'} in ${city.name}${totalUsers > users ? ` · ${formatCount(totalUsers)} across all towns` : ''} this month`
+            ? users >= 25
+              ? `· ${formatCount(users)} active ${users === 1 ? 'neighbor' : 'neighbors'} in ${city.name}${totalUsers > users ? ` · ${formatCount(totalUsers)} across all towns` : ''} this month`
+              : `· ${city.name} is just getting started${totalUsers ? ` · ${formatCount(totalUsers)} active across all towns this month` : ''}`
             : `· current rate loads in a moment`}
         </ThemedText>
       </View>
@@ -244,7 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFill,
     paddingVertical: spacing.md,
     borderRadius: radius.pill,
     marginTop: spacing.lg,

@@ -103,7 +103,16 @@ function up(){
   if(t.townLink){sb.href=t.townLink;sb.textContent='Become a sponsor';}else{sb.href=MAIL;sb.textContent='Email us to sponsor';}
   if(t.feat30Link){fb.href=t.feat30Link;fb.textContent='Feature my listing';}else{fb.href=MAIL;fb.textContent='Email us to feature';}
   var sa=document.getElementById('sponsorAnnual'); if(sa){ sa.innerHTML=t.townAnnual?('<a href="'+t.townAnnual+'" style="color:var(--green);font-weight:600;">or $190/year (2 months free)</a>'):''; }
-  document.getElementById('rateNote').textContent=t.name+' is at the '+t.tier+' rate ('+t.users+' active this month).';
+  // Below a real sample the raw count both sells against itself and means nothing:
+  // "Canton is at the Founding rate (0 active this month)" sat directly above a $19
+  // Buy button. The fix is NOT to hide the number — it is material to someone about
+  // to pay, and concealing it to close a sale would be a lie by omission. Say the
+  // same fact in the terms a buyer can act on: the town is new, the rate reflects
+  // that, and it locks. Once a town has an audience worth quoting, quote it.
+  var note = t.users >= 25
+    ? t.name+' is at the '+t.tier+' rate ('+t.users+' active this month).'
+    : t.name+' is just getting started, so it is at the '+t.tier+' rate: our lowest, locked in for a full year.';
+  document.getElementById('rateNote').textContent=note;
   document.querySelectorAll('table.tiers-table tbody tr').forEach(function(r){
     var on=r.getAttribute('data-tier')===t.tier; r.classList.toggle('now',on);
     var b=r.querySelector('.tier-badge'); if(b)b.style.display=on?'':'none';

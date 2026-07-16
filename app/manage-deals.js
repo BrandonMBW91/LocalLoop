@@ -8,6 +8,7 @@ import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { CITIES } from '../src/data/cities';
 import { fetchAllDeals, insertDeal, setDealActive, deleteDeal } from '../src/lib/db';
+import { normalizeLinkUrl } from '../src/lib/links';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 import { formatDateMedium } from '../src/utils/dates';
 
@@ -63,6 +64,14 @@ export default function ManageDealsScreen() {
       Alert.alert('Add the basics', 'A business name and a deal headline are required.');
       return;
     }
+    // Same reason as the sponsor form: a scheme-less link makes the paid deal's
+    // Visit button dead while taps still increments, so the number we quote the
+    // business counts taps that never reached them. tel: is common here and passes.
+    const link = normalizeLinkUrl(linkUrl);
+    if (link === null) {
+      Alert.alert('Check the link', `"${linkUrl.trim()}" isn't something we can open. Try joespizza.com or tel:5551234567, or leave it blank.`);
+      return;
+    }
     setSaving(true);
     try {
       const endsAt = runWeeks > 0 ? new Date(Date.now() + runWeeks * 7 * 86400000).toISOString() : null;
@@ -71,7 +80,7 @@ export default function ManageDealsScreen() {
         businessName: business.trim(),
         title: title.trim(),
         description: description.trim(),
-        linkUrl: linkUrl.trim(),
+        linkUrl: link,
         featured,
         endsAt,
         active: true,
@@ -244,12 +253,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill,
     borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 40, justifyContent: 'center',
   },
-  chipSel: { backgroundColor: colors.primary, borderColor: colors.primary },
+  // Border keeps the lighter base hue: nothing sits on it, and the rim reads as a
+  // deliberate edge against the darker fill.
+  chipSel: { backgroundColor: colors.primaryFill, borderColor: colors.primary },
   runRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   featuredToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   createBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-    backgroundColor: colors.accent, borderRadius: radius.pill, paddingVertical: spacing.md, minHeight: 52, marginTop: spacing.sm,
+    backgroundColor: colors.accentFill, borderRadius: radius.pill, paddingVertical: spacing.md, minHeight: 52, marginTop: spacing.sm,
   },
   dealCard: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   dealTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

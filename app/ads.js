@@ -22,6 +22,7 @@ import {
   deleteSponsor,
   expirePromotions,
 } from '../src/lib/db';
+import { normalizeLinkUrl } from '../src/lib/links';
 import { colors, spacing, radius, baseFont } from '../src/theme/theme';
 
 const RUN_OPTIONS = [
@@ -89,6 +90,19 @@ export default function AdsScreen() {
       Alert.alert('Add a title', 'Give the ad a short business name or headline.');
       return;
     }
+    // A business gives you "joespizza.com". Saved raw, the paid banner's tap is dead
+    // (openURL rejects on native, resolves to a 404 on web) while clicks still counts
+    // it — so the CTR we report back to them includes taps that never arrived.
+    const link = normalizeLinkUrl(linkUrl);
+    if (link === null) {
+      Alert.alert('Check the link', `"${linkUrl.trim()}" isn't a web address we can open. Try something like joespizza.com, or leave it blank.`);
+      return;
+    }
+    const image = normalizeLinkUrl(imageUrl);
+    if (image === null) {
+      Alert.alert('Check the image link', `"${imageUrl.trim()}" isn't a web address we can open. Paste the image's URL, or leave it blank.`);
+      return;
+    }
     setSaving(true);
     try {
       const endsAt = runWeeks > 0 ? new Date(Date.now() + runWeeks * 7 * 86400000).toISOString() : null;
@@ -96,8 +110,8 @@ export default function AdsScreen() {
         cityId: formCity,
         title: title.trim(),
         body: body.trim(),
-        linkUrl: linkUrl.trim(),
-        imageUrl: imageUrl.trim(),
+        linkUrl: link,
+        imageUrl: image,
         endsAt,
         active: true,
       });
@@ -319,14 +333,15 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: 'center',
   },
-  chipSel: { backgroundColor: colors.primary, borderColor: colors.primary },
+  // border keeps the light base so the selected chip still reads as primary against the card
+  chipSel: { backgroundColor: colors.primaryFill, borderColor: colors.primary },
   runRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   createBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFill,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
     minHeight: 52,
