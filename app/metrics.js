@@ -4,8 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity } from '../src/lib/db';
+import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity, fetchRevSplit } from '../src/lib/db';
 import { CITIES } from '../src/data/cities';
+import { BUILD, APP_VERSION } from '../src/version';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 const CITY_NAME = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
@@ -56,6 +57,7 @@ export default function MetricsScreen() {
   const [users, setUsers] = useState(0);
   const [platform, setPlatform] = useState({ ios: 0, android: 0, web: 0, unknown: 0 });
   const [usersByCity, setUsersByCity] = useState([]); // [{cityId, users}] every town, desc
+  const [revSplit, setRevSplit] = useState([]); // [{rev, runtime, embedded, users}]
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null); // 'featured' | 'ads' | null
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key));
@@ -64,18 +66,21 @@ export default function MetricsScreen() {
     setLoading(true);
     try {
       const target = scope === 'all' ? null : cityId; // null => every town
-      const [m, u, p, byCity] = await Promise.all([
+      const [m, u, p, byCity, revs] = await Promise.all([
         fetchMetrics(target),
         fetchCityUsers(target),
         fetchPlatformSplit(target),
         // Always every town, regardless of scope: the point of the breakdown is to
         // compare towns, so scoping it to one town would make it a single row.
         fetchUsersByCity(),
+        // Same: update adoption is a fleet-wide question, not a per-town one.
+        fetchRevSplit(),
       ]);
       setData(m);
       setUsers(u);
       setPlatform(p);
       setUsersByCity(byCity);
+      setRevSplit(revs);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -244,6 +249,53 @@ export default function MetricsScreen() {
             </Pressable>
           ))}
         </View>
+      ) : null}
+
+      {/* Are the auto-updates actually landing? Nothing could answer this before rev
+          111: an OTA was published into silence. Three states matter and they look
+          identical without the runtime:
+            - on the current rev            -> the update landed
+            - behind, current runtime       -> just has not reopened yet; self-heals
+            - behind, OLD runtime           -> STRANDED. Can never receive a 1.0.4 OTA,
+                                               no matter how long it waits. Needs a new
+                                               binary from the store.
+          Devices report nothing until they reopen on rev 111+, so "Not yet reported"
+          shrinks on its own and is not a fault. */}
+      {revSplit.length ? (
+        <>
+          <ThemedText size="subtitle" weight="bold" style={styles.sectionTitle}>
+            Update adoption (30d)
+          </ThemedText>
+          <View style={styles.card}>
+            {(() => {
+              const total = revSplit.reduce((a, r) => a + r.users, 0);
+              const unknown = revSplit.filter((r) => r.rev == null).reduce((a, r) => a + r.users, 0);
+              const known = revSplit.filter((r) => r.rev != null);
+              const stranded = known.filter((r) => r.runtime && r.runtime !== APP_VERSION);
+              const current = known.filter((r) => r.rev === BUILD).reduce((a, r) => a + r.users, 0);
+              const behind = known.filter((r) => r.rev !== BUILD && !(r.runtime && r.runtime !== APP_VERSION))
+                .reduce((a, r) => a + r.users, 0);
+              const strandedN = stranded.reduce((a, r) => a + r.users, 0);
+              const rows = [
+                { key: 'cur', label: `On rev ${BUILD} (latest)`, icon: 'checkmark-circle', color: colors.success, n: current },
+                { key: 'behind', label: 'Behind, will update on next open', icon: 'time-outline', color: colors.textMuted, n: behind },
+                { key: 'stranded', label: 'STRANDED on an old runtime', icon: 'warning', color: colors.accent, n: strandedN },
+                { key: 'unknown', label: 'Not yet reported (pre-rev-111)', icon: 'help-circle-outline', color: colors.textMuted, n: unknown },
+              ].filter((r) => r.n > 0);
+              return rows.map((p, i) => {
+                const pct = total ? Math.round((p.n / total) * 100) : 0;
+                return (
+                  <View key={p.key} style={[styles.breakRow, i > 0 && styles.rowBorder]}>
+                    <Ionicons name={p.icon} size={20} color={p.color} style={{ marginRight: spacing.sm }} />
+                    <ThemedText size="body" style={{ flex: 1 }}>{p.label}</ThemedText>
+                    <ThemedText size="small" color={colors.textMuted} style={{ marginRight: spacing.md }}>{pct}%</ThemedText>
+                    <ThemedText size="body" weight="bold" color={p.key === 'stranded' ? colors.accent : colors.text}>{p.n}</ThemedText>
+                  </View>
+                );
+              });
+            })()}
+          </View>
+        </>
       ) : null}
 
       {/* Active users by platform */}

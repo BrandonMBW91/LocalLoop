@@ -2,6 +2,31 @@ import { supabase } from './supabase.js';
 import { cleanText, cleanLocation, cleanDescription } from './text.js';
 import { effectiveEndMs } from './eventTime.js';
 import { nyDateKey, nyOffsetHours } from '../utils/dates.js';
+import { BUILD } from '../version.js';
+
+// expo-updates via a guarded lazy require, exactly as nearMe.js guards expo-location.
+// A top-level import of a native module is the shape that has already cost this app
+// five days of downtime, and this file is imported by ~46 others: if it throws at
+// module load, the whole app dies before rendering. On web it resolves but the
+// constants are undefined, which is correct — the web app has no OTA.
+let Updates = null;
+try { Updates = require('expo-updates'); } catch { Updates = null; }
+
+// What this device is running, for OTA-adoption metrics. Never throws; nulls mean
+// "unknown", which is a real answer (web, or an older build that never sent it).
+function updatesInfo() {
+  try {
+    return {
+      // The runtime is the one that matters: a device on the old fingerprint runtime
+      // can never receive a 1.0.4 OTA no matter how long it waits.
+      runtime: Updates && typeof Updates.runtimeVersion === 'string' ? Updates.runtimeVersion : null,
+      // true = running the bundle baked into the binary, i.e. no OTA has ever landed.
+      embedded: Updates && typeof Updates.isEmbeddedLaunch === 'boolean' ? Updates.isEmbeddedLaunch : null,
+    };
+  } catch (e) {
+    return { runtime: null, embedded: null };
+  }
+}
 
 // Today's date in Eastern time as 'YYYY-MM-DD' (date-only strings sort
 // chronologically), used to expire past garage sales and food trucks. Uses the
@@ -825,9 +850,38 @@ export async function recordDeviceActivity(deviceId, cityId, platform) {
     // read/write policies). A direct upsert needs read access for ON CONFLICT,
     // which would expose the user list. See supabase/device_activity.sql.
     // p_platform ('ios' | 'android') powers the iOS-vs-Android metrics breakout.
-    await supabase.rpc('record_device_activity', { p_device: deviceId, p_city: cityId, p_platform: platform });
+    //
+    // rev/runtime/embedded answer "are the auto-updates actually landing?", which
+    // nothing could answer before: an OTA was published into silence. runtime is the
+    // one that matters most — a device on the old fingerprint runtime can NEVER
+    // receive a 1.0.4 OTA, so "stuck forever" and "just has not reopened" stop
+    // looking identical. embedded=true means no OTA has ever reached it at all.
+    // See supabase/device_rev.sql.
+    const { runtime, embedded } = updatesInfo();
+    await supabase.rpc('record_device_activity', {
+      p_device: deviceId,
+      p_city: cityId,
+      p_platform: platform,
+      p_rev: BUILD,
+      p_runtime: runtime,
+      p_embedded: embedded,
+    });
   } catch (e) {
     // non-fatal
+  }
+}
+
+// Distinct devices grouped by what build they are running, for the admin metrics
+// screen. Aggregates only; device_activity stays private behind the RPC.
+export async function fetchRevSplit() {
+  try {
+    const { data, error } = await supabase.rpc('rev_split');
+    if (error) throw error;
+    return (data || []).map((r) => ({
+      rev: r.rev, runtime: r.runtime, embedded: r.embedded, users: r.users || 0,
+    }));
+  } catch (e) {
+    return [];
   }
 }
 
