@@ -12,6 +12,18 @@ import { BUILD } from '../version.js';
 let Updates = null;
 try { Updates = require('expo-updates'); } catch { Updates = null; }
 
+// expo-application is NOT a direct dependency — it arrives via expo-notifications
+// (~0.32.17), which means its native module is ALREADY autolinked into every binary.
+// So reading it is OTA-safe: no native code is added and the fingerprint does not move
+// (verified 2026-07-16). It is required lazily and guarded like everything else here,
+// so if expo-notifications ever drops it this degrades to nulls instead of crashing.
+//
+// Why not Constants.expoConfig.version: that comes from the OTA manifest, so it
+// reports what the JS BUNDLE says, not what the binary is. It would just echo
+// APP_VERSION and tell us nothing about which build someone actually installed.
+let Application = null;
+try { Application = require('expo-application'); } catch { Application = null; }
+
 // What this device is running, for OTA-adoption metrics. Never throws; nulls mean
 // "unknown", which is a real answer (web, or an older build that never sent it).
 function updatesInfo() {
@@ -22,9 +34,17 @@ function updatesInfo() {
       runtime: Updates && typeof Updates.runtimeVersion === 'string' ? Updates.runtimeVersion : null,
       // true = running the bundle baked into the binary, i.e. no OTA has ever landed.
       embedded: Updates && typeof Updates.isEmbeddedLaunch === 'boolean' ? Updates.isEmbeddedLaunch : null,
+      // The BINARY's own version + build number, straight from the native side and
+      // therefore untouched by OTAs. app_version answers "who is still on the 1.0.3
+      // binary"; native_build answers "which store build" (iOS 12, Android vc9).
+      // Together with rev they separate the three states that matter: current binary
+      // + current JS, current binary + stale JS (reopens and self-heals), and old
+      // binary (only a store update can ever move them).
+      appVersion: Application && typeof Application.nativeApplicationVersion === 'string' ? Application.nativeApplicationVersion : null,
+      nativeBuild: Application && typeof Application.nativeBuildVersion === 'string' ? Application.nativeBuildVersion : null,
     };
   } catch (e) {
-    return { runtime: null, embedded: null };
+    return { runtime: null, embedded: null, appVersion: null, nativeBuild: null };
   }
 }
 
@@ -857,7 +877,7 @@ export async function recordDeviceActivity(deviceId, cityId, platform) {
     // receive a 1.0.4 OTA, so "stuck forever" and "just has not reopened" stop
     // looking identical. embedded=true means no OTA has ever reached it at all.
     // See supabase/device_rev.sql.
-    const { runtime, embedded } = updatesInfo();
+    const { runtime, embedded, appVersion, nativeBuild } = updatesInfo();
     await supabase.rpc('record_device_activity', {
       p_device: deviceId,
       p_city: cityId,
@@ -865,6 +885,8 @@ export async function recordDeviceActivity(deviceId, cityId, platform) {
       p_rev: BUILD,
       p_runtime: runtime,
       p_embedded: embedded,
+      p_app_version: appVersion,
+      p_native_build: nativeBuild,
     });
   } catch (e) {
     // non-fatal

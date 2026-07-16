@@ -268,19 +268,26 @@ export default function MetricsScreen() {
           </ThemedText>
           <View style={styles.card}>
             {(() => {
-              const total = revSplit.reduce((a, r) => a + r.users, 0);
-              const unknown = revSplit.filter((r) => r.rev == null).reduce((a, r) => a + r.users, 0);
+              const sum = (rs) => rs.reduce((a, r) => a + r.users, 0);
+              const total = sum(revSplit);
+              const unknown = sum(revSplit.filter((r) => r.rev == null));
               const known = revSplit.filter((r) => r.rev != null);
+              // A device on a runtime other than the current app version can never
+              // receive an OTA for it. Nothing about waiting fixes that: it needs a
+              // new binary from the store. Checked FIRST so it is never miscounted
+              // as merely "behind".
               const stranded = known.filter((r) => r.runtime && r.runtime !== APP_VERSION);
-              const current = known.filter((r) => r.rev === BUILD).reduce((a, r) => a + r.users, 0);
-              const behind = known.filter((r) => r.rev !== BUILD && !(r.runtime && r.runtime !== APP_VERSION))
-                .reduce((a, r) => a + r.users, 0);
-              const strandedN = stranded.reduce((a, r) => a + r.users, 0);
+              const reachable = known.filter((r) => !(r.runtime && r.runtime !== APP_VERSION));
+              // Old BINARY but a runtime that still matches — can take OTAs, but is a
+              // store version behind. app_version is native, so OTAs cannot fake it.
+              const oldBinary = reachable.filter((r) => r.app_version && r.app_version !== APP_VERSION);
+              const currentBinary = reachable.filter((r) => !(r.app_version && r.app_version !== APP_VERSION));
               const rows = [
-                { key: 'cur', label: `On rev ${BUILD} (latest)`, icon: 'checkmark-circle', color: colors.success, n: current },
-                { key: 'behind', label: 'Behind, will update on next open', icon: 'time-outline', color: colors.textMuted, n: behind },
-                { key: 'stranded', label: 'STRANDED on an old runtime', icon: 'warning', color: colors.accent, n: strandedN },
-                { key: 'unknown', label: 'Not yet reported (pre-rev-111)', icon: 'help-circle-outline', color: colors.textMuted, n: unknown },
+                { key: 'cur', label: `On rev ${BUILD} (latest)`, icon: 'checkmark-circle', color: colors.success, n: sum(currentBinary.filter((r) => r.rev === BUILD)) },
+                { key: 'behind', label: 'Behind, updates on next open', icon: 'time-outline', color: colors.textMuted, n: sum(currentBinary.filter((r) => r.rev !== BUILD)) },
+                { key: 'oldapp', label: `On an older app version (not ${APP_VERSION})`, icon: 'download-outline', color: colors.garageSale, n: sum(oldBinary) },
+                { key: 'stranded', label: 'STRANDED: old runtime, no OTA can reach', icon: 'warning', color: colors.accent, n: sum(stranded) },
+                { key: 'unknown', label: 'Not yet reported (pre-rev-112)', icon: 'help-circle-outline', color: colors.textMuted, n: unknown },
               ].filter((r) => r.n > 0);
               return rows.map((p, i) => {
                 const pct = total ? Math.round((p.n / total) * 100) : 0;
