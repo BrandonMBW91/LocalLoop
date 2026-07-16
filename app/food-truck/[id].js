@@ -38,7 +38,7 @@ export default function FoodTruckDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findFoodTruckById, backendEnabled, isAdmin, toggleFollow, isFollowing } = useApp();
+  const { findFoodTruckById, backendEnabled, isAdmin, noTrack, toggleFollow, isFollowing } = useApp();
   const cached = findFoodTruckById(id);
   const [fetched, setFetched] = useState(null);
   const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
@@ -60,11 +60,11 @@ export default function FoodTruckDetailScreen() {
   // inflate the view counts shown to advertisers. Owner/admin views are excluded.
   const viewedRef = useRef(null);
   useEffect(() => {
-    if (backendEnabled && id && truck && viewedRef.current !== id && !isAdmin) {
+    if (backendEnabled && id && truck && viewedRef.current !== id && !noTrack) {
       viewedRef.current = id;
       recordView('food_truck', id);
     }
-  }, [id, backendEnabled, truck, isAdmin]);
+  }, [id, backendEnabled, truck, noTrack]);
 
   if (!truck) {
     if (fetching) return <DetailSkeleton tint={colors.foodTruckLight} />;

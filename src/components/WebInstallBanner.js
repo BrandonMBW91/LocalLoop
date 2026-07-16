@@ -19,7 +19,12 @@ export default function WebInstallBanner() {
     AsyncStorage.getItem(KEY).then((v) => { if (!v) setShow(true); }).catch(() => {});
   }, []);
 
-  if (Platform.OS !== 'web' || !show) return null;
+  // An Android visitor has nothing to install until the Play listing is live,
+  // and the button pointed them at the APPLE App Store — a dead end for exactly
+  // the audience the web app exists to serve. Show nothing rather than sell an
+  // app they cannot get.
+  const isAndroidUA = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent || '');
+  if (Platform.OS !== 'web' || !show || (isAndroidUA && !ANDROID_LIVE)) return null;
 
   const dismiss = () => { setShow(false); AsyncStorage.setItem(KEY, '1').catch(() => {}); };
 

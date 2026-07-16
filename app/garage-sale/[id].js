@@ -37,7 +37,7 @@ export default function GarageSaleDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findGarageSaleById, backendEnabled, isAdmin, toggleSavedSale, isSaleSaved } = useApp();
+  const { findGarageSaleById, backendEnabled, isAdmin, noTrack, toggleSavedSale, isSaleSaved } = useApp();
   const cached = findGarageSaleById(id);
   const [fetched, setFetched] = useState(null);
   const [fetching, setFetching] = useState(!cached && backendEnabled && !!id);
@@ -59,11 +59,11 @@ export default function GarageSaleDetailScreen() {
   // inflate the view counts shown to advertisers. Owner/admin views are excluded.
   const viewedRef = useRef(null);
   useEffect(() => {
-    if (backendEnabled && id && sale && viewedRef.current !== id && !isAdmin) {
+    if (backendEnabled && id && sale && viewedRef.current !== id && !noTrack) {
       viewedRef.current = id;
       recordView('garage_sale', id);
     }
-  }, [id, backendEnabled, sale, isAdmin]);
+  }, [id, backendEnabled, sale, noTrack]);
 
   if (!sale) {
     if (fetching) return <DetailSkeleton tint={colors.garageSaleLight} />;

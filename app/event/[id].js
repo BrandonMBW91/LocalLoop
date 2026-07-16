@@ -40,7 +40,7 @@ export default function EventDetailScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
-  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, logEvent, deviceId } = useApp();
+  const { findEventById, savedIds, toggleSaved, isFollowing, toggleFollow, backendEnabled, isAdmin, noTrack, logEvent, deviceId } = useApp();
   const cached = findEventById(id);
   // Deep link (localloop.io/event/<id>) may reference an event outside the
   // loaded city — fetch it directly when the cache misses.
@@ -64,12 +64,12 @@ export default function EventDetailScreen() {
   // logged category isn't undefined on the first-render race.
   const viewedRef = useRef(null);
   useEffect(() => {
-    if (backendEnabled && id && event && viewedRef.current !== id && !isAdmin) {
+    if (backendEnabled && id && event && viewedRef.current !== id && !noTrack) {
       viewedRef.current = id;
       recordView('event', id); // owner views excluded — they'd inflate advertiser-facing numbers
       logEvent('view_event', { category: event.category });
     }
-  }, [id, backendEnabled, event, isAdmin, recordView, logEvent]);
+  }, [id, backendEnabled, event, noTrack, recordView, logEvent]);
 
   // "I'm going" RSVP — public count as social proof, one tap to toggle. The
   // count loads from the backend; taps update optimistically and reconcile with
