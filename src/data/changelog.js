@@ -4,8 +4,17 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 86 revs, newest first.
+// secret. 87 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 113,
+    "date": "2026-07-17",
+    "whatsNew": null,
+    "changes": [
+      "rev 113: fix the runtime empty string, and see the stranded devices at all",
+      "rev 112: regenerate the release log"
+    ]
+  },
   {
     "rev": 112,
     "date": "2026-07-16",
