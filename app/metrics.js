@@ -282,12 +282,21 @@ export default function MetricsScreen() {
               // store version behind. app_version is native, so OTAs cannot fake it.
               const oldBinary = reachable.filter((r) => r.app_version && r.app_version !== APP_VERSION);
               const currentBinary = reachable.filter((r) => !(r.app_version && r.app_version !== APP_VERSION));
+              // A stranded device cannot SAY it is stranded: the reporting code ships
+              // in the very OTA it cannot receive, so `stranded` (runtime mismatch)
+              // only ever catches ones that CAN report. update_blocked is the inference
+              // that catches the rest: still no rev, yet opening long after the update
+              // was available. Both are a FLOOR, never a count -- a stranded device
+              // that never opens again is invisible to any method.
+              const blocked = sum(revSplit.filter((r) => r.update_blocked));
+              const notReported = unknown - blocked;
               const rows = [
                 { key: 'cur', label: `On rev ${BUILD} (latest)`, icon: 'checkmark-circle', color: colors.success, n: sum(currentBinary.filter((r) => r.rev === BUILD)) },
                 { key: 'behind', label: 'Behind, updates on next open', icon: 'time-outline', color: colors.textMuted, n: sum(currentBinary.filter((r) => r.rev !== BUILD)) },
                 { key: 'oldapp', label: `On an older app version (not ${APP_VERSION})`, icon: 'download-outline', color: colors.garageSale, n: sum(oldBinary) },
                 { key: 'stranded', label: 'STRANDED: old runtime, no OTA can reach', icon: 'warning', color: colors.accent, n: sum(stranded) },
-                { key: 'unknown', label: 'Not yet reported (pre-rev-112)', icon: 'help-circle-outline', color: colors.textMuted, n: unknown },
+                { key: 'blocked', label: 'Opening, but not taking updates (likely stranded)', icon: 'warning-outline', color: colors.accent, n: blocked },
+                { key: 'unknown', label: 'Not yet reported (no open since tracking shipped)', icon: 'help-circle-outline', color: colors.textMuted, n: notReported },
               ].filter((r) => r.n > 0);
               return rows.map((p, i) => {
                 const pct = total ? Math.round((p.n / total) * 100) : 0;

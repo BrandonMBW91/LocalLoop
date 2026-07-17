@@ -26,12 +26,18 @@ try { Application = require('expo-application'); } catch { Application = null; }
 
 // What this device is running, for OTA-adoption metrics. Never throws; nulls mean
 // "unknown", which is a real answer (web, or an older build that never sent it).
+// Empty string -> null. On web, expo-updates reports runtimeVersion as '' rather than
+// undefined, so a `typeof === 'string'` check happily stored '' and web devices grouped
+// under a meaningless empty runtime instead of "unknown". '' is not a runtime; the web
+// app has no OTA at all, and null is the honest answer.
+const orNull = (v) => (typeof v === 'string' && v.trim() ? v : null);
+
 function updatesInfo() {
   try {
     return {
       // The runtime is the one that matters: a device on the old fingerprint runtime
       // can never receive a 1.0.4 OTA no matter how long it waits.
-      runtime: Updates && typeof Updates.runtimeVersion === 'string' ? Updates.runtimeVersion : null,
+      runtime: Updates ? orNull(Updates.runtimeVersion) : null,
       // true = running the bundle baked into the binary, i.e. no OTA has ever landed.
       embedded: Updates && typeof Updates.isEmbeddedLaunch === 'boolean' ? Updates.isEmbeddedLaunch : null,
       // The BINARY's own version + build number, straight from the native side and
@@ -40,8 +46,8 @@ function updatesInfo() {
       // Together with rev they separate the three states that matter: current binary
       // + current JS, current binary + stale JS (reopens and self-heals), and old
       // binary (only a store update can ever move them).
-      appVersion: Application && typeof Application.nativeApplicationVersion === 'string' ? Application.nativeApplicationVersion : null,
-      nativeBuild: Application && typeof Application.nativeBuildVersion === 'string' ? Application.nativeBuildVersion : null,
+      appVersion: Application ? orNull(Application.nativeApplicationVersion) : null,
+      nativeBuild: Application ? orNull(Application.nativeBuildVersion) : null,
     };
   } catch (e) {
     return { runtime: null, embedded: null, appVersion: null, nativeBuild: null };
