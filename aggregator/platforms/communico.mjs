@@ -30,6 +30,10 @@ export async function pull(source, { floor, cutoff }) {
   const CHUNK = 30;
   const seen = new Set();
   const data = [];
+  // Track slices that actually ANSWERED (HTTP ok + a JSON array), separately from how
+  // many events came back. Without this, a library that is simply quiet is reported as
+  // a hard failure — see the throw below.
+  let okSlices = 0;
   for (let off = 0; off < totalDays; off += CHUNK) {
     const days = Math.min(CHUNK, totalDays - off);
     const date = new Date(floor + off * DAY).toISOString().slice(0, 10);
@@ -46,6 +50,7 @@ export async function pull(source, { floor, cutoff }) {
       } catch { /* transient — retry once */ }
     }
     if (!arr) continue; // this slice failed both attempts; keep the rest
+    okSlices++;
     for (const e of arr) {
       const k = e && e.id != null ? String(e.id) : `${e && e.title}|${e && e.raw_start_time}`;
       if (seen.has(k)) continue;
@@ -53,7 +58,14 @@ export async function pull(source, { floor, cutoff }) {
       data.push(e);
     }
   }
-  if (!data.length) throw new Error('Communico returned no events (all slices failed)');
+  // Only a TRANSPORT failure is an error. "Every slice answered, and the library has
+  // nothing scheduled" is a legitimate empty result, not a dead feed — Massillon
+  // Public Library returns a valid [] across all 120 days and was being reported as
+  // DEAD for it (found 2026-07-19 while clearing the board for feed-health alerting).
+  // Conflating the two produces false alarms, which is how alerting stops being
+  // trusted. An empty return lands in feed-health's ZERO-EVENT bucket instead.
+  if (!okSlices) throw new Error('Communico unreachable (every slice failed)');
+  if (!data.length) return [];
 
   // Branch address book (best-effort — custom domains may not resolve on the API host).
   const branchAddr = new Map();
