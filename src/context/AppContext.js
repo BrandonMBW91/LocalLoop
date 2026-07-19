@@ -60,6 +60,7 @@ const STORAGE_KEYS = {
   submittedSales: '@fe/submittedGarageSales',
   submittedTrucks: '@fe/submittedFoodTrucks',
   rulesAccepted: '@fe/rulesAccepted',
+  hideKids: '@fe/hideKids',
   deviceId: '@fe/deviceId',
   excludeStats: '@fe/excludeStats',
   onboarded: '@fe/onboarded',
@@ -82,6 +83,7 @@ export function AppProvider({ children }) {
   const [submittedSales, setSubmittedSales] = useState([]); // local fallback (no backend)
   const [submittedTrucks, setSubmittedTrucks] = useState([]); // local fallback (no backend)
   const [rulesAccepted, setRulesAccepted] = useState(false); // accepted community rules
+  const [hideKids, setHideKidsState] = useState(false); // hide kids/family events (persisted content pref)
   const [deviceId, setDeviceId] = useState(null); // anonymous per-install id
   const [onboarded, setOnboarded] = useState(false); // finished first-launch welcome
   const [interests, setInterestsState] = useState([]); // categories the user cares about
@@ -139,6 +141,7 @@ export function AppProvider({ children }) {
         if (map[STORAGE_KEYS.submittedSales]) setSubmittedSales(JSON.parse(map[STORAGE_KEYS.submittedSales]));
         if (map[STORAGE_KEYS.submittedTrucks]) setSubmittedTrucks(JSON.parse(map[STORAGE_KEYS.submittedTrucks]));
         if (map[STORAGE_KEYS.rulesAccepted] === 'true') setRulesAccepted(true);
+        if (map[STORAGE_KEYS.hideKids] === 'true') setHideKidsState(true);
         if (map[STORAGE_KEYS.onboarded] === 'true') setOnboarded(true);
         if (map[STORAGE_KEYS.interests]) setInterestsState(JSON.parse(map[STORAGE_KEYS.interests]));
         if (map[STORAGE_KEYS.follows]) setFollows(JSON.parse(map[STORAGE_KEYS.follows]));
@@ -479,6 +482,13 @@ export function AppProvider({ children }) {
     AsyncStorage.setItem(STORAGE_KEYS.rulesAccepted, 'true').catch(() => {});
   };
 
+  // Persisted content preference: hide kids/family events across every town, and
+  // remember it. Toggled from the events filter row.
+  const setHideKids = (on) => {
+    setHideKidsState(on);
+    AsyncStorage.setItem(STORAGE_KEYS.hideKids, on ? 'true' : 'false').catch(() => {});
+  };
+
   const completeOnboarding = () => {
     setOnboarded(true);
     AsyncStorage.setItem(STORAGE_KEYS.onboarded, 'true').catch(() => {});
@@ -721,6 +731,8 @@ export function AppProvider({ children }) {
     reportListing,
     rulesAccepted,
     acceptRules,
+    hideKids,
+    setHideKids,
     onboarded,
     completeOnboarding,
     resetOnboarding,

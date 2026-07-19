@@ -10,6 +10,8 @@ import WebInstallBanner from '../../src/components/WebInstallBanner';
 import CityHeaderControl from '../../src/components/CityHeaderControl';
 import SearchBar from '../../src/components/SearchBar';
 import FilterRow from '../../src/components/FilterRow';
+import ToggleChip from '../../src/components/ToggleChip';
+import { isKidsEvent } from '../../src/utils/kids';
 import ListBody from '../../src/components/ListBody';
 import { useListState } from '../../src/hooks/useListState';
 import { useApp } from '../../src/context/AppContext';
@@ -25,6 +27,7 @@ export default function EventsScreen() {
   const {
     city, scale, events, deals, sponsors, editorPick, interests, follows,
     loadingData, loadError, refresh, backendEnabled, signedIn, logEvent,
+    hideKids, setHideKids,
   } = useApp();
   const {
     query, setQuery, deferredQuery,
@@ -54,6 +57,7 @@ export default function EventsScreen() {
   const filtered = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
     return events.filter((e) => {
+      if (hideKids && isKidsEvent(e)) return false;
       const matchesFilter =
         activeCat === 'All' ? true
         : activeCat === 'Today' ? touchesToday(e.start, e.end)
@@ -69,7 +73,7 @@ export default function EventsScreen() {
         e.description.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [events, deferredQuery, activeCat, interests, follows]);
+  }, [events, deferredQuery, activeCat, interests, follows, hideKids]);
 
   const sections = useMemo(
     () =>
@@ -107,6 +111,16 @@ export default function EventsScreen() {
         {follows.length > 0 ? (
           <CategoryChip label="Following" selected={activeCat === 'Following'} onPress={() => setActiveCat('Following')} />
         ) : null}
+        {/* A persistent on/off toggle (not a single-select category), so it uses
+            ToggleChip and combines with whatever category is active. */}
+        <ToggleChip
+          icon="happy-outline"
+          label="Hide kids"
+          on={hideKids}
+          onPress={() => setHideKids(!hideKids)}
+          accent={colors.primary}
+          tintLight={colors.primaryLight}
+        />
         {CATEGORIES.map((cat) => (
           <CategoryChip key={cat} label={cat} selected={activeCat === cat} onPress={() => setActiveCat(cat)} />
         ))}
