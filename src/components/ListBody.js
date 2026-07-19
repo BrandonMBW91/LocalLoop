@@ -52,9 +52,18 @@ export default function ListBody({
       // Galaxy A16 (Android 16) via adb: crash on every launch, gone once off.
       // The windowing props below already do the real virtualization work.
       removeClippedSubviews={false}
-      initialNumToRender={8}
-      maxToRenderPerBatch={8}
-      windowSize={11}
+      // A deep scroll (Findlay, ~130 events in) would clamp and snap back, refusing
+      // to reach the ~77 events still below. Cause: iOS estimates the height of rows
+      // it has not laid out yet from the average of the ones it has; any tiny
+      // per-row error compounds over ~130 rows into a full-screen underestimate of
+      // the total, so the list thinks it ends where it does not and clamps there.
+      // Rendering more rows before you reach them (larger window + bigger batches)
+      // keeps far more of the list truly MEASURED rather than estimated, so the
+      // running total stays accurate and the clamp does not build up. The cards are
+      // uniform height (EventCard), so this extra window is cheap simple views.
+      initialNumToRender={12}
+      maxToRenderPerBatch={12}
+      windowSize={21}
       contentContainerStyle={{ paddingBottom: spacing.xxl }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[accent]} tintColor={accent} />
