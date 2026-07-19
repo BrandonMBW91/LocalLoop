@@ -124,10 +124,21 @@ export default function CityPickerScreen() {
             </View>
             {section.items.map((c, i) => {
               const selected = c.id === cityId;
-              // Density-aware label: a real count once a town has enough, else a
-              // friendly "just getting started" so a tiny number never discourages.
+              // Show the REAL count for every town, plus a short density tagline.
+              // The old rule hid any count under 25 behind "just getting started",
+              // which made towns that genuinely have events look empty (Ada has 23).
+              // Count first so it's honest; tagline after so a small number still
+              // reads as growing, not dead. 0 (only ever the current selection) has
+              // no count to show.
               const n = cityCounts ? cityCounts[c.id] : undefined;
-              const countLabel = n == null ? null : n >= 25 ? `${formatCount(n)} events` : 'Just getting started';
+              const countLabel =
+                n == null ? null
+                : n === 0 ? 'Just getting started'
+                : `${formatCount(n)} event${n === 1 ? '' : 's'} · ${
+                    n >= 100 ? 'lots to do'
+                    : n >= 25 ? 'plenty going on'
+                    : 'just getting started'
+                  }`;
               return (
                 <Pressable
                   key={c.id}
