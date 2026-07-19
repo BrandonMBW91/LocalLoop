@@ -28,6 +28,8 @@ const STEPS = [
   ['All-Region ad backfill', 'backfill-region-ads.mjs'],
   ['Content guard (ghost/thin report)', 'check-content.mjs'],
   ['Feed health (dead-source report)', 'feed-health.mjs'],
+  // Escalates the report: emails only when a town has ZERO healthy feeds.
+  ['Feed health ALERT (email if a town is about to go dark)', 'feed-health-alert.mjs'],
   ['Website pages', 'generate-events.mjs'],
   ['Advertise page', 'generate-advertise.mjs'],
 ];

@@ -289,20 +289,34 @@ const METRO_ROLLUP = new Set([
   'Columbus Metropolitan Library',
 ]);
 
+// Every TITLE-only rejection in one place, so makeRow and its tests can never
+// drift apart (tests/aggregator.test.mjs exercises this directly). Returns a short
+// reason string — handy in diagnostics — or null to keep the event.
+// CLOSURE_RE is deliberately NOT here: it inspects venue/address/description, not
+// the title, so it stays inline in makeRow where those are available.
+export function titleRejectReason(title) {
+  const t = String(title || '');
+  if (JUNK_RE.test(t)) return 'junk';                 // closures, reservations, hours
+  if (WEATHER_RE.test(t)) return 'weather-alert';     // NWS alerts riding in on feeds
+  if (GOV_MEETING_RE.test(t)) return 'gov-meeting';   // routine committee/board meetings
+  if (HOURS_RE.test(t)) return 'standing-hours';      // "Gift Shop Open (10am-4:30pm)"
+  if (WORSHIP_RE.test(t) && !OUTING_RE.test(t)) return 'worship-service';
+  if (ACADEMIC_RE.test(t)) return 'academic-admin';   // add/drop, tuition due
+  if (TEST_TITLE_RE.test(t)) return 'feed-test-row';
+  if (CERT_SPAM_RE.test(t)) return 'cert-spam';
+  if (UNSAFE_RE.test(t)) return 'unsafe';             // profane/adult before auto-publish
+  return null;
+}
+
 function makeRow(ev, source, start, end) {
   const { venue: rawVenue, address: rawAddress } = deriveVenue(txt(ev.location), source.name);
   let venue = cleanLocation(rawVenue);
   let address = cleanLocation(rawAddress);
   const title = cleanText(txt(ev.summary) || 'Untitled').slice(0, 200);
-  if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
-  if (WEATHER_RE.test(title)) return null; // skip NWS/weather alerts (not events)
-  if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
-  if (HOURS_RE.test(title)) return null; // standing shop/facility hours, not an event
-  // Routine worship services, unless the title reads like an outing (see WORSHIP_RE).
-  if (WORSHIP_RE.test(title) && !OUTING_RE.test(title)) return null;
-  if (ACADEMIC_RE.test(title)) return null; // skip academic-calendar admin (add/drop, tuition due, deadlines)
-  if (TEST_TITLE_RE.test(title)) return null; // literal feed test rows
-  if (CERT_SPAM_RE.test(title)) return null; // certification-mill lead-gen spam
+  // Junk, weather alerts, gov meetings, standing hours, worship services, academic
+  // admin, feed test rows, cert spam, profanity — all of it lives in one tested
+  // function now (see titleRejectReason above).
+  if (titleRejectReason(title)) return null;
   const description = cleanDescription(txt(ev.description)) || `From ${source.name}.`;
   // Multi-branch library feeds (WhoFi) name the BRANCH only in the description's
   // first line while the feed's location carries the MAIN library — which pointed
@@ -323,7 +337,7 @@ function makeRow(ev, source, start, end) {
     venue = branchName;
     address = '';
   }
-  if (UNSAFE_RE.test(title)) return null; // drop profane/adult feed content (title only) before it auto-publishes
+  // (profanity/adult titles are handled by titleRejectReason above)
   // Not an event people attend, even though the title reads like a holiday.
   if (CLOSURE_RE.test(`${venue} ${address} ${description}`)) return null;
   // Assign to the town in the event's location, not the feed's host town.
@@ -775,7 +789,12 @@ async function main() {
   console.log(`\nDone.${DRY_RUN ? ' (dry run — nothing written)' : ` Added ${totalNew} new event(s).`}`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// Only run the pipeline when invoked directly. tests/aggregator.test.mjs imports
+// this module for titleRejectReason, and without this guard that import would kick
+// off a full live aggregation. Same entry-point guard dedupe.mjs uses.
+if (process.argv[1] && process.argv[1].replace(/\\/g, '/').endsWith('aggregate.mjs')) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

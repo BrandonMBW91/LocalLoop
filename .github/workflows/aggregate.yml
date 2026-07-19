@@ -104,6 +104,22 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node feed-health.mjs
+      # The report above is only useful if a human reads it, and nobody does —
+      # Experience Columbus and Visit Cincy sat dead in it for weeks (fixed
+      # 2026-07-19). This step ESCALATES: it emails only when a town has zero
+      # healthy feeds and is about to empty, so it stays signal rather than spam.
+      # Safe to run from the cloud even though some feeds are datacenter-IP
+      # blocked: "healthy" means a successful pull within 7 days, so a feed that
+      # only succeeds on the 7am residential desktop run still counts as healthy.
+      # Needs the RESEND_API_KEY repo secret; without it this logs and no-ops.
+      - name: Feed health ALERT (email when a town is about to go dark)
+        working-directory: aggregator
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: node feed-health-alert.mjs
       - name: Regenerate SEO event pages
         working-directory: aggregator
         env:
