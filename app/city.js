@@ -124,21 +124,16 @@ export default function CityPickerScreen() {
             </View>
             {section.items.map((c, i) => {
               const selected = c.id === cityId;
-              // Show the REAL count for every town, plus a short density tagline.
-              // The old rule hid any count under 25 behind "just getting started",
-              // which made towns that genuinely have events look empty (Ada has 23).
-              // Count first so it's honest; tagline after so a small number still
-              // reads as growing, not dead. 0 (only ever the current selection) has
-              // no count to show.
+              // Real event count + the town's own nickname/tagline (Findlay is
+              // "Flag City, USA", Toledo "The Glass City"); every town in cities.js
+              // has one. Count first so it's honest, then the tagline for character.
+              // Before the count has loaded, or a town with none yet, show just the
+              // tagline. Long combos are truncated to one line at the subtitle below.
               const n = cityCounts ? cityCounts[c.id] : undefined;
               const countLabel =
-                n == null ? null
-                : n === 0 ? 'Just getting started'
-                : `${formatCount(n)} event${n === 1 ? '' : 's'} · ${
-                    n >= 100 ? 'lots to do'
-                    : n >= 25 ? 'plenty going on'
-                    : 'just getting started'
-                  }`;
+                n == null || n === 0
+                  ? c.tagline || null
+                  : `${formatCount(n)} event${n === 1 ? '' : 's'} · ${c.tagline}`;
               return (
                 <Pressable
                   key={c.id}
@@ -152,12 +147,8 @@ export default function CityPickerScreen() {
                       {c.name}, {c.state}
                     </ThemedText>
                     {countLabel ? (
-                      <ThemedText size="small" color={colors.textMuted}>
+                      <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>
                         {countLabel}
-                      </ThemedText>
-                    ) : c.tagline ? (
-                      <ThemedText size="small" color={colors.textMuted}>
-                        {c.tagline}
                       </ThemedText>
                     ) : null}
                   </View>
