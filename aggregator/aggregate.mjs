@@ -35,7 +35,12 @@ const args = Object.fromEntries(
 );
 
 const DRY_RUN = Boolean(args['dry-run']);
-const HORIZON_DAYS = Number(args.days || 60);
+// 90 days out — matches ticketmaster.mjs and seatgeek.mjs so a community festival,
+// county fair, or university series announced 2-3 months ahead surfaces at the same
+// horizon a concert does (they share one events table and the client fetches the
+// whole future window with no upper bound). Was 60, which silently cut feed events
+// in the 61-90 day range while ticketing events at the same range were kept.
+const HORIZON_DAYS = Number(args.days || 90);
 
 const EMOJI = {
   Music: '🎶', Family: '👨‍👩‍👧', Food: '🍽️', Sports: '🏅',
@@ -67,6 +72,25 @@ const WEATHER_RE = /\bNWS\b|\b(heat|wind|winter storm|ice storm|snow|blizzard|fl
 // "Committee of the Whole", so real public programs ("Council on Aging talk")
 // aren't caught.
 const GOV_MEETING_RE = /\b(committee|board|commission|city council|council|trustees?|caucus|council of the whole|committee of the whole)\s+meeting\b|\bcity council\b|\bcommittee of the whole\b/i;
+
+// Standing shop/facility hours posted as if they were events ("Gift Shop Open
+// (10am-4:30pm)"). JUNK_RE already covers the "hours of operation" phrasings; this
+// catches the "<place> Open (<time>-<time>)" form. Requires an explicit time RANGE
+// so real events ("Open House", "Open Mic Night", "Opening Day") never match.
+const HOURS_RE = /\bopen\b\s*[\(\[]?\s*\d{1,2}(:\d{2})?\s*(am|pm)?\s*[-–—]\s*\d{1,2}(:\d{2})?\s*(am|pm)\b|\b(gift|book|thrift|museum|campus)\s*shop\b.*\bopen\b|\bstore hours\b/i;
+
+// Routine recurring worship services — a congregation's STANDING programming, the
+// same way a weekly council meeting is a city's (see GOV_MEETING_RE). This is a
+// density rule, not a judgement about the content: Carey's Basilica (a national
+// pilgrimage shrine) posts a daily Mass and hourly devotions, which came to 394
+// events and buried every other listing in a town of 3,700.
+// Anything that reads like an OUTING is deliberately kept even when it names a
+// service — parish festivals, concerts, dinners, bingo, talks, tours, and the
+// Basilica's marquee candlelight procession all survive. The "of a/an/the" guard
+// keeps titled works and occasions ("Confessions of a Baseball Scout" is a talk,
+// "Mass of the Holy Spirit" is Walsh University's convocation).
+const WORSHIP_RE = /\b(?:(?:mass|confessions?|adoration|devotions?|novena)(?!\s+of\s+(?:a|an|the)\b)|reconciliation|rosary|eucharistic adoration|benediction|vespers|evensong|divine liturgy|worship service|holy hour|stations of the cross)\b/i;
+const OUTING_RE = /\b(festival|concert|dinner|supper|breakfast|brunch|bazaar|fundraiser|picnic|bingo|sale|tour|talk|lecture|class|workshop|camp|retreat|conference|parade|fair|market|auction|reunion|celebration|anniversary|open house|choir|band|recital|performance|procession|pilgrimage)\b/i;
 
 // Municipal closure notices ("City offices will be closed in observance of...")
 // slip past the title filter because the title is a plain holiday name. Catch
@@ -273,6 +297,9 @@ function makeRow(ev, source, start, end) {
   if (JUNK_RE.test(title)) return null; // skip closures, reservations, hours, etc.
   if (WEATHER_RE.test(title)) return null; // skip NWS/weather alerts (not events)
   if (GOV_MEETING_RE.test(title)) return null; // skip routine committee/board meetings
+  if (HOURS_RE.test(title)) return null; // standing shop/facility hours, not an event
+  // Routine worship services, unless the title reads like an outing (see WORSHIP_RE).
+  if (WORSHIP_RE.test(title) && !OUTING_RE.test(title)) return null;
   if (ACADEMIC_RE.test(title)) return null; // skip academic-calendar admin (add/drop, tuition due, deadlines)
   if (TEST_TITLE_RE.test(title)) return null; // literal feed test rows
   if (CERT_SPAM_RE.test(title)) return null; // certification-mill lead-gen spam
