@@ -6,7 +6,7 @@ import ThemedText from './ThemedText';
 import FadeInImage from './FadeInImage';
 import DateChip from './DateChip';
 import Pill from './Pill';
-import { colors, spacing, radius, categoryColor } from '../theme/theme';
+import { colors, spacing, radius, categoryColor, baseFont } from '../theme/theme';
 import { useApp } from '../context/AppContext';
 import { relativeDay, timeLabel, isOngoing, isAllDayAnchor, formatShortDate, formatTime, toDateString } from '../utils/dates';
 
@@ -58,13 +58,23 @@ function EventCard({ event }) {
             ) : null}
           </View>
 
-          <ThemedText size="subtitle" weight="bold" numberOfLines={2}>
-            {event.title}
-          </ThemedText>
+          {/* Reserve exactly two lines for the title, ALWAYS, so a one-line title
+              ("Fall Fest") and a two-line title ("Community Granny Square Blanket")
+              produce the SAME card height. Uneven card heights were the bug: a
+              SectionList with no getItemLayout estimates offscreen rows from the
+              average height, gets variable-height rows wrong, then yanks the scroll
+              to correct — the list "fought back" and bounced to the same spot deep in
+              Later. Height tracks the text-size setting via ThemedText's own formula
+              (round(round(base*scale)*1.3)), so it stays two lines at every size. */}
+          <View style={{ height: 2 * Math.round(Math.round(baseFont.subtitle * scale) * 1.3), justifyContent: 'center' }}>
+            <ThemedText size="subtitle" weight="bold" numberOfLines={2}>
+              {event.title}
+            </ThemedText>
+          </View>
 
           <View style={styles.metaRow}>
             <Ionicons name="time-outline" size={15 * scale} color={colors.textMuted} />
-            <ThemedText size="small" color={colors.textMuted}>
+            <ThemedText size="small" color={colors.textMuted} numberOfLines={1}>
               {ongoing
                 ? `Happening now · through ${formatShortDate(event.end)}`
                 : multiDay
