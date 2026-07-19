@@ -4,9 +4,9 @@
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
 export const APP_VERSION = '1.0.4';
-export const BUILD = 114;
+export const BUILD = 115;
 
 // One-line "what's new" shown once in a dismissible banner after an update (see
 // WhatsNewBanner). Update it alongside BUILD each release so returning users get a
 // gentle heads-up about what changed. Keep it short and user-facing.
-export const WHATS_NEW = "Smoother scrolling through long event lists.";
+export const WHATS_NEW = "Fixed the Findlay events list jumping while you scroll.";

@@ -150,7 +150,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flexWrap: 'wrap',
+    // NO flexWrap, and clip overflow. A normal card has one pill (category); a
+    // FEATURED card has two (category + FEATURED). With wrap on, the second pill
+    // could drop to a second line on iOS, making that ONE card taller than every
+    // other -- a height outlier. Findlay is the only town with a featured event, so
+    // it was the only town whose list jumped: iOS estimates that off-screen card at
+    // the average (normal) height, gets it wrong, and yanks the scroll to correct.
+    // rev 114 made every OTHER card uniform; this closes the last gap so all cards,
+    // featured included, are the same height and nothing is misjudged.
+    overflow: 'hidden',
   },
   metaRow: {
     flexDirection: 'row',
