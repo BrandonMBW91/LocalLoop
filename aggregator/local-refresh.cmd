@@ -14,7 +14,15 @@ rem written even when node failed, so the morning brief's "done line from TODAY"
 rem health check could pass on a completely failed (or yesterday's) run.
 cd /d "%~dp0"
 echo ======= %date% %time% ======= >> local-refresh.log
-node aggregate.mjs >> local-refresh.log 2>&1 && node geocode.mjs >> local-refresh.log 2>&1 && (echo done %date% %time% >> local-refresh.log) || (echo FAILED %date% %time% >> local-refresh.log)
+rem dedupe MUST run here, not just in the cloud workflow. This pass re-pulls every
+rem feed (that is the point - the datacenter-blocked ones only answer a residential
+rem IP), which re-introduces cross-source twins: an Eventbrite listing against the
+rem venue's own feed, or Visit Cincy against Ticketmaster. The cloud run dedupes at
+rem ~5:40am and this one lands at ~7:15am, so without a dedupe here the duplicates
+rem sat in front of users for the ~22 hours until the next cloud run. Found
+rem 2026-07-20 with 174 live duplicates. It runs BEFORE geocode so we never spend
+rem Mapbox calls geocoding rows that are about to be deleted.
+node aggregate.mjs >> local-refresh.log 2>&1 && node dedupe.mjs --apply >> local-refresh.log 2>&1 && node geocode.mjs >> local-refresh.log 2>&1 && (echo done %date% %time% >> local-refresh.log) || (echo FAILED %date% %time% >> local-refresh.log)
 
 rem Food trucks: Cloudflare blocks the cloud runner, so the pull + the follower
 rem push both run from this residential IP. Deliberately NOT chained into the
