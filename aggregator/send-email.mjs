@@ -62,7 +62,7 @@ if (!body.trim()) {
 }
 
 const message = {
-  from: `Local Loop <${USER}>`,
+  from: `Michael Williams <${USER}>`,
   to: args.to,
   cc: args.cc || undefined,
   replyTo: args.replyto || undefined,

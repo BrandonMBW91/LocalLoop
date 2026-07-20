@@ -617,7 +617,7 @@ async function sendSeeds(sample) {
   for (const to of SEED_INBOXES) {
     try {
       await smtp.sendMail({
-        from: `Local Loop <${USER}>`, to, subject: sample.subject, text: sample.body,
+        from: `Michael Williams <${USER}>`, to, subject: sample.subject, text: sample.body,
       });
       appendFileSync(SEED_LOG, `${new Date().toISOString()}  SEED  ${to}  ${sample.subject}\n`);
       console.log(`seed -> ${to} (check inbox vs spam): "${sample.subject}"`);
@@ -635,7 +635,12 @@ async function sendOne(d) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       return await smtp.sendMail({
-        from: `Local Loop <${USER}>`,
+        // Personal display name, not "Local Loop" (changed 2026-07-20): for 1:1
+        // outreach a real person's name reads as human correspondence and supports
+        // Gmail Primary-inbox placement, while a brand name reads as a newsletter and
+        // leans Promotions. Matches the "I'm Michael" opener and "Michael Williams"
+        // signature. Address stays localloop@ so the reply-sweep still finds replies.
+        from: `Michael Williams <${USER}>`,
         to: d.to,
         subject: d.subject,
         text: body,
