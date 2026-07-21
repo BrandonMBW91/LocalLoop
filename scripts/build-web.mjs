@@ -43,25 +43,42 @@ function findFile(dir, re) {
 // 1. Expo web export (the app itself).
 execSync(`npx expo export --platform web --output-dir ${OUT}`, { stdio: 'inherit' });
 
-// 2. Merge every site/ file EXCEPT the marketing homepage and its _redirects —
-//    so the app's index.html stays the homepage and we write our own redirects.
+// 2. Merge every site/ file EXCEPT the marketing homepage and _redirects — the
+//    app's index.html stays the homepage, and _redirects is composed in step 3
+//    (copied from site/ but with the SPA fallback forced last) rather than copied.
 for (const entry of fs.readdirSync(SITE)) {
   if (entry === 'index.html' || entry === '_redirects') continue;
   fs.cpSync(path.join(SITE, entry), path.join(OUT, entry), { recursive: true });
 }
 
-// 3. Redirects: universal-link rewrites (dot-dirs get dropped by Netlify, so serve
-//    the JSON via a 200 rewrite), then a SPA fallback. Netlify serves real files
-//    (privacy.html, events/*, aasa.json) BEFORE the catch-all, so only app routes
-//    with no file (e.g. /event/123) fall through to the web app shell.
+// 3. Redirects: every rule from site/_redirects, then the SPA fallback LAST.
+//
+// This used to hardcode three rules and skip site/_redirects entirely, which meant
+// every custom rule in that file was written, reviewed, committed — and then thrown
+// away at build time. It shipped that way from 2026-07-13 until 2026-07-21. The cost
+// was invisible because the symptom of a dropped rule is the catch-all quietly
+// serving the app shell with a 200, which looks like a working page:
+//   /for/*  outreach click tracking never fired once. outreach_events had 0 rows
+//           after ~700 cold emails; every branded link landed on the homepage.
+//   /event/*, /garage-sale/*, /food-truck/*  shared links skipped open.html, so
+//           Android users hit an iOS-only App Store page instead of the test build.
+//   /digest/confirm/*, /digest/unsubscribe/*  would have left every subscriber
+//           stuck at "pending" the moment the digest shipped.
+//
+// Netlify takes the FIRST match, so the catch-all must be last or it eats everything
+// after it. That ordering is enforced here rather than trusted to site/_redirects:
+// any catch-all in the source file is stripped and re-appended at the end, so adding
+// a rule to that file can never again silently kill the rules below it.
+const SPA_FALLBACK = '/*  /index.html  200';
+const customRedirects = fs
+  .readFileSync(path.join(SITE, '_redirects'), 'utf8')
+  .split('\n')
+  .filter((l) => l.trim() !== SPA_FALLBACK && !/^\/\*\s/.test(l.trim()))
+  .join('\n')
+  .trimEnd();
 fs.writeFileSync(
   path.join(OUT, '_redirects'),
-  [
-    '/.well-known/apple-app-site-association  /aasa.json  200',
-    '/.well-known/assetlinks.json             /assetlinks.json  200',
-    '/*  /index.html  200',
-    '',
-  ].join('\n'),
+  `${customRedirects}\n\n# SPA fallback — MUST stay last; Netlify takes the first match.\n${SPA_FALLBACK}\n`,
 );
 
 // 4. Homepage SEO. The Expo shell ships only a bare <title> and no description,
