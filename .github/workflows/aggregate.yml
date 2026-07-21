@@ -46,6 +46,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
+        # continue-on-error, like the SeatGeek step below it. ticketmaster.mjs now
+        # exits non-zero when anchors fail, so the step goes RED and the failure is
+        # visible — but without this the whole job stops and every later step is
+        # skipped, INCLUDING the Netlify deploy. That happened on 2026-07-21: 2 of 40
+        # anchors hit a transient 429 and the website did not deploy at all. A flaky
+        # third-party API must never be able to block shipping the site.
+        continue-on-error: true
         run: node ticketmaster.mjs
       - name: Pull SeatGeek events (deduped vs Ticketmaster)
         working-directory: aggregator
@@ -78,6 +85,12 @@ jobs:
         run: node retention.mjs
       - name: Geocode new events (map pins)
         working-directory: aggregator
+        # Map pins are an enhancement; the website shipping is not. geocode.mjs now
+        # aborts non-zero when Mapbox refuses (a dead token or an exhausted quota),
+        # which is right for visibility and wrong as a deploy gate — without this a
+        # Mapbox outage would stop localloop.io from updating at all. Same lesson as
+        # the Ticketmaster step above, found in the same audit.
+        continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -43,6 +43,8 @@ function pickImage(images) {
   return pool[0].url;
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function fetchAnchor(a) {
   const now = new Date().toISOString().slice(0, 19) + 'Z';
   const end = new Date(Date.now() + HORIZON_DAYS * 86400000).toISOString().slice(0, 19) + 'Z';
@@ -52,7 +54,17 @@ async function fetchAnchor(a) {
     const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${KEY}`
       + `&geoPoint=${gp}&radius=${a.radius}&unit=miles&countryCode=US&size=100&page=${page}&sort=date,asc`
       + `&startDateTime=${now}&endDateTime=${end}`;
-    const res = await fetch(url);
+    // Ticketmaster enforces a 5 requests/second "spike arrest" and answers 429 the
+    // instant you cross it. There was no retry, so a single burst killed the whole
+    // anchor and that town silently lost its concerts for the night. On 2026-07-21
+    // that hit Marietta and Portsmouth. Back off and try again — a 429 is a "wait",
+    // not a failure, and the daily quota (5,000) is nowhere near the constraint.
+    let res;
+    for (let attempt = 0; ; attempt += 1) {
+      res = await fetch(url);
+      if (res.status !== 429 || attempt >= 3) break;
+      await sleep(1200 * (attempt + 1));
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 150)}`);
     const data = await res.json();
     const evs = data._embedded?.events || [];
