@@ -14,10 +14,17 @@
 // flipping late: the banner would start offering Android users a store page that does
 // not exist, which is the exact dead end ANDROID_LIVE was created to prevent.
 //
-// After --apply:
-//   npm test && node scripts/build-changelog.mjs   (bump BUILD first)
-//   git commit && eas update --branch production   -> the app + banner
-//   npm run deploy:web                             -> open.html
+// After --apply, IN THIS ORDER. The order is not cosmetic: build-changelog.mjs reads
+// COMMITTED git history, and tests/guards.test.mjs fails unless changelog.js already
+// lists the rev in src/version.js. So "npm test && build-changelog" — which this
+// comment used to say — fails every time by construction. It did, on rev 121.
+//   1. bump BUILD in src/version.js
+//   2. git commit                                  (build-changelog reads history)
+//   3. node scripts/build-changelog.mjs            (writes src/data/changelog.js)
+//   4. npm test                                    (the rev guard passes only now)
+//   5. git commit --amend  (or a second commit)    then push
+//   6. eas update --branch production              -> the app + banner
+//   7. npm run deploy:web                          -> open.html
 // Both are needed: the banner ships in the JS bundle, open.html is a static page.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
