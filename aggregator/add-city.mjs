@@ -97,12 +97,23 @@ function webhookCatalogPlan() {
   try { src = readFileSync(WEBHOOK_FILE, 'utf8'); }
   catch { return { msg: '… webhook source not found — skipping CATALOG_CITY_IDS (add "' + id + '" by hand)' }; }
   const start = src.indexOf('const CATALOG_CITY_IDS = [');
-  const end = start === -1 ? -1 : src.indexOf('\n];', start);
+  // Match the line break BEFORE `];` including a CR, so `end` lands on the start of
+  // the break rather than on the LF. This file is CRLF: the old `indexOf('\n];')`
+  // pointed at the LF and left the CR inside slice(0, end), so appending a comma
+  // produced `// added by add-city.mjs\r,`. A bare CR is a JS line terminator, which
+  // ENDS the comment — so that comma became a real array separator and left an
+  // elision. The resulting `undefined` element reached codeToCity's id.replace() and
+  // threw, making the webhook 500 on EVERY checkout.session.completed. Payments were
+  // dead from that moment (found 2026-07-21 by replaying a signed event).
+  const brk = start === -1 ? null : /\r?\n\];/.exec(src.slice(start));
+  const end = brk ? start + brk.index : -1;
   if (end === -1) return { msg: `⚠ could not locate CATALOG_CITY_IDS array — add '${id}' to the webhook by hand` };
   if (new RegExp(`'${reEsc(id)}'`).test(src.slice(start, end))) return { msg: `✓ webhook CATALOG_CITY_IDS already lists "${id}"` };
-  // Add the separating comma if the last existing element lacks a trailing one, so
-  // the insert can't produce two adjacent string literals (invalid TS).
-  const needsComma = !/,\s*$/.test(src.slice(start, end));
+  // Add the separating comma only if the last ELEMENT lacks one. Strip line comments
+  // first: every entry here ends `// added by add-city.mjs`, so the old bare
+  // `/,\s*$/` never matched and this appended a stray comma on every single run.
+  const lastCode = src.slice(start, end).replace(/\/\/[^\r\n]*/g, '').trimEnd();
+  const needsComma = !/,$/.test(lastCode);
   const next = `${src.slice(0, end)}${needsComma ? ',' : ''}\n  '${id}', // added by add-city.mjs${src.slice(end)}`;
   return {
     msg: `✓ added "${id}" to webhook CATALOG_CITY_IDS — REDEPLOY the function to apply (supabase functions deploy stripe-webhook)`,
