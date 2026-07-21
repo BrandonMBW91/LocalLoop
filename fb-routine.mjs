@@ -12,6 +12,7 @@
 // only on the weekend digest so the page never reads as spammy.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { CITIES } from './src/data/cities.js';
+import { ANDROID_LIVE } from './src/lib/links.js';
 import { MARQUEE, BIGDRAW, FILLER, isShouty, isUnsafe, isImplausibleTime, scrubDashes } from './aggregator/content-safety.mjs';
 
 const DIR = new URL('.', import.meta.url);
@@ -162,7 +163,15 @@ async function genWeekend() {
   // Data from the page's own posts: a clickable external link tanked reach to 10,
   // while a plain-text "search Local Loop" post hit 2,332. So NO raw URL in the body.
   // (Owner can drop the App Store link as the FIRST COMMENT to keep full reach.)
-  const text = `Weekend plans, sorted. 🙂\n\nHere's what's happening around ${cities} this weekend:\n\n${body}\n\nMore going on than we can fit here. Full list, times, and directions are in the app. Search "Local Loop" in the App Store, it's free.\n\nWhat's your family getting into this weekend?`;
+  // Store line reads from ANDROID_LIVE so it flips with the app, not by remembering.
+  // android-live.mjs handles links.js and open.html; this post is public and recurring
+  // and the script cannot see it, so deriving it here is the only way it cannot go
+  // stale. Before Android is public, naming Google Play would send half the readers to
+  // a 404 — which is exactly the dead end the flag exists to prevent.
+  const storeLine = ANDROID_LIVE
+    ? 'Search "Local Loop" in the App Store or on Google Play, it\'s free.'
+    : 'Search "Local Loop" in the App Store, it\'s free.';
+  const text = `Weekend plans, sorted. 🙂\n\nHere's what's happening around ${cities} this weekend:\n\n${body}\n\nMore going on than we can fit here. Full list, times, and directions are in the app. ${storeLine}\n\nWhat's your family getting into this weekend?`;
   return { text, ok: !weak, note: weak ? 'Thin weekend (few marquee events) — review before posting, or skip this week.' : '' };
 }
 
