@@ -27,6 +27,15 @@ const CENTER = Object.fromEntries(
   Object.entries(POLY).map(([id, p]) => [id, { lng: (p.bbox[0] + p.bbox[2]) / 2, lat: (p.bbox[1] + p.bbox[3]) / 2 }])
 );
 const MAX_TOWN_MI = 35; // a real venue for a town sits within ~this far of its center
+// Mapbox API-level refusals (401/403/429/5xx), as distinct from "no match for this
+// address". See the geocode() comment: conflating the two is what made a revoked token
+// or an exhausted quota look like a night of unresolvable addresses.
+let apiFailures = 0;
+let lastApiError = '';
+// Stop the run rather than grind through thousands of doomed lookups. Small enough to
+// catch a dead token on the first town, large enough that a couple of transient blips
+// do not abort a healthy night.
+const MAX_API_FAILURES = 25;
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MAPBOX_TOKEN } = process.env;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !MAPBOX_TOKEN) {
   console.error('Missing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or MAPBOX_TOKEN.');
@@ -58,7 +67,19 @@ async function geocode(query) {
     `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json` +
     `?access_token=${MAPBOX_TOKEN}&limit=1&country=US&proximity=-83.65,41.04`;
   const res = await fetch(url);
-  if (!res.ok) return null;
+  // A NOT-OK response is not "address not found" — it is the API refusing us, and the
+  // two used to be indistinguishable because both returned null. That made the worst
+  // failure in the codebase silent: if the token were revoked or the monthly quota ran
+  // out, every address would come back "unresolvable", the run would exit 0, and new
+  // events would just quietly stop getting map pins. Count these separately so the
+  // caller can abort the run instead of writing off the whole night's addresses.
+  if (!res.ok) {
+    apiFailures += 1;
+    lastApiError = `HTTP ${res.status}`;
+    if (res.status === 401 || res.status === 403) lastApiError += ' (token rejected)';
+    if (res.status === 429) lastApiError += ' (rate limit or quota exhausted)';
+    return null;
+  }
   const data = await res.json();
   const f = data.features?.[0];
   if (!f?.center) return null;
@@ -126,10 +147,22 @@ async function main() {
       }
     }
     process.stdout.write(`\r  ${done}/${groups.size} combos · ${updated} events · ${missed} not found`);
+    if (apiFailures >= MAX_API_FAILURES) {
+      process.stdout.write('\n');
+      throw new Error(
+        `Mapbox refused ${apiFailures} requests in a row (last: ${lastApiError}). Stopping.\n` +
+        `This is an API problem, not bad addresses — check the token and the monthly quota at\n` +
+        `https://console.mapbox.com/. Nothing was written for the remaining combos.`,
+      );
+    }
     await new Promise((r) => setTimeout(r, 110)); // stay well under Mapbox rate limits
   }
   process.stdout.write('\n');
   console.log(DRY ? 'dry run — nothing written' : `Done. Geocoded ${updated} events.` + (farRejected ? ` (${farRejected} rejected as too far from town)` : ''));
+  // Under the abort threshold but non-zero still means Mapbox turned us away some of
+  // the time, which no amount of "not found" ever explains. Say so on its own line —
+  // this used to be invisible.
+  if (apiFailures) console.warn(`WARNING: ${apiFailures} Mapbox API failure(s) (last: ${lastApiError}). Those addresses were skipped, not resolved.`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => { console.error(e.message || e); process.exit(1); });

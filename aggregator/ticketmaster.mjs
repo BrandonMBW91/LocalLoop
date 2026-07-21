@@ -120,12 +120,18 @@ async function main() {
   }
   const seen = new Set();
   const rows = [];
+  // Anchors that the API refused. Ticketmaster is NOT in event_sources, so a failure
+  // here writes no last_error anywhere and feed-health is blind to it by construction:
+  // the towns just quietly stop getting concerts and the run still exits 0. Collect
+  // them and fail loudly at the end instead.
+  const failedAnchors = [];
   for (const a of ANCHORS) {
     let events = [];
     try {
       events = await fetchAnchor(a);
     } catch (e) {
       console.error(`  ! ${a.name}: ${e.message}`);
+      failedAnchors.push(`${a.name}: ${String(e.message).slice(0, 120)}`);
       continue;
     }
     let n = 0;
@@ -154,10 +160,27 @@ async function main() {
     (data || []).forEach((r) => have.add(r.source_uid));
   }
   const newRows = rows.filter((r) => !have.has(r.source_uid));
-  if (!newRows.length) { console.log('\nNo new Ticketmaster events.'); return; }
-  const { data, error } = await sb.from('events').upsert(newRows, { onConflict: 'source_uid', ignoreDuplicates: true }).select('id');
-  if (error) { console.error('write error:', error.message); process.exit(1); }
-  console.log(`\nAdded ${data ? data.length : 0} new Ticketmaster event(s).`);
+  if (newRows.length) {
+    const { data, error } = await sb.from('events').upsert(newRows, { onConflict: 'source_uid', ignoreDuplicates: true }).select('id');
+    if (error) { console.error('write error:', error.message); process.exit(1); }
+    console.log(`\nAdded ${data ? data.length : 0} new Ticketmaster event(s).`);
+  } else {
+    console.log('\nNo new Ticketmaster events.');
+  }
+  reportFailures(failedAnchors);
+}
+
+// Exit non-zero when anchors were refused, so the workflow step goes red and the
+// morning brief has something to show. Previously this was one stderr line inside a
+// continue-on-error step, i.e. nothing. A THIRD of the anchors failing and the whole
+// job succeeding is the exact shape of a silent outage.
+function reportFailures(failed) {
+  if (!failed.length) return;
+  console.error(`\n${failed.length} of ${ANCHORS.length} Ticketmaster anchors FAILED:`);
+  for (const f of failed) console.error(`  ${f}`);
+  console.error('These towns got no concerts this run. Nothing records that in event_sources,');
+  console.error('so this message is the only signal — check the API key and the daily quota.');
+  process.exit(1);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

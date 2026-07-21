@@ -77,7 +77,10 @@
        localloop@ delivered; hello@, events@ and noreply@ all BOUNCED (Zoho has no
        catch-all). This footer said hello@ — a paying advertiser emailing the support
        address printed on their own ad-management page got a bounce. -->
-  <div class="foot">Questions? Email <a href="mailto:localloop@localloop.io?subject=Managing%20my%20Local%20Loop%20ad">localloop@localloop.io</a> · <a href="https://localloop.io">localloop.io</a></div>
+  <!-- Billing link is hidden until the ad loads, because it is only meaningful once we
+       have a token that resolves. The function itself decides what to show: a one-off
+       Featured Listing has no subscription, so it says so rather than 404ing. -->
+  <div class="foot"><a id="billing" href="#" style="display:none">Cancel or update billing</a> · Questions? Email <a href="mailto:localloop@localloop.io?subject=Managing%20my%20Local%20Loop%20ad">localloop@localloop.io</a> · <a href="https://localloop.io">localloop.io</a></div>
 </div>
 <script>
 (function(){
@@ -110,6 +113,8 @@
       else { st.className="pill off"; st.textContent = ad.paused_reason==="payment_failed" ? "Paused — payment" : "Paused"; }
       var towns=(ad.towns||[]).map(title);
       $("towns").textContent = towns.length ? ("Running in "+towns.join(", ")+(towns.length===1?", OH":"")) : "";
+      var bp=$("billing");
+      if(bp){ bp.href="https://wtaefyspddadcrnovumk.supabase.co/functions/v1/billing-portal?token="+encodeURIComponent(token); bp.style.display="inline"; }
       show("form");
     })
     .catch(function(){ show("badtoken"); });

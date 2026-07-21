@@ -79,9 +79,12 @@ function toRow(ev, cityId) {
 async function main() {
   if (!CID) { console.error('Missing SEATGEEK_CLIENT_ID in aggregator/.env'); process.exit(1); }
   const seenUid = new Set(), seenKey = new Set(), rows = [];
+  // Anchors the API refused. SeatGeek is not in event_sources, so nothing else on
+  // earth records this failure — feed-health cannot see it and the run exits 0.
+  const failedAnchors = [];
   for (const a of ANCHORS) {
     let evs = [];
-    try { evs = await fetchAnchor(a); } catch (e) { console.error(`  ! ${a.name}: ${e.message}`); continue; }
+    try { evs = await fetchAnchor(a); } catch (e) { console.error(`  ! ${a.name}: ${e.message}`); failedAnchors.push(`${a.name}: ${String(e.message).slice(0, 120)}`); continue; }
     let n = 0;
     for (const ev of evs) {
       const row = toRow(ev, a.city);
@@ -114,9 +117,20 @@ async function main() {
   console.log(`${dupeCount} overlapped existing events (Ticketmaster/feeds) and were dropped; ${fresh.length} genuinely new`);
 
   if (DRY) { fresh.slice(0, 12).forEach((r) => console.log(`    • ${r.start_at.slice(0, 16)} [${r.category}] ${r.title} @ ${r.venue} (${r.city_id})`)); console.log('\n(dry run — nothing written)'); return; }
-  if (!fresh.length) { console.log('nothing new to add.'); return; }
+  if (!fresh.length) { console.log('nothing new to add.'); reportFailures(failedAnchors); return; }
   const { data, error } = await sb.from('events').upsert(fresh, { onConflict: 'source_uid', ignoreDuplicates: true }).select('id');
   if (error) { console.error('write error:', error.message); process.exit(1); }
   console.log(`Added ${data ? data.length : 0} new SeatGeek event(s).`);
+  reportFailures(failedAnchors);
+}
+
+// Exit non-zero so the workflow step goes red. One stderr line inside a
+// continue-on-error step is indistinguishable from success.
+function reportFailures(failed) {
+  if (!failed.length) return;
+  console.error(`\n${failed.length} of ${ANCHORS.length} SeatGeek anchors FAILED:`);
+  for (const f of failed) console.error(`  ${f}`);
+  console.error('Those towns got no SeatGeek events this run, and nothing records it.');
+  process.exit(1);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
