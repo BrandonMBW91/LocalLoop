@@ -9,6 +9,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { normalizeLinkUrl } from '../src/lib/links.js';
+import { rateForUsers } from '../src/data/pricing.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let pass = 0, fail = 0;
@@ -147,6 +148,38 @@ const linkCases = [
 for (const [input, expected] of linkCases) {
   t(`normalizeLinkUrl(${JSON.stringify(input)}) -> ${JSON.stringify(expected)}`, () => {
     assert.equal(normalizeLinkUrl(input), expected);
+  });
+}
+
+// --- prices are never typed into prose ---------------------------------------
+// The home tab shipped the hardcoded line "Put your business here from $19/mo" while
+// every other surface derived the number from the town's real user count. $19 is the
+// FOUNDING rate, so it was accidentally true in 134 towns and false in Findlay, which
+// had crossed into the Local tier at $29 — promising a price the checkout would not
+// honour. The tier engine is not the fragile part; a literal in a sentence is. These
+// guard the shape of the mistake, not the one town it happened to hit.
+t('the tier engine still maps user counts to the right monthly rate', () => {
+  assert.equal(rateForUsers(0).sponsor, 19, 'a brand-new town is Founding $19');
+  assert.equal(rateForUsers(249).sponsor, 19, 'just under the line is still Founding');
+  assert.equal(rateForUsers(250).sponsor, 29, 'the threshold itself is Local $29');
+  assert.equal(rateForUsers(260).sponsor, 29, "Findlay's real count today is Local");
+  assert.equal(rateForUsers(1000).sponsor, 49, 'Established');
+  assert.equal(rateForUsers(5000).sponsor, 79, 'Premier');
+});
+
+for (const screen of ['app/(tabs)/index.js', 'app/promote.js']) {
+  t(`${screen} quotes no per-town price as a literal`, () => {
+    // code(), not readFileSync: the comments explaining this rule quote the very
+    // numbers it forbids, and a guard that trips on its own rationale gets deleted.
+    const src = code(join(ROOT, screen));
+    // Only the four tier rates matter: those are the numbers that differ BY TOWN.
+    // Flat SKUs ($9 deal, $39 metro, $79 all-region) are the same everywhere, so a
+    // literal there cannot mislead anyone about their own town.
+    const perTown = [19, 29, 49].map((n) => `$${n}/mo`);
+    const hits = perTown.filter((p) => src.includes(p));
+    assert.deepEqual(hits, [],
+      `${screen} hardcodes ${hits.join(', ')} — a per-town rate must come from `
+      + 'useTownRate/rateForUsers, or it will be wrong for whichever town crosses a tier next.');
   });
 }
 

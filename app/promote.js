@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
 import { fetchCityUsers } from '../src/lib/db';
-import { rateForUsers } from '../src/data/pricing';
+import { useTownRate } from '../src/hooks/useTownRate';
 import { formatCount } from '../src/utils/dates';
-import { REGION_LINK, CHECKOUT_BY_TIER, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, CHECKOUT_ANNUAL_BY_TIER, DEAL_LINK } from '../src/data/checkout';
+import { REGION_LINK, REGION_ANNUAL_LINK, METRO_LINK, METRO_ANNUAL_LINK, DEAL_LINK } from '../src/data/checkout';
 import { colors, spacing, radius } from '../src/theme/theme';
 
 // Hosted advertise page + live Stripe Payment Links. Purchases stay on the web
@@ -61,27 +61,20 @@ function RateRow({ label, sub, price, last, url }) {
 export default function PromoteScreen() {
   const { city, cityId, backendEnabled } = useApp();
   const email = 'localloop@localloop.io';
-  // null = user count UNKNOWN (loading, or the RPC failed). Never price off an
-  // unknown count — rateForUsers(0) = Founding $19 would let a Local-tier ($29)
-  // town check out at the wrong price during any network blip.
-  const [users, setUsers] = useState(null);
+  // Rate derivation moved into useTownRate so this screen and the home-tab house ad
+  // cannot compute a town's price differently. That is not hypothetical: the house ad
+  // had its own hardcoded $19 and disagreed with this screen in Findlay.
+  //
+  // The rules it enforces, unchanged from what lived here: null count = UNKNOWN, and
+  // an unknown count must never fall back to rateForUsers(0) = Founding $19, or a
+  // Local-tier ($29) town checks out at the wrong price during any network blip.
+  const { known, users, rate, links, buyable, annualTown } = useTownRate(cityId, backendEnabled);
+
   const [totalUsers, setTotalUsers] = useState(0);
-
   useEffect(() => {
-    setUsers(null); // switching towns resets to unknown
-    if (backendEnabled) {
-      fetchCityUsers(cityId).then(setUsers).catch(() => {}); // resolves null on failure
-      fetchCityUsers(null).then((n) => setTotalUsers(n || 0)).catch(() => {}); // display only
-    }
-  }, [cityId, backendEnabled]);
-
-  const known = users != null;
-  const rate = rateForUsers(users || 0);
-  // Tap-to-buy only when the tier is KNOWN and has live links; an unknown count
-  // shows the email flow instead of possibly-wrong Founding buy links.
-  const links = known ? CHECKOUT_BY_TIER[rate.name] || null : null;
-  const buyable = !!links;
-  const annualTown = known ? CHECKOUT_ANNUAL_BY_TIER[rate.name]?.town : null;
+    // Product-wide total, display only — not an input to any price.
+    if (backendEnabled) fetchCityUsers(null).then((n) => setTotalUsers(n || 0)).catch(() => {});
+  }, [backendEnabled]);
 
   return (
     <ScrollView
@@ -160,9 +153,15 @@ export default function PromoteScreen() {
         <RateRow label="Custom plan" sub="Multiple towns, events, nonprofits" price="Let's talk" last />
       </View>
       <ThemedText size="small" color={colors.textMuted} style={styles.note}>
-        {rate.nextTierAt
-          ? `You pay the ${rate.name} rate shown above. Rates step up as ${city.name} grows, so start now to lock in today's price for a full year. No contracts.`
-          : `You pay the ${rate.name} rate shown above, locked in for a full year. No contracts.`}
+        {/* Guarded like every other tier-dependent string on this screen (see the
+            `known` checks above). Unguarded, this named the FOUNDING tier while the
+            count was still loading — so a Findlay owner, who actually pays the Local
+            rate, read "You pay the Founding rate" for as long as the fetch took. */}
+        {!known
+          ? `Rates are set by how many people use Local Loop in ${city.name}. Your town's rate loads in a moment.`
+          : rate.nextTierAt
+            ? `You pay the ${rate.name} rate shown above. Rates step up as ${city.name} grows, so start now to lock in today's price for a full year. No contracts.`
+            : `You pay the ${rate.name} rate shown above, locked in for a full year. No contracts.`}
       </ThemedText>
 
       {buyable ? (

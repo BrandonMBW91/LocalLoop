@@ -20,15 +20,23 @@ import { daysFromNow, touchesToday, touchesWeekend } from '../../src/utils/dates
 import { buildTimeSections } from '../../src/utils/grouping';
 import { shareAppMessage } from '../../src/lib/links';
 import { venueCore } from '../../src/utils/place';
+import { useTownRate } from '../../src/hooks/useTownRate';
 import { colors, spacing, radius } from '../../src/theme/theme';
 
 export default function EventsScreen() {
   const router = useRouter();
   const {
-    city, scale, events, deals, sponsors, editorPick, interests, follows,
+    city, cityId, scale, events, deals, sponsors, editorPick, interests, follows,
     loadingData, loadError, refresh, backendEnabled, signedIn, logEvent,
     hideKids, setHideKids,
   } = useApp();
+  // The house ad quotes a price, so it must be THIS town's price. Fetching only when
+  // the ad can actually render keeps it off the critical path for the 134 towns that
+  // already have a sponsor booked.
+  const { known: rateKnown, sponsor: townPrice } = useTownRate(
+    cityId,
+    backendEnabled && !loadingData && sponsors.length === 0,
+  );
   const {
     query, setQuery, deferredQuery,
     activeFilter: activeCat, setActiveFilter: setActiveCat,
@@ -158,7 +166,12 @@ export default function EventsScreen() {
               >
                 <Ionicons name="megaphone-outline" size={20} color={colors.primary} />
                 <ThemedText size="small" weight="bold" color={colors.primary} style={{ flex: 1 }}>
-                  Reach {city.name}. Put your business here from $19/mo.
+                  {/* "from" is deliberately gone: it reads as a floor and it was not
+                      one. And no number at all beats a wrong one — the tap lands on a
+                      page that will quote the real rate either way. */}
+                  {rateKnown
+                    ? `Reach ${city.name}. Put your business here for $${townPrice}/mo.`
+                    : `Reach ${city.name}. Put your business here.`}
                 </ThemedText>
                 <Ionicons name="chevron-forward" size={20} color={colors.primary} />
               </Pressable>

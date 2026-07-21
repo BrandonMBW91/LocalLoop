@@ -4,13 +4,13 @@
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
 export const APP_VERSION = '1.0.4';
-export const BUILD = 122;
+export const BUILD = 123;
 
 // One-line "what's new" shown once in a dismissible banner after an update (see
 // WhatsNewBanner). Update it alongside BUILD each release so returning users get a
 // gentle heads-up about what changed. Keep it short and user-facing.
 //
-// EMPTY ON PURPOSE for revs 121-122. WhatsNewBanner fires whenever the stored rev is
+// EMPTY ON PURPOSE for revs 121-123. WhatsNewBanner fires whenever the stored rev is
 // behind BUILD *and* this string is truthy, so leaving rev 120's text here would
 // re-show a message people already dismissed — advertising "twice as many events" a
 // second time for a release that changed nothing they can see. Revs 121-122 are the

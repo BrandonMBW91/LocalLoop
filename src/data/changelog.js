@@ -4,13 +4,27 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 96 revs, newest first.
+// secret. 97 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 123,
+    "date": "2026-07-21",
+    "whatsNew": null,
+    "changes": [
+      "rev 123: per-town ad price (wip)",
+      "Make every script accept both --dry and --dry-run",
+      "Stop re-asking Mapbox the same 923 unanswerable questions twice a day",
+      "Close the four gaps the dependency audit found",
+      "Correct the release order in android-live's notes"
+    ]
+  },
   {
     "rev": 122,
     "date": "2026-07-21",
     "whatsNew": null,
-    "changes": []
+    "changes": [
+      "rev 122: make Total views a tappable tile with a per-town breakdown"
+    ]
   },
   {
     "rev": 121,
