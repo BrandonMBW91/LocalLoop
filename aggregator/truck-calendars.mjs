@@ -3,12 +3,18 @@
 // and their stops appear automatically (the Jonny Burritos objection, solved).
 //   node truck-calendars.mjs            # ingest + prune past aggregator stops
 //   node truck-calendars.mjs --dry-run  # report only
+import './tz-utc.mjs'; // MUST be first: pins TZ=UTC before node-ical/rrule load (see file)
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
+import ical from 'node-ical';
 import { loadDotEnv } from './env.mjs';
 import { wallParts } from './et.mjs';
 import { safeFetch } from './safe-fetch.mjs';
+
+// How far ahead to expand a recurring series. Matches aggregate.mjs's horizon so a
+// truck's weekly stop and a venue's weekly event show the same distance out.
+const HORIZON_DAYS = 90;
 
 // SSRF-safe fetch (scheme/host/resolved-IP checks + socket-level DNS pin + manual
 // redirects) lives in ./safe-fetch.mjs, shared with the event aggregator — truck
@@ -21,83 +27,39 @@ const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const UA = { 'User-Agent': 'Mozilla/5.0 (LocalLoop truck-calendars)' };
 const sha1 = (s) => createHash('sha1').update(s).digest('hex');
 
-// --- minimal iCal parser: unfold, then split VEVENTs ---
+// --- privacy screen (parsing itself is node-ical, see the pull loop) ---
 // A stop the owner clearly doesn't want on their public list. The reliable signal is
 // the calendar's own Private flag (CLASS:PRIVATE / CONFIDENTIAL) or a Cancelled status;
 // this title keyword list is a backstop for owners who forget to set that. Kept
 // conservative to avoid dropping legit public stops (e.g. "Holiday Market" is fine).
 const PERSONAL_RE = /\b(private|personal|appointment|appt\.?|dentist|doctor|dr\.|vacation|day ?off|out of (office|town)|not available|unavailable|do not book|blocked|birthday|anniversary|family (time|dinner|event|gathering|party)|closed)\b/i;
 
-function parseICS(text) {
-  const unfolded = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
-  const events = [];
-  const re = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
-  let m;
-  while ((m = re.exec(unfolded))) {
-    // Strip embedded VALARM sub-components first: their DESCRIPTION ("This is
-    // an event reminder") would otherwise be read as the stop's public note.
-    const block = m[1].replace(/BEGIN:VALARM[\s\S]*?END:VALARM/g, '');
-    const get = (name) => {
-      const r = new RegExp('^' + name + '(;[^:\\n]*)?:(.*)$', 'm').exec(block);
-      return r ? { params: r[1] || '', value: unescapeText(r[2].trim()) } : null;
-    };
-    events.push({ summary: get('SUMMARY'), location: get('LOCATION'), dtstart: get('DTSTART'), dtend: get('DTEND'), desc: get('DESCRIPTION'), cls: get('CLASS'), status: get('STATUS'), rrule: get('RRULE') });
-  }
-  return events;
-}
-
-// RFC 5545 TEXT values escape , ; \n and backslash — without unescaping, nearly
-// every address with a comma published with literal backslashes. Order matters:
-// unescape the double-backslash LAST so it can't create new escape sequences.
-function unescapeText(s) {
-  return String(s || '')
-    .replace(/\\n/gi, ' ')
-    .replace(/\\,/g, ',')
-    .replace(/\\;/g, ';')
-    .replace(/\\\\/g, '\\');
-}
-
-// Convert a wall-clock in a named IANA zone to the equivalent UTC instant, using
-// Node's full tz database (server-side Intl is fine — the Hermes ban is on-device
-// only). Corrects the naive "treat wall as UTC" guess by the zone's real offset.
-function wallInZoneToUTC(y, mo, d, h, mi, tz) {
-  const guess = Date.UTC(y, mo - 1, d, h, mi);
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-      .formatToParts(new Date(guess)).map((p) => [p.type, p.value])
-  );
-  const asUTC = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute);
-  return new Date(guess - (asUTC - guess));
-}
-
-// DTSTART/DTEND -> ET wall date + display time. Handles Z (UTC), a named TZID
-// (e.g. a truck whose Google Calendar is set to America/Chicago), floating times
-// (treated as local ET), and date-only (all-day, no time).
-function whenET(field) {
-  if (!field) return null;
-  const v = field.value;
-  const dOnly = /^(\d{4})(\d{2})(\d{2})$/.exec(v);
-  if (dOnly) return { date: `${dOnly[1]}-${dOnly[2]}-${dOnly[3]}`, time: null };
-  const dt = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/.exec(v);
-  if (!dt) return null;
-  let [, y, mo, d, h, mi, , z] = dt;
-  const tzid = (String(field.params || '').match(/TZID=([^;:]+)/) || [])[1];
-  let instant = null;
-  if (z) instant = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, 0)); // UTC
-  else if (tzid && tzid !== 'America/New_York') {
-    // Named non-Eastern zone -> convert its wall clock to a UTC instant first.
-    try { instant = wallInZoneToUTC(+y, +mo, +d, +h, +mi, tzid); } catch { instant = null; }
-  }
-  if (instant) {
-    const p = wallParts(instant); // -> ET wall clock
-    y = String(p.y); mo = String(p.mo).padStart(2, '0'); d = String(p.d).padStart(2, '0');
-    h = String(p.h).padStart(2, '0'); mi = String(p.mi).padStart(2, '0');
-  }
-  const hr = +h, m12 = ((hr + 11) % 12) + 1, ap = hr < 12 ? 'AM' : 'PM';
-  return { date: `${y}-${mo}-${d}`, time: `${m12}:${mi} ${ap}` };
-}
-
 const todayET = (() => { const p = wallParts(new Date()); return `${p.y}-${String(p.mo).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`; })();
+
+// node-ical returns fields that carry iCal params (SUMMARY;LANGUAGE=en-US:…) as
+// {params, val} objects. Stringifying those published literal "[object Object]".
+const txt = (v) => String(v && typeof v === 'object' && 'val' in v ? v.val : (v ?? '')).trim();
+
+// A node-ical Date -> the ET wall date + display time the row stores.
+function etOf(d, allDay) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
+  if (allDay) {
+    // Date-only values are a CALENDAR DAY, not an instant, and node-ical hands them
+    // back as UTC midnight. Reading that in Eastern rolls it back to 8pm the previous
+    // evening — an all-day Saturday stop would publish as Friday. The UTC components
+    // are the day the owner actually picked, so use them verbatim.
+    return {
+      date: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`,
+      time: null,
+    };
+  }
+  const p = wallParts(d);
+  const m12 = ((p.h + 11) % 12) + 1, ap = p.h < 12 ? 'AM' : 'PM';
+  return {
+    date: `${p.y}-${String(p.mo).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`,
+    time: `${m12}:${String(p.mi).padStart(2, '0')} ${ap}`,
+  };
+}
 
 // StreetFoodFinder profile pages (streetfoodfinder.com/<slug>) have no public
 // iCal — the .ics endpoints sit behind a bot wall (HTTP 403) while the page
@@ -170,7 +132,6 @@ for (const cal of cals) {
   let stops = 0, skipped = 0, error = null;
   try {
     let rows = [];
-    let rruleCount = 0;
     if (/streetfoodfinder\.com/i.test(cal.ical_url)) {
       rows = await fetchSffStops(cal);
     } else {
@@ -178,29 +139,73 @@ for (const cal of cals) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error('not iCal (bot wall or moved feed?)');
-    for (const ev of parseICS(text)) {
-      // RRULE recurring stops are NOT expanded by this minimal parser — only the
-      // master DTSTART ingests, and once that's past the series silently yields
-      // nothing. Surface it on the calendar record instead of a silent no-op.
-      if (ev.rrule) rruleCount++;
-      const start = whenET(ev.dtstart);
-      if (!start || start.date < todayET) continue; // future stops only
+    // Parsed with node-ical (NOT the old hand-rolled regex parser) specifically so
+    // RRULE series expand. A truck's schedule is mostly recurring — "Earnest Brew
+    // Works every Tuesday" is entered ONCE with an RRULE — and the old parser read
+    // only the master DTSTART, so a weekly stop showed up once and then vanished
+    // for good once that first date passed. Rusty's Road Trip reported it (2026-07-21):
+    // 6 one-off stops ingested while his calendar held a full recurring season.
+    // node-ical also gives us EXDATE (a cancelled week) and RECURRENCE-ID overrides
+    // (a moved week), which the regex parser could not see at all.
+    const parsed = await ical.async.parseICS(text);
+    const horizonEnd = new Date(Date.now() + HORIZON_DAYS * 86400000);
+    for (const ev of Object.values(parsed)) {
+      if (!ev || ev.type !== 'VEVENT' || !ev.start) continue;
       // Privacy: never publish an event the owner marked Private/Confidential or
       // Cancelled in their calendar, or whose title reads as a personal appointment.
-      const vis = (ev.cls?.value || '').toUpperCase();
+      const vis = String(ev.class || '').toUpperCase();
       if (vis === 'PRIVATE' || vis === 'CONFIDENTIAL') { skipped++; continue; }
-      if ((ev.status?.value || '').toUpperCase() === 'CANCELLED') { skipped++; continue; }
-      if (PERSONAL_RE.test(ev.summary?.value || '')) { skipped++; continue; }
-      const loc = (ev.summary?.value || ev.location?.value || cal.name).slice(0, 200);
-      const end = whenET(ev.dtend);
-      rows.push({
-        city_id: cal.city_id, name: cal.name, cuisine: cal.cuisine,
-        date: start.date, start_time: start.time, end_time: end?.time || null,
-        location_name: loc, address: ev.location?.value?.slice(0, 300) || null,
-        host: cal.host || cal.name, note: (ev.desc?.value || '').slice(0, 500) || null,
-        featured: false, status: 'approved',
-        source_uid: sha1(`${cal.id}|${start.date}|${loc}`),
-      });
+      if (String(ev.status || '').toUpperCase() === 'CANCELLED') { skipped++; continue; }
+      const summary = txt(ev.summary), location = txt(ev.location), note = txt(ev.description);
+      if (PERSONAL_RE.test(summary)) { skipped++; continue; }
+
+      const allDay = ev.datetype === 'date';
+      const durMs = ev.end && ev.start ? Math.max(0, ev.end.getTime() - ev.start.getTime()) : 0;
+
+      // A moved instance lives in ev.recurrences keyed by its ORIGINAL date, so the
+      // master expansion must skip that date and publish the moved one separately.
+      const overrides = ev.recurrences ? Object.values(ev.recurrences) : [];
+      const overriddenDays = new Set(Object.keys(ev.recurrences || {}).map((k) => String(k).slice(0, 10)));
+      // EXDATE = a week the owner deleted. Publishing it would send someone to a
+      // truck that isn't coming, which is worse than missing the stop entirely.
+      const exDays = new Set(Object.keys(ev.exdate || {}).map((k) => String(k).slice(0, 10)));
+
+      let starts = [];
+      if (ev.rrule) {
+        try { starts = ev.rrule.between(new Date(Date.now() - 86400000), horizonEnd, true); }
+        catch { starts = []; }
+      } else {
+        starts = [ev.start];
+      }
+
+      const emit = (whenDate, sum, loc0, addr, noteText) => {
+        const start = etOf(whenDate, allDay);
+        if (!start || start.date < todayET) return; // future stops only
+        const end = durMs ? etOf(new Date(whenDate.getTime() + durMs), allDay) : null;
+        const loc = (sum || loc0 || cal.name).slice(0, 200);
+        rows.push({
+          city_id: cal.city_id, name: cal.name, cuisine: cal.cuisine,
+          date: start.date, start_time: start.time, end_time: end?.time || null,
+          location_name: loc, address: addr ? addr.slice(0, 300) : null,
+          host: cal.host || cal.name, note: noteText ? noteText.slice(0, 500) : null,
+          featured: false, status: 'approved',
+          source_uid: sha1(`${cal.id}|${start.date}|${loc}`),
+        });
+      };
+
+      for (const when of starts) {
+        const dayKey = etOf(when, allDay)?.date;
+        if (!dayKey || exDays.has(dayKey) || overriddenDays.has(dayKey)) continue;
+        emit(when, summary, location, location, note);
+      }
+      // Publish the moved instances at their NEW time (unless themselves cancelled).
+      for (const o of overrides) {
+        if (!o?.start) continue;
+        if (String(o.status || '').toUpperCase() === 'CANCELLED') { skipped++; continue; }
+        const oSum = txt(o.summary) || summary;
+        if (PERSONAL_RE.test(oSum)) { skipped++; continue; }
+        emit(o.start, oSum, txt(o.location) || location, txt(o.location) || location, txt(o.description) || note);
+      }
     }
     }
     // De-dup the payload by source_uid: two same-day events with the same
@@ -209,7 +214,6 @@ for (const cal of cals) {
     const seenUid = new Set();
     const uniqueRows = rows.filter((r) => (seenUid.has(r.source_uid) ? false : seenUid.add(r.source_uid)));
     stops = uniqueRows.length;
-    if (rruleCount && !error) error = `${rruleCount} recurring event(s) not expanded (RRULE unsupported; post stops individually or flatten the series)`;
     if (!DRY) {
       if (uniqueRows.length) {
         const { error: upErr } = await sb.from('food_trucks').upsert(uniqueRows, { onConflict: 'source_uid', ignoreDuplicates: false });
