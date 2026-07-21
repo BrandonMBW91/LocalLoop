@@ -168,3 +168,22 @@ revoke execute on function public.update_sponsor_ad(text, text, text, text, text
 grant execute on function public.update_sponsor_ad(text, text, text, text, text, text) to anon, authenticated;
 
 notify pgrst, 'reload schema';
+
+-- ---------------------------------------------------------------------------
+-- COLUMN GRANTS FOR cta — added 2026-07-21 after this migration broke ad rendering.
+--
+-- sponsors uses COLUMN-LEVEL grants (supabase/sponsors_hardening.sql) so the anon key
+-- shipped in the public web bundle cannot read stripe ids or the per-ad counters.
+-- Adding the cta column above did not extend those grants, and PostgREST denies the
+-- WHOLE query — 401, "permission denied for table sponsors" — the moment a request
+-- names one ungranted column. src/lib/db.js then added cta to SPONSOR_PUBLIC_COLS, so
+-- fetchSponsors started 401ing for every user in every town: no ad rendered anywhere.
+--
+-- RLS was never the issue and the rows were fine; the query never got that far.
+--
+-- THE RULE: adding a column that any client reads means granting it here too. A new
+-- column is invisible-by-default on this table, and the failure is total rather than
+-- partial, which makes it look like "ads are broken" rather than "one field is missing".
+grant select (cta) on public.sponsors to anon, authenticated;
+
+notify pgrst, 'reload schema';
