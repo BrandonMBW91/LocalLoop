@@ -1027,6 +1027,25 @@ export async function fetchUsersByCity() {
   }
 }
 
+// Total views across EVERY approved listing, in every town, always.
+//
+// Deliberately ignores the Metrics screen's town scope. Every other card there is a
+// per-town number, but views read as a product total — the sort of figure you quote
+// to an advertiser — and standing in Findlay it showed 436 against a real 1,101.
+// Server-side aggregate (supabase/total_views.sql): the client alternative pages
+// every approved row in three tables just to sum one column.
+// null = UNKNOWN, never 0, so a failed fetch cannot be shown as "no views".
+export async function fetchTotalViews() {
+  try {
+    const { data, error } = await supabase.rpc('total_views');
+    if (error) throw error;
+    return data ?? null;
+  } catch (e) {
+    console.warn('fetchTotalViews failed:', e?.message);
+    return null;
+  }
+}
+
 // Monthly active users in a town — drives ad pricing by actual users.
 // Pass null or 'all' to count active users across every town.
 export async function fetchCityUsers(cityId) {

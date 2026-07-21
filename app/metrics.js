@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity, fetchRevSplit } from '../src/lib/db';
+import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity, fetchRevSplit, fetchTotalViews } from '../src/lib/db';
 import { CITIES } from '../src/data/cities';
 import { BUILD, APP_VERSION } from '../src/version';
 import { colors, spacing, radius } from '../src/theme/theme';
@@ -58,6 +58,7 @@ export default function MetricsScreen() {
   const [platform, setPlatform] = useState({ ios: 0, android: 0, web: 0, unknown: 0 });
   const [usersByCity, setUsersByCity] = useState([]); // [{cityId, users}] every town, desc
   const [revSplit, setRevSplit] = useState([]); // [{rev, runtime, embedded, users}]
+  const [totalViews, setTotalViews] = useState(null); // always all towns; null = unknown
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null); // 'featured' | 'ads' | null
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key));
@@ -66,7 +67,7 @@ export default function MetricsScreen() {
     setLoading(true);
     try {
       const target = scope === 'all' ? null : cityId; // null => every town
-      const [m, u, p, byCity, revs] = await Promise.all([
+      const [m, u, p, byCity, revs, views] = await Promise.all([
         fetchMetrics(target),
         fetchCityUsers(target),
         fetchPlatformSplit(target),
@@ -75,12 +76,16 @@ export default function MetricsScreen() {
         fetchUsersByCity(),
         // Same: update adoption is a fleet-wide question, not a per-town one.
         fetchRevSplit(),
+        // Same again: total views is a product number, not a town number. Scoped to
+        // Findlay this card read 436 while the product had served 1,101.
+        fetchTotalViews(),
       ]);
       setData(m);
       setUsers(u);
       setPlatform(p);
       setUsersByCity(byCity);
       setRevSplit(revs);
+      setTotalViews(views);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -157,7 +162,15 @@ export default function MetricsScreen() {
           onPress={usersByCity.length ? () => toggle('users') : undefined}
           expanded={expanded === 'users'}
         />
-        <StatCard icon="eye" value={m.totalViews ?? 0} label="Total views" color={colors.primary} />
+        {/* Always every town, unlike the cards around it — hence the explicit label,
+            so this can't be misread as a per-town figure when scope is one town.
+            Falls back to the scoped number only if the global fetch failed. */}
+        <StatCard
+          icon="eye"
+          value={totalViews ?? m.totalViews ?? 0}
+          label="Total views (all towns)"
+          color={colors.primary}
+        />
         <StatCard icon="list" value={m.totalListings ?? 0} label="Live listings" color={colors.text} />
         <StatCard
           icon="star"

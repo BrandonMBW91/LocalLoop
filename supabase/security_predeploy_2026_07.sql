@@ -1,3 +1,9 @@
+-- !! SUPERSEDED IN PART BY supabase/metrics_exclusions.sql (2026-07-21) !!
+-- The active-user function(s) defined below now read the human_activity VIEW, not the
+-- device_activity table, so that bot-minted and owner devices stay out of every MAU
+-- number (MAU sets ad pricing and is the ad experiment metric). The definition kept
+-- here is the PRE-fix one. Re-applying this file as-is would silently revert the
+-- exclusion and quietly re-inflate pricing. Apply metrics_exclusions.sql after it.
 -- Pre-deploy security hardening from the whole-app review (2026-07). Additive /
 -- tightening only, independent of the held feature batch. Applied to prod.
 

@@ -39,7 +39,7 @@ const mau = {};
   const seen = new Set();
   for (let from = 0; ; from += 1000) {
     const { data, error } = await sb
-      .from('device_activity')
+      .from('human_activity')
       .select('device_id,city_id,last_seen')
       .gte('last_seen', monthAgo)
       .order('device_id', { ascending: true })

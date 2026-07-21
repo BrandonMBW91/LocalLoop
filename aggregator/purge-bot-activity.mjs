@@ -1,4 +1,9 @@
-// Remove crawler-generated rows from the user metrics.
+// Keep crawler-generated rows out of the user metrics.
+//
+// MARKS, does not delete (changed 2026-07-21). Rows get excluded_at/excluded_reason
+// stamped; every metric reads the human_activity view, which hides them. Same effect
+// on every number, but a misfire is now visible and one UPDATE from being undone —
+// whereas the old delete removed a real person with no way to notice.
 //
 // A JS-rendering crawler followed the SEO pages' "Open in Local Loop" link into
 // the app. Bots keep no localStorage, so makeDeviceId() minted a NEW anonymous
@@ -13,7 +18,7 @@
 // touched, so a genuine 1-in-4-billion collision between two people is ignored.
 //
 //   node purge-bot-activity.mjs           dry run
-//   node purge-bot-activity.mjs --apply   delete
+//   node purge-bot-activity.mjs --apply   mark as excluded
 import { createClient } from '@supabase/supabase-js';
 import { loadDotEnv } from './env.mjs';
 
@@ -39,14 +44,20 @@ const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_R
 
 let rows = [];
 for (let from = 0; ; from += 1000) {
+  // Reads the RAW table on purpose. Every other consumer reads the human_activity
+  // view; this is the thing that decides what belongs in it, so it has to see
+  // everything — including rows it has already marked.
   const { data, error } = await sb.from('device_activity')
-    .select('device_id,city_id,platform,last_seen').range(from, from + 999);
+    .select('device_id,city_id,platform,last_seen,excluded_at').range(from, from + 999);
   if (error) { console.error('read ERR', error.message); process.exit(1); }
   rows.push(...(data || []));
   if (!data || data.length < 1000) break;
 }
 
-const web = rows.filter((r) => r.platform === 'web');
+// Skip anything already marked (bot from a previous run, or the owner's own device):
+// re-marking is harmless but it would re-report the same groups every morning and
+// bury a genuinely new cluster in noise.
+const web = rows.filter((r) => r.platform === 'web' && !r.excluded_at);
 const bySuffix = new Map();
 for (const r of web) {
   const s = String(r.device_id).slice(-8);
@@ -119,18 +130,37 @@ for (const [town, list] of byTown) {
 clusterLog.forEach((l) => console.log(l));
 
 const removeIds = [...new Set([...botIds, ...dupeIds])];
-console.log(`bot devices to remove: ${botIds.length} (shared RNG suffix) + ${dupeIds.length} (synchronized clusters, collapsed to 1 each) = ${removeIds.length}`);
-console.log(`real web devices remaining: ${web.length - removeIds.length}`);
+console.log(`bot devices to mark: ${botIds.length} (shared RNG suffix) + ${dupeIds.length} (synchronized clusters, collapsed to 1 each) = ${removeIds.length}`);
+console.log(`real web devices counted: ${web.length - removeIds.length}`);
 
 if (!removeIds.length) process.exit(0);
 if (!APPLY) { console.log('(dry run — use --apply)'); process.exit(0); }
 
-let devDeleted = 0, evDeleted = 0;
+// MARK, don't delete. Every metric now reads the human_activity view, which hides
+// marked rows, so marking has exactly the same effect on every number — but it is
+// reversible and auditable. A delete was not: if this heuristic ever misfired on a
+// real user, that user vanished with no way to notice, let alone undo it. Now a
+// misfire is one query away from being seen:
+//     select excluded_reason, count(*) from device_activity
+//      where excluded_at is not null group by 1;
+// and one UPDATE away from being undone.
+const botSet = new Set(botIds);
+let devMarked = 0, evDeleted = 0;
 for (let i = 0; i < removeIds.length; i += 100) {
   const batch = removeIds.slice(i, i + 100);
+  // app_events is not a pricing input and this delete is the existing behaviour.
   const { error: e1 } = await sb.from('app_events').delete().in('device_id', batch);
   if (e1) console.error('app_events del ERR', e1.message); else evDeleted += batch.length;
-  const { error: e2 } = await sb.from('device_activity').delete().in('device_id', batch);
-  if (e2) console.error('device_activity del ERR', e2.message); else devDeleted += batch.length;
+  // Split by reason so the audit trail says WHICH rule caught each device.
+  for (const reason of ['bot:suffix', 'bot:cluster']) {
+    const ids = batch.filter((id) => (reason === 'bot:suffix') === botSet.has(id));
+    if (!ids.length) continue;
+    const { error: e2, count } = await sb.from('device_activity')
+      .update({ excluded_at: new Date().toISOString(), excluded_reason: reason }, { count: 'exact' })
+      .in('device_id', ids)
+      .is('excluded_at', null); // never overwrite an earlier mark (e.g. 'owner')
+    if (e2) console.error('device_activity mark ERR', e2.message); else devMarked += count ?? ids.length;
+  }
 }
-console.log(`applied: removed ${devDeleted} bot devices and their app_events (${evDeleted} batches ok)`);
+console.log(`applied: marked ${devMarked} bot devices as excluded, and deleted their app_events (${evDeleted} batches ok)`);
+console.log('(marked, not deleted — reversible: update device_activity set excluded_at=null where excluded_reason like \'bot:%\')');

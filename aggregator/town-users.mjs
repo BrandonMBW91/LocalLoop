@@ -25,7 +25,7 @@ async function all(path) {
 }
 
 const push = await all('push_tokens?select=city_id');
-const act = await all('device_activity?select=city_id').catch(() => []);
+const act = await all('human_activity?select=city_id').catch(() => []);
 
 const nameById = Object.fromEntries(CITIES.map((c) => [c.id, c.name]));
 function tally(rows) {

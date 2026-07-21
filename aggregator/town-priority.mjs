@@ -39,7 +39,7 @@ async function all(path) {
 
 // "users" = engaged devices per town (device_activity). Falls back to push_tokens
 // if device_activity is empty/unavailable.
-let act = await all('device_activity?select=city_id');
+let act = await all('human_activity?select=city_id');
 if (!act.length) act = await all('push_tokens?select=city_id');
 const usersById = {};
 for (const r of act) { const c = r.city_id || 'findlay'; usersById[c] = (usersById[c] || 0) + 1; }

@@ -16,7 +16,7 @@
 // into cold, "what does $5/day buy from zero" is exactly the number needed, and for
 // towns like New Philadelphia free posting is not even available.
 //
-// The metric is per-town 30-day MAU — distinct devices in device_activity over 30
+// The metric is per-town 30-day MAU — distinct devices in human_activity over 30
 // days, the SAME number the in-app Metrics screen shows. Net lift = test MAU gain
 // minus control MAU gain, which cancels ordinary organic growth. With the controls
 // at zero, net lift is essentially the test gain, and the controls' job is to prove
@@ -26,10 +26,13 @@
 //   free posting, which this test does not measure:
 //     < $3/user = scale paid · $3-5 = one more round · > $5 or no lift = do not scale
 //
-// COUNTING: this reads device_activity AFTER purge-bot-activity.mjs has run (7 AM
-// via local-refresh.cmd, ahead of this task's 8:15). That ordering matters. On
-// 2026-07-16 two automated agents were inflating the ad towns badly (sandusky 16
-// reported vs 8 real) and any cost-per-user off the raw numbers was ~30% optimistic.
+// COUNTING: this reads human_activity, the view that hides devices marked as bots
+// or as the owner's own (supabase/metrics_exclusions.sql). It no longer depends on
+// the 7 AM purge having run first: filtering happens at READ time now, so a bot that
+// appears at 9 AM cannot inflate a number the way it used to between cron runs.
+// That inflation was real, not theoretical: on 2026-07-16 two automated agents had
+// sandusky reporting 16 users against 8 real, making cost-per-user ~30% optimistic —
+// which is exactly the number this experiment exists to measure.
 //
 // Runs daily via the ll-ad-test scheduled task:
 //   node ad-test-tracker.mjs --email   send the report to the owner + update state
@@ -109,7 +112,7 @@ async function rows(path) {
 // undercount MAU exactly when the test succeeds and the towns grow.
 const da = [];
 for (let from = 0; ; from += 1000) {
-  const page = await rows(`device_activity?select=city_id,last_seen&city_id=in.(${ALL.join(',')})&last_seen=gte.${since30}&order=device_id.asc&limit=1000&offset=${from}`);
+  const page = await rows(`human_activity?select=city_id,last_seen&city_id=in.(${ALL.join(',')})&last_seen=gte.${since30}&order=device_id.asc&limit=1000&offset=${from}`);
   da.push(...page);
   if (page.length < 1000) break;
 }
@@ -180,7 +183,7 @@ log(`  NET AD LIFT:         ${sign(netLift)}   (test minus control)`);
 log(`  Cost per net user:   ${costPerUser != null ? '$' + costPerUser.toFixed(2) : 'n/a (no positive lift yet)'}`);
 log(`  VERDICT: ${v.label} - ${v.detail}`);
 log(`  STATUS: ${done ? 'COMPLETE (safe to disable ll-ad-test)' : `RUNNING (day ${day}/${RUN_DAYS})`}`);
-log(`  Note: gains show +change (current MAU). Numbers read from device_activity,`);
+log(`  Note: gains show +change (current MAU). Numbers exclude bot and owner devices.`);
 log(`  the same source as the in-app Metrics screen. Late installs can lag 1-2 days.`);
 log(`===============================================================\n`);
 console.log(REPORT.join('\n'));
@@ -204,7 +207,7 @@ function buildHtml() {
     + `<tr><td style="padding:12px 18px 4px;"><div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:#15315B;margin-bottom:4px;">PER-TOWN LIFT &middot; +change (current)</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-size:11px;color:#8a8a8a;padding:0 6px;">PAIR</td><td style="font-size:11px;color:#8a8a8a;padding:0 6px;">TEST (ad)</td><td style="font-size:11px;color:#8a8a8a;padding:0 6px;">CONTROL</td></tr>${rowsHtml}</table></td></tr>`
     + `<tr><td style="padding:10px 18px;border-top:1px solid #efede8;font-size:15px;color:#333;line-height:1.9;">Test towns gain: <b>${esc(sign(testGain))}</b><br>Control towns gain: <b>${esc(sign(controlGain))}</b><br>Net ad lift: <b style="font-size:18px;color:${netLift > 0 ? '#256B29' : '#B22234'};">${esc(sign(netLift))}</b> <span style="color:#8a8a8a;font-size:13px;">(test minus control)</span><br>Cost per net user: <b>${costPerUser != null ? '$' + costPerUser.toFixed(2) : 'n/a'}</b></td></tr>`
     + `<tr><td style="padding:14px 18px;background:${vColor};"><div style="color:#fff;font-size:12px;letter-spacing:.8px;font-weight:700;opacity:.85;">VERDICT ${day < RUN_DAYS ? '(provisional)' : ''}</div><div style="color:#fff;font-size:18px;font-weight:800;margin-top:2px;">${esc(v.label)}</div><div style="color:#e8eef6;font-size:14px;margin-top:3px;">${esc(v.detail)}</div></td></tr>`
-    + `<tr><td style="padding:12px 18px;background:#faf9f6;font-size:12px;color:#9a9a9a;line-height:1.6;">Read from device_activity, the same source as the in-app Metrics screen. Late installs can take a day or two to open the app, so the routine keeps reporting through day ${RUN_DAYS + SETTLE_DAYS}. This measures ads against untouched control towns, not against free posting: no town in the test got a community post. Decision rule: under $3/user scale, $3-5 one more round, over $5 or no lift do not scale.</td></tr>`
+    + `<tr><td style="padding:12px 18px;background:#faf9f6;font-size:12px;color:#9a9a9a;line-height:1.6;">Read from the same source as the in-app Metrics screen, with bot-minted and owner devices excluded. Late installs can take a day or two to open the app, so the routine keeps reporting through day ${RUN_DAYS + SETTLE_DAYS}. This measures ads against untouched control towns, not against free posting: no town in the test got a community post. Decision rule: under $3/user scale, $3-5 one more round, over $5 or no lift do not scale.</td></tr>`
     + `</table></div>`;
 }
 

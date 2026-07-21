@@ -80,7 +80,7 @@ const [
   evUserTotal, evUser24, gsTotal, gs24, ftTotal, ft24,
   eventsLive,
 ] = await Promise.all([
-  count('device_activity?select=device_id'),
+  count('human_activity?select=device_id'),
   count('app_events?select=id&event=neq.app_open'),
   count('events?select=id&source_uid=is.null'),
   count(`events?select=id&source_uid=is.null&created_at=gte.${dayStart}&created_at=lt.${dayEnd}`),
@@ -98,7 +98,7 @@ const [
 const platName = (p) => (p === 'ios' ? 'iOS' : p === 'android' ? 'Android' : 'unknown');
 const daInfo = {};
 const byPlatform = {};
-for (const d of await rows('device_activity?select=device_id,city_id,platform&order=device_id.asc')) {
+for (const d of await rows('human_activity?select=device_id,city_id,platform&order=device_id.asc')) {
   daInfo[d.device_id] = { city: d.city_id, platform: d.platform };
   const k = platName(d.platform); byPlatform[k] = (byPlatform[k] || 0) + 1;
 }
