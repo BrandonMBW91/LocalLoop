@@ -408,7 +408,7 @@ if (EMAIL || PREVIEW) {
   } else {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'Local Loop <noreply@findlayevents.com>', to: ['michabw91@gmail.com'], subject, html }),
+      body: JSON.stringify({ from: 'Local Loop <noreply@localloop.io>', to: ['michabw91@gmail.com'], subject, html }),
     });
     if (!r.ok) { console.error('email failed: ' + (await r.text()).slice(0, 200)); process.exit(1); }
     console.log('[emailed to michabw91@gmail.com]');

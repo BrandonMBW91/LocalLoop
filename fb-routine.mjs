@@ -271,6 +271,9 @@ console.log(out.text || '(nothing to post)');
 
 if (process.argv.includes('--email')) {
   const key = g('RESEND_API_KEY');
+  // The only one of the four Resend senders that had no guard; without it a missing
+  // key sends "Bearer undefined" and the 401 surfaces as a generic "email failed".
+  if (!key) { console.error('RESEND_API_KEY missing, cannot email.'); process.exit(1); }
   const esc = (s) => (s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const skip = !out.ok && !out.text;
   const note = out.note ? `<p style="color:#a15c00"><b>Note:</b> ${esc(out.note)}</p>` : '';
@@ -280,7 +283,7 @@ if (process.argv.includes('--email')) {
     : `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:520px"><p><b>${meta.name}</b> — schedule this in Facebook for <b>${meta.postWhen}</b> (or just post it then).</p>${note}<pre style="white-space:pre-wrap;font-family:inherit;background:#f4f2ee;padding:14px;border-radius:10px">${esc(out.text)}</pre>${linkTip}</div>`;
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: 'Local Loop <noreply@findlayevents.com>', to: ['michabw91@gmail.com'], subject: `${meta.name} — post for ${meta.postWhen.split(' around')[0]}`, html }),
+    body: JSON.stringify({ from: 'Local Loop <noreply@localloop.io>', to: ['michabw91@gmail.com'], subject: `${meta.name} — post for ${meta.postWhen.split(' around')[0]}`, html }),
   });
   console.log(r.ok ? '\n[emailed to michabw91@gmail.com]' : '\nemail failed: ' + (await r.text()).slice(0, 200));
 }

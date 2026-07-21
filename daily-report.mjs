@@ -294,7 +294,7 @@ if (process.argv.includes('--email')) {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Local Loop <noreply@findlayevents.com>',
+        from: 'Local Loop <noreply@localloop.io>',
         to: ['michabw91@gmail.com'],
         subject: `Local Loop daily report: ${dayLabel}`,
         text: REPORT.join('\n'),
