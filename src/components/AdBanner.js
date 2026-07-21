@@ -12,10 +12,14 @@ import { colors, spacing, radius } from '../theme/theme';
 const countedImpressions = new Set();
 
 // A tel: link means "call this business"; anything else is a website to open.
-function ctaFor(linkUrl) {
+function ctaFor(linkUrl, custom) {
   if (!linkUrl) return null;
-  if (/^tel:/i.test(linkUrl)) return { label: 'Call', icon: 'call' };
-  return { label: 'Visit site', icon: 'open-outline' };
+  const isTel = /^tel:/i.test(linkUrl);
+  const icon = isTel ? 'call' : 'open-outline';
+  // The advertiser's own words win. 'See menu' or 'Book now' IS the offer; 'Visit
+  // site' is what every ad everywhere says. Falls back when they have not set one.
+  const label = (custom && String(custom).trim()) || (isTel ? 'Call' : 'Visit site');
+  return { label, icon };
 }
 
 // Shows a real local sponsor when one is booked for the current city. Renders
@@ -23,7 +27,7 @@ function ctaFor(linkUrl) {
 // "your ad could be here" placeholder (that pitch lives on the Advertise screen).
 // Pass `index` in a list so multiple slots rotate through the available sponsors.
 export default function AdBanner({ index = 0 }) {
-  const { sponsors = [], backendEnabled, noTrack } = useApp();
+  const { sponsors = [], backendEnabled, noTrack, city } = useApp();
   const sponsor = sponsors.length ? sponsors[index % sponsors.length] : null;
   const track = backendEnabled && !noTrack; // real users only — never admin/dev/opted-out
 
@@ -36,7 +40,7 @@ export default function AdBanner({ index = 0 }) {
   }, [track, sponsor?.id]);
 
   if (sponsor) {
-    const cta = ctaFor(sponsor.linkUrl);
+    const cta = ctaFor(sponsor.linkUrl, sponsor.cta);
     const open = () => {
       if (track && sponsor.id) trackSponsor(sponsor.id, 'click');
       if (sponsor.linkUrl) Linking.openURL(sponsor.linkUrl).catch(() => {});
@@ -67,7 +71,7 @@ export default function AdBanner({ index = 0 }) {
             <View style={styles.tagRow}>
               <View style={styles.tagPill}>
                 <ThemedText size="tiny" weight="bold" color={colors.accent} style={styles.tag}>
-                  LOCAL SPONSOR
+                  {city?.name ? `PROUD SPONSOR OF ${String(city.name).toUpperCase()}` : 'LOCAL SPONSOR'}
                 </ThemedText>
               </View>
             </View>

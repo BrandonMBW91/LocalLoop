@@ -714,6 +714,7 @@ function rowToSponsor(r) {
     body: r.body,
     imageUrl: r.image_url,
     linkUrl: r.link_url,
+    cta: r.cta || null,   // the advertiser's own button words
     weight: r.weight,
     active: r.active,
     startsAt: r.starts_at,
@@ -1085,7 +1086,7 @@ export async function fetchCityUsers(cityId) {
 
 // Columns the anon role may read (see supabase/sponsors_hardening.sql — Stripe
 // ids and metrics are column-restricted, so `select *` would be denied).
-const SPONSOR_PUBLIC_COLS = 'id, city_id, title, body, image_url, link_url, weight, active, starts_at, ends_at';
+const SPONSOR_PUBLIC_COLS = 'id, city_id, title, body, image_url, link_url, cta, weight, active, starts_at, ends_at';
 // The admin view adds the owner-only counters. Still an explicit list, never '*':
 // sponsors has 19 columns but `authenticated` may read 15 — the stripe_* ones are
 // withheld — so a SELECT * 403s and, on an insert, rolls the row back.

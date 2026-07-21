@@ -4,14 +4,22 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 98 revs, newest first.
+// secret. 99 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 125,
+    "date": "2026-07-21",
+    "whatsNew": null,
+    "changes": [
+      "rev 125 wip"
+    ]
+  },
   {
     "rev": 124,
     "date": "2026-07-21",
     "whatsNew": null,
     "changes": [
-      "rev 124: feed-wide ad placement (wip)",
+      "rev 124: place ads across the whole feed, so thin towns are not sold nothing",
       "Advertiser portal: let them customise the ad, and show them what it did"
     ]
   },
