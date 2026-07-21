@@ -1,4 +1,7 @@
-import { daysFromNow } from './dates';
+// Explicit .js so plain Node can import this file and the ad-placement logic can be
+// tested for real. Metro resolves an explicit extension identically; the tests used to
+// hand-mirror bucketForDays instead, which is the kind of copy that drifts.
+import { daysFromNow } from './dates.js';
 
 // Friendly time buckets shared by the Events, Garage Sales, and Food Trucks
 // lists, so a long list stays scannable under sticky headers.
@@ -36,12 +39,28 @@ export function buildTimeSections({ items, getDays, isFeatured, toRenderItem, in
   // each group.
   buckets.Today.sort((a, b) => (getDays(a) === 0 ? 0 : 1) - (getDays(b) === 0 ? 0 : 1));
 
+  // Ads are placed every 4th item across the WHOLE feed, not per section.
+  //
+  // This used to count within each bucket, so a bucket needed 5+ items before it could
+  // emit even one ad. A town with 4 events today, 3 tomorrow and 4 this week showed
+  // ZERO ads — 11 events and no placement at all. Those are precisely the small towns
+  // on the $19 tier, so the advertisers most likely to get nothing for their money were
+  // the ones paying the entry price, while the advertise page promised "your ad shown
+  // between listings in your town".
+  //
+  // adIndex keeps advancing across sections (it always did), which is what rotates
+  // multiple sponsors through the slots rather than showing the first one every time.
   let adIndex = 0;
-  const withAds = (arr) => {
+  let placed = 0; // items emitted so far across every section
+  const withAds = (arr, isLastSection) => {
     const out = [];
     arr.forEach((it, i) => {
       out.push(toRenderItem(it));
-      if (injectAds && (i + 1) % 4 === 0 && i !== arr.length - 1) {
+      placed += 1;
+      // Never end the entire feed on an ad. Between sections is fine; dangling off the
+      // bottom reads as the list having run out of events.
+      const endOfFeed = isLastSection && i === arr.length - 1;
+      if (injectAds && placed % 4 === 0 && !endOfFeed) {
         out.push({ type: 'ad', key: `ad-${adIndex}`, adIndex });
         adIndex += 1;
       }
@@ -49,8 +68,11 @@ export function buildTimeSections({ items, getDays, isFeatured, toRenderItem, in
     return out;
   };
 
-  const ordered = [['Featured', featured], ...BUCKET_ORDER.map((b) => [b, buckets[b]])];
-  return ordered
-    .filter(([, arr]) => arr.length)
-    .map(([title, arr]) => ({ title, count: arr.length, data: withAds(arr) }));
+  const ordered = [['Featured', featured], ...BUCKET_ORDER.map((b) => [b, buckets[b]])]
+    .filter(([, arr]) => arr.length);
+  return ordered.map(([title, arr], si) => ({
+    title,
+    count: arr.length,
+    data: withAds(arr, si === ordered.length - 1),
+  }));
 }

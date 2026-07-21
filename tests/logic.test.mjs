@@ -4,6 +4,7 @@ import assert from 'node:assert';
 import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel, isOver, isThisWeekend } from '../src/utils/dates.js';
 import { rateForUsers, PRICING_TIERS } from '../src/data/pricing.js';
 import { effectiveEndMs } from '../src/lib/eventTime.js';
+import { buildTimeSections } from '../src/utils/grouping.js';
 
 // Mirror of grouping.bucketForDays (can't import it directly — it uses a
 // bundler-style extensionless import that native Node won't resolve). Kept in
@@ -133,6 +134,54 @@ t('pricing tiers monotonically increase', () => {
     assert.ok(PRICING_TIERS[i].sponsor > PRICING_TIERS[i - 1].sponsor, 'sponsor price increases');
     assert.ok(PRICING_TIERS[i].minUsers > PRICING_TIERS[i - 1].minUsers, 'threshold increases');
   }
+});
+
+
+// --- ad placement across the whole feed -------------------------------------
+// Imported for real, not mirrored: this is a revenue path and a hand-copied version
+// of it would be exactly the thing that drifts.
+const secs = (counts, injectAds = true) => {
+  // counts = items per bucket, e.g. {Today: 4, Tomorrow: 3, 'This Week': 4}
+  const items = [];
+  const dayFor = { Today: 0, Tomorrow: 1, 'This Week': 3, 'Next Week': 9, Later: 20 };
+  for (const [bucket, n] of Object.entries(counts)) {
+    for (let i = 0; i < n; i++) items.push({ id: `${bucket}-${i}`, d: dayFor[bucket] });
+  }
+  return buildTimeSections({
+    items,
+    getDays: (x) => x.d,
+    isFeatured: () => false,
+    toRenderItem: (x) => ({ type: 'item', key: x.id }),
+    injectAds,
+  });
+};
+const adsIn = (sections) => sections.flatMap((s) => s.data).filter((x) => x.type === 'ad');
+
+t('a thin town still gets ads (the bug: 11 events across 3 buckets showed ZERO)', () => {
+  const ads = adsIn(secs({ Today: 4, Tomorrow: 3, 'This Week': 4 }));
+  assert.ok(ads.length >= 2, `expected 2+ ads across 11 events, got ${ads.length}`);
+});
+
+t('a single thin bucket under 4 items still shows no ad', () => {
+  assert.equal(adsIn(secs({ Today: 3 })).length, 0);
+});
+
+t('ads rotate so a second sponsor is actually shown', () => {
+  const ads = adsIn(secs({ Today: 4, Tomorrow: 4, 'This Week': 4 }));
+  const idx = ads.map((a) => a.adIndex);
+  assert.deepEqual(idx, [...new Set(idx)], 'adIndex must not repeat');
+  assert.ok(idx.length >= 2 && idx[1] === idx[0] + 1, `expected rotating indices, got ${idx}`);
+});
+
+t('the feed never ends on an ad', () => {
+  for (const counts of [{ Today: 4 }, { Today: 8 }, { Today: 4, Tomorrow: 4 }]) {
+    const all = secs(counts).flatMap((s) => s.data);
+    assert.notEqual(all[all.length - 1].type, 'ad', `feed ended on an ad for ${JSON.stringify(counts)}`);
+  }
+});
+
+t('injectAds=false places none', () => {
+  assert.equal(adsIn(secs({ Today: 20 }, false)).length, 0);
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

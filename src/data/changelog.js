@@ -4,14 +4,23 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 97 revs, newest first.
+// secret. 98 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 124,
+    "date": "2026-07-21",
+    "whatsNew": null,
+    "changes": [
+      "rev 124: feed-wide ad placement (wip)",
+      "Advertiser portal: let them customise the ad, and show them what it did"
+    ]
+  },
   {
     "rev": 123,
     "date": "2026-07-21",
     "whatsNew": null,
     "changes": [
-      "rev 123: per-town ad price (wip)",
+      "rev 123: the in-app ad price is the town's real price, not a literal",
       "Make every script accept both --dry and --dry-run",
       "Stop re-asking Mapbox the same 923 unanswerable questions twice a day",
       "Close the four gaps the dependency audit found",
