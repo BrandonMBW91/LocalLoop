@@ -34,6 +34,20 @@
   .msg.err{ display:block; background:#FBE9EB; color:var(--red); }
   .state{ text-align:center; color:var(--muted); padding:26px 8px; font-size:15px; }
   .foot{ text-align:center; margin-top:18px; font-size:12.5px; color:var(--muted); }
+  .stats{ margin:14px 0 4px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--bg); }
+  .statrow{ display:flex; gap:26px; }
+  .stat b{ display:block; font-size:26px; line-height:1.1; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .stat span{ font-size:12.5px; color:var(--muted); }
+  .prevwrap{ margin:16px 0 6px; }
+  .prev{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:12px 12px 12px 0; overflow:hidden; }
+  .prev-bar{ width:4px; align-self:stretch; background:var(--red); border-radius:0 3px 3px 0; flex:0 0 4px; }
+  .prev-thumb{ width:52px; height:52px; flex:0 0 52px; border-radius:10px; background:var(--bg); border:1px solid var(--line);
+               display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--muted); background-size:cover; background-position:center; margin-left:8px; }
+  .prev-body{ min-width:0; flex:1; }
+  .prev-pill{ font-size:10px; font-weight:800; letter-spacing:.08em; color:var(--red); }
+  .prev-title{ font-weight:800; font-size:15px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prev-sub{ font-size:13px; color:var(--muted); margin-top:1px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .prev-cta{ font-size:13px; font-weight:700; color:var(--navy); margin-top:6px; }
   .foot a{ color:var(--navy); text-decoration:none; }
 </style></head>
 <body><div class="wrap">
@@ -50,15 +64,54 @@
       <div><span id="status" class="pill on">Active</span></div>
       <div class="towns" id="towns"></div>
 
+      <!-- Proof. Filled from get_sponsor_stats, hidden until it answers, because an
+           advertiser seeing "0 views" because a request failed is worse than an
+           advertiser seeing nothing. "Views" here are app sessions in which a neighbour
+           saw the ad, since impressions are deduped per session. No percentage: a low tap
+           rate is normal locally and reads as failure out of context. -->
+      <div id="stats" class="stats" style="display:none">
+        <div class="statrow">
+          <div class="stat"><b id="s-views">0</b><span>neighbors saw it</span></div>
+          <div class="stat"><b id="s-taps">0</b><span>tapped through</span></div>
+        </div>
+        <div class="hint" id="s-since"></div>
+        <div class="hint" id="s-towns"></div>
+      </div>
+
+      <!-- What their ad actually looks like in the feed. Most buyers will never install
+           the app and scroll their own town, so without this they have never seen the
+           thing they are paying for. Mirrors src/components/AdBanner.js. -->
+      <div class="prevwrap">
+        <div class="hint" style="margin:0 0 6px">How it looks in the app</div>
+        <div class="prev">
+          <div class="prev-bar"></div>
+          <div class="prev-thumb" id="p-thumb"><span id="p-thumb-ico">&#127970;</span></div>
+          <div class="prev-body">
+            <div class="prev-pill" id="p-pill">LOCAL SPONSOR</div>
+            <div class="prev-title" id="p-title">Your business</div>
+            <div class="prev-sub" id="p-sub"></div>
+            <div class="prev-cta" id="p-cta">Visit site</div>
+          </div>
+        </div>
+      </div>
+
       <label for="business">Business name</label>
       <input id="business" maxlength="80" autocomplete="organization"/>
 
       <label for="headline">Headline <span class="opt">— optional, shown under your name</span></label>
-      <input id="headline" maxlength="120" placeholder="e.g. 15% off for neighbors"/>
+      <input id="headline" maxlength="200" placeholder="e.g. 15% off for neighbors"/>
 
       <label for="link">Link <span class="opt">— where a tap sends people</span></label>
       <input id="link" inputmode="url" placeholder="yourbusiness.com"/>
-      <div class="hint">Your website, Facebook page, menu, booking link — anything.</div>
+      <div class="hint">Your website, Facebook page, menu, booking link, or a phone number as tel:4195551234.</div>
+
+      <label for="logo">Logo <span class="opt">— optional, the image beside your name</span></label>
+      <input id="logo" inputmode="url" placeholder="yourbusiness.com/logo.png"/>
+      <div class="hint">A square image works best. Without one your ad shows a plain grey icon.</div>
+
+      <label for="cta">Button words <span class="opt">— optional, up to 22 characters</span></label>
+      <input id="cta" maxlength="22" placeholder="Visit site"/>
+      <div class="hint">What the tap button says. "See menu", "Book now", "Get a quote".</div>
 
       <button id="save">Save changes</button>
       <div id="msg" class="msg"></div>
@@ -113,11 +166,61 @@
       else { st.className="pill off"; st.textContent = ad.paused_reason==="payment_failed" ? "Paused — payment" : "Paused"; }
       var towns=(ad.towns||[]).map(title);
       $("towns").textContent = towns.length ? ("Running in "+towns.join(", ")+(towns.length===1?", OH":"")) : "";
+      $("logo").value = ad.image_url || "";
+      $("cta").value = ad.cta || "";
       var bp=$("billing");
       if(bp){ bp.href="https://wtaefyspddadcrnovumk.supabase.co/functions/v1/billing-portal?token="+encodeURIComponent(token); bp.style.display="inline"; }
+      paint();
       show("form");
+      loadStats();
     })
     .catch(function(){ show("badtoken"); });
+
+  // Live preview. Redraws from the inputs on every keystroke so the advertiser can see
+  // what they are buying before they commit it. Everything is set with textContent or
+  // an encoded background-image URL, never innerHTML: this page renders values typed
+  // into it, and the RPC's validation is a second line of defence, not the only one.
+  function paint(){
+    var name=$("business").value.trim(), head=$("headline").value.trim();
+    var logo=$("logo").value.trim(), cta=$("cta").value.trim();
+    $("p-title").textContent = name || "Your business";
+    $("p-sub").textContent = head;
+    $("p-cta").textContent = cta || (/^tel:/i.test($("link").value.trim()) ? "Call" : "Visit site");
+    var t=$("p-thumb"), ico=$("p-thumb-ico");
+    if(logo){
+      var url = /^https?:\/\//i.test(logo) ? logo : "https://"+logo;
+      t.style.backgroundImage = "url('" + encodeURI(url).replace(/'/g, "%27") + "')";
+      ico.style.display="none";
+    } else {
+      t.style.backgroundImage=""; ico.style.display="";
+    }
+  }
+  ["business","headline","link","logo","cta"].forEach(function(id){
+    var el=$(id); if(el) el.addEventListener("input", paint);
+  });
+
+  // Proof of reach. Hidden unless it answers: showing "0 views" because a request
+  // failed would be worse than showing nothing at all.
+  function loadStats(){
+    rpc("get_sponsor_stats", { p_token: token })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(rows){
+        var s = rows && rows[0];
+        if(!s) return;
+        $("s-views").textContent = Number(s.views||0).toLocaleString();
+        $("s-taps").textContent = Number(s.taps||0).toLocaleString();
+        if(s.since){
+          var d=new Date(s.since);
+          $("s-since").textContent = "Running since " + d.toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"}) + ".";
+        }
+        var td = s.towns_detail || [];
+        if(td.length > 1){
+          $("s-towns").textContent = td.map(function(x){ return title(x.city_id)+" "+Number(x.views||0).toLocaleString(); }).join(" · ");
+        }
+        $("stats").style.display="block";
+      })
+      .catch(function(){ /* leave hidden */ });
+  }
 
   $("save") && $("save").addEventListener("click", function(){
     var btn=$("save"), msg=$("msg");
@@ -126,14 +229,26 @@
       p_token: token,
       p_business: $("business").value,
       p_headline: $("headline").value,
-      p_link_url: $("link").value
+      p_link_url: $("link").value,
+      p_image_url: $("logo").value,
+      p_cta: $("cta").value
     })
     .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
     .then(function(res){
       btn.disabled=false; btn.textContent="Save changes";
       if(res.ok && Number(res.d)>0){ msg.className="msg ok"; msg.textContent="Saved. Your ad is updated across every town it runs in."; }
       else if(res.ok && Number(res.d)===0){ msg.className="msg err"; msg.textContent="We couldn't match this ad — try the link from your email again."; }
-      else { msg.className="msg err"; msg.textContent = (res.d && res.d.message==="invalid link") ? "That link doesn't look right. Include the full web address." : "Something went wrong. Please try again."; }
+      else {
+        // Name the field that is wrong: "Something went wrong" on a five-field form
+        // makes people guess.
+        var m = (res.d && res.d.message) || "";
+        msg.className="msg err";
+        msg.textContent =
+          m==="invalid link" ? "That link doesn't look right. Include the full web address, or use tel: and a phone number."
+          : m==="invalid image url" ? "That logo address doesn't look right. Paste the full web address of an image."
+          : m==="invalid button label" ? "Button words can only use letters, numbers and spaces."
+          : "Something went wrong. Please try again.";
+      }
     })
     .catch(function(){ btn.disabled=false; btn.textContent="Save changes"; msg.className="msg err"; msg.textContent="Network error. Please try again."; });
   });
