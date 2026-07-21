@@ -74,15 +74,13 @@ if (critical.length && !DRY) {
       `\n\nFix: repair or add a feed for these towns (see aggregator/feed-health.mjs, add-city runbook).`;
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      // MUST be @findlayevents.com, NOT localloop.io. Resend's free plan allows ONE
-      // verified domain and that slot holds findlayevents.com (the pre-rebrand name),
-      // which moderation-alert and stripe-webhook also send from. localloop.io is
-      // unverified, so a send from it 403s — this alert was silently failing that way
-      // until 2026-07-21. It only ever mails Michael, so the domain is cosmetic here.
-      // Do NOT "fix" this to localloop.io without verifying that domain in Resend
-      // first, and do NOT free the slot by deleting findlayevents.com: that would
-      // break Stripe receipt + moderation emails.
-      body: JSON.stringify({ from: 'Local Loop <noreply@findlayevents.com>', to: [ALERT_TO], subject: `⚠ Feed-health: ${critical.length} Ohio town(s) about to empty`, text: body }),
+      // localloop.io was verified in Resend on 2026-07-21, so this now sends on-brand.
+      // Before that it pointed at localloop.io while only findlayevents.com was
+      // verified, which meant every alert 403'd SILENTLY — the alert could detect a
+      // town going dark but never actually tell anyone. If you change this address,
+      // send one test through Resend and confirm a 200: a bad From here fails quietly,
+      // which is the worst possible failure mode for an alerting path.
+      body: JSON.stringify({ from: 'Local Loop <noreply@localloop.io>', to: [ALERT_TO], subject: `⚠ Feed-health: ${critical.length} Ohio town(s) about to empty`, text: body }),
     });
     console.log(r.ok ? `Alert emailed to ${ALERT_TO}.` : `Alert email failed: ${r.status} ${(await r.text()).slice(0, 120)}`);
   }

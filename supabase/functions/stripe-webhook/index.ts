@@ -102,7 +102,11 @@ function field(session: any, key: string): string {
   return (f?.text?.value || f?.dropdown?.value || '').trim();
 }
 
-const FROM = 'Local Loop <noreply@findlayevents.com>';
+// localloop.io (verified in Resend 2026-07-21). This one is CUSTOMER-FACING: the
+// buyer-confirmation below ("your ad is live") goes to whoever just paid. It used to
+// arrive from findlayevents.com, the pre-rebrand domain, which a buyer has never seen
+// and which reads as a phishing attempt on a charge they just made — i.e. dispute bait.
+const FROM = 'Local Loop <noreply@localloop.io>';
 const OWNER = 'localloop@localloop.io';
 
 async function resendSend(to: string, subject: string, text: string) {

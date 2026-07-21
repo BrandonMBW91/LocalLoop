@@ -11,7 +11,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const TO = 'localloop@localloop.io';
-const FROM = 'Local Loop <noreply@findlayevents.com>';
+// localloop.io (verified in Resend 2026-07-21). Was findlayevents.com, the pre-rebrand
+// domain, which was the only verified one until then.
+const FROM = 'Local Loop <noreply@localloop.io>';
 const ADMIN_EMAIL = 'michabw91@gmail.com'; // mirrors is_admin() in Postgres
 
 function safeEqual(a: string, b: string): boolean {
