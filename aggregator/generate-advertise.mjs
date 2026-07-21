@@ -137,7 +137,7 @@ const html = `<!DOCTYPE html><html lang="en"><head>
   <div class="price feat">
     <span class="tag">★ Most popular</span><h3>Town Sponsor</h3>
     <div class="amt" id="sponsorAmt"></div>
-    <ul><li>Your ad shown between listings in your town</li><li>Headline and a link to your site or phone</li><li>Ask us any time for your views and taps</li><li>Cancel anytime</li></ul>
+    <ul><li>Your ad shown between listings in your town</li><li>Your logo, headline and a link to your site or phone</li><li>See your own views and taps any time</li><li>Cancel anytime, yourself</li></ul>
     <a class="buy" id="sponsorBuy" href="#">Become a sponsor</a>
     <p id="sponsorAnnual" style="text-align:center;margin:10px 0 0;font-size:13px;"></p>
   </div>
@@ -186,9 +186,9 @@ const html = `<!DOCTYPE html><html lang="en"><head>
 
 <div class="steps"><h2>How it works</h2><ol>
   <li><strong>Pick your town</strong> above to see today's rate, then check out securely with Stripe (card or Apple/Google Pay). Prefer to talk first? Email us.</li>
-  <li><strong>Tell us about your ad</strong> at checkout: your business name, headline, and town. Want a clickable link to your site or phone? Just reply to your confirmation email and we'll add it.</li>
+  <li><strong>Tell us about your ad</strong> at checkout: your business name, headline, and town.</li>
   <li><strong>You go live</strong> in the app, with simple monthly billing.</li>
-  <li><strong>Ask us for your numbers</strong> any time: views and taps, so you see the reach you're getting.</li>
+  <li><strong>Change it yourself, any time.</strong> Your receipt links to your own page, where you can set your logo, headline, link and the words on the button, and see how many neighbors saw your ad and tapped it.</li>
 </ol></div>
 
 <p class="foot-note">Questions, or want to feature an event for a single weekend? Email <a href="mailto:localloop@localloop.io">localloop@localloop.io</a> and we'll set you up.</p>

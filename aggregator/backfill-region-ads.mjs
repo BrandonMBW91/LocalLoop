@@ -24,7 +24,12 @@ const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const { data: rows, error } = await sb
   .from('sponsors')
-  .select('city_id, title, body, link_url, active, ends_at, paused_reason, product, edit_token, stripe_customer_id, stripe_subscription_id, stripe_session_id')
+  // image_url and cta are DISPLAY fields — if they are not selected here they arrive
+  // undefined and every backfilled town gets a logo-less, generic-button copy of the
+  // ad. That silently degrades the most expensive plan over time: the advertiser sets
+  // a logo once, then every town added afterwards shows the initials fallback instead.
+  // weight is the share-of-voice knob; dropping it would quietly demote them too.
+  .select('city_id, title, body, link_url, image_url, cta, weight, active, ends_at, paused_reason, product, edit_token, stripe_customer_id, stripe_subscription_id, stripe_session_id')
   .eq('product', 'all_region')
   .not('stripe_session_id', 'is', null);
 if (error) { console.error(error.message); process.exit(1); }
@@ -48,6 +53,9 @@ for (const [session, group] of bySession) {
     title: rep.title,
     body: rep.body,
     link_url: rep.link_url,
+    image_url: rep.image_url,
+    cta: rep.cta,
+    weight: rep.weight,
     active: rep.active,
     ends_at: rep.ends_at,
     paused_reason: rep.paused_reason,
