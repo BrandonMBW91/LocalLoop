@@ -5,6 +5,7 @@ import ThemedText from './ThemedText';
 import FadeInImage from './FadeInImage';
 import { useApp } from '../context/AppContext';
 import { trackSponsor } from '../lib/db';
+import { initialsOf, initialsColor } from '../lib/initials';
 import { colors, spacing, radius } from '../theme/theme';
 
 // Count each sponsor's impression once per app session, not once per remount —
@@ -63,8 +64,10 @@ export default function AdBanner({ index = 0 }) {
           {sponsor.imageUrl ? (
             <FadeInImage source={{ uri: sponsor.imageUrl }} style={styles.thumb} resizeMode="cover" />
           ) : (
-            <View style={[styles.thumb, styles.thumbFallback]}>
-              <Ionicons name="storefront" size={28} color={colors.accent} />
+            <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: initialsColor(sponsor.title) }]}>
+              <ThemedText size="large" weight="bold" color="#FFFFFF">
+                {initialsOf(sponsor.title)}
+              </ThemedText>
             </View>
           )}
           <View style={styles.copy}>

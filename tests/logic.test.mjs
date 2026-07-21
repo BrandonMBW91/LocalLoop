@@ -5,6 +5,7 @@ import { calendarBits, daysFromNow, relativeDay, toDateString, dateRangeLabel, i
 import { rateForUsers, PRICING_TIERS } from '../src/data/pricing.js';
 import { effectiveEndMs } from '../src/lib/eventTime.js';
 import { buildTimeSections } from '../src/utils/grouping.js';
+import { initialsOf, initialsColor, INITIALS_COLORS } from '../src/lib/initials.js';
 
 // Mirror of grouping.bucketForDays (can't import it directly — it uses a
 // bundler-style extensionless import that native Node won't resolve). Kept in
@@ -182,6 +183,36 @@ t('the feed never ends on an ad', () => {
 
 t('injectAds=false places none', () => {
   assert.equal(adsIn(secs({ Today: 20 }, false)).length, 0);
+});
+
+// --- sponsor logo fallback ---------------------------------------------------
+// A paid ad showing a generic grey glyph reads as unsold. Coloured initials mean no
+// advertiser ever looks like a placeholder, including the many small businesses that
+// have no usable logo file at all.
+for (const [name, want] of [
+  ["Joe's Pizza", 'JP'],
+  ['Hometown Heating and Air', 'HH'],
+  ['The Cutting Room', 'CR'],   // leading article skipped, else this reads TC
+  ['Blanchards', 'BL'],         // single word falls back to two letters
+  ['  spaced   out  ', 'SO'],
+  ['', '?'],
+  [null, '?'],
+]) {
+  t(`initialsOf(${JSON.stringify(name)}) -> ${want}`, () => {
+    assert.equal(initialsOf(name), want);
+  });
+}
+
+t('the initials colour is stable for a given business', () => {
+  // Must not change between renders, sessions or towns — an ad whose colour flickered
+  // would look broken rather than branded.
+  assert.equal(initialsColor("Joe's Pizza"), initialsColor("Joe's Pizza"));
+});
+
+t('the initials colour always comes from the app palette', () => {
+  for (const n of ['Joe', 'Riverside Salon', 'Blanchard Hardware', 'x', '']) {
+    assert.ok(INITIALS_COLORS.includes(initialsColor(n)), String(n));
+  }
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);
