@@ -28,6 +28,11 @@ const SITE = 'https://localloop.io';
 const EMBED_ANON = 'sb_publishable__7DDuHpyiU8xNr5YndfZCQ_8MuVMoRw';
 const HORIZON_DAYS = 45;
 const TZ = 'America/New_York'; // CI runs in UTC — all day math must be Eastern
+// Weekly-email signup posts straight to the digest-subscribe function. Cross-origin
+// on purpose: the function is deployed --no-verify-jwt with CORS '*', and a Netlify
+// rewrite to an external host does not reliably preserve POST bodies. Falls back to
+// the literal so a run without .env still emits a working form.
+const DIGEST_FN = `${process.env.SUPABASE_URL || 'https://wtaefyspddadcrnovumk.supabase.co'}/functions/v1/digest-subscribe`;
 
 // Mirrors src/theme/theme.js colors.category — keep in sync with the app.
 const CATEGORY = {
@@ -197,6 +202,17 @@ nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;f
 footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 footer a{color:var(--green);text-decoration:none;}
 @media(max-width:480px){.town-hero h1{font-size:28px;}.ev{padding:12px;}}
+.digest{background:var(--green-l);border:1px solid var(--line);border-radius:20px;padding:22px 20px;margin:28px 0;}
+.digest h2{margin:0 0 6px;font-size:22px;}
+.digest p{margin:0 0 14px;color:var(--muted);}
+.digest-form{display:flex;flex-wrap:wrap;gap:10px;}
+.digest-form input[type=email],.digest-form select{flex:1 1 220px;min-width:0;font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);}
+.digest-form button{border:0;cursor:pointer;margin-top:0;}
+.digest-form input[name=company]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+.digest-msg{margin-top:10px;font-weight:600;color:var(--green);min-height:1.2em;}
+.digest-fine{margin-top:8px;color:var(--muted);font-size:12.5px;}
+.digest-fine a{color:var(--green);}
+@media(max-width:480px){.digest-form input[type=email],.digest-form select{flex:1 1 100%;}.digest-form button{width:100%;justify-content:center;}}
 /* Dark mode: mirror the app's dark palette. --green/--orange stay saturated
    (they carry white text on the hero/buttons and read on both grounds); only
    the page ground, surfaces, text, and borders invert. */
@@ -236,6 +252,75 @@ const FOOT = `<div class="banner"><h2>Get the free app</h2>
 })();
 </script>
 </div></body></html>`;
+
+// Weekly-email signup block.
+//
+// Its CSS lives in the HEAD <style> above, deliberately just BEFORE the dark-mode
+// @media so it inherits those token overrides for free. Two notes that belong here
+// rather than next to the rules, because a comment inside that template literal
+// ships to every public page (this exact mistake happened here twice):
+//   - font-size:16px on the inputs is load-bearing. Anything smaller and iOS Safari
+//     zooms the whole page when the field takes focus.
+//   - input[name=company] is positioned off-screen rather than display:none, because
+//     some bots skip hidden fields and the point is to tempt them into filling it.
+//
+// On a town page the slug is known at generation time, so the form is one field. The
+// hub passes selectHtml and the town comes from the <select> instead.
+//
+// The honeypot input is named "company" and hidden in CSS: a bot that fills it is
+// dropped client-side, so drive-by form spam cannot make US send confirmation mail to
+// harvested addresses. The function throttles resends too, but not sending at all is
+// better than sending and throttling.
+//
+// EVERY comment here is outside the template literal below. A comment written inside
+// one is emitted verbatim and shipped onto every public town page (see HEAD above).
+//
+// The regex backslashes are DOUBLED. Inside a template literal \s collapses to s, so
+// a single-escaped copy would silently ship [^s@]+@[^s@]+.[a-z]{2,} and accept
+// garbage that the server then rejects.
+const DIGEST_FORM = (cityId, cityName, selectHtml = '') => `<section class="digest">
+<h2>Get this weekend's plans by email</h2>
+<p>One email, Friday morning, with what is on ${cityName ? `in ${esc(cityName)}` : 'in your town'} that weekend. Free, and you can stop any time.</p>
+<form class="digest-form" data-city="${esc(cityId)}" novalidate>
+${selectHtml ? `<select name="city_id" required aria-label="Your town">${selectHtml}</select>` : ''}
+<input type="email" name="email" required maxlength="254" inputmode="email" autocomplete="email" placeholder="you@example.com" aria-label="Your email address"/>
+<input type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true"/>
+<button type="submit" class="get">Email me Fridays</button>
+</form>
+<div class="digest-msg" role="status" aria-live="polite"></div>
+<div class="digest-fine">We send one confirmation email and nothing else until you click it. <a href="/privacy.html">Privacy</a></div>
+<script>
+(function(){
+  var EP=${JSON.stringify(DIGEST_FN)};
+  var RE=/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i;
+  var forms=document.querySelectorAll('form.digest-form');
+  for(var i=0;i<forms.length;i++){(function(f){
+    var box=f.parentNode, msg=box.querySelector('.digest-msg'), btn=f.querySelector('button');
+    f.addEventListener('submit',function(ev){
+      ev.preventDefault();
+      if(f.company&&f.company.value)return;
+      var email=(f.email.value||'').trim();
+      var city=f.city_id?f.city_id.value:f.getAttribute('data-city');
+      if(!RE.test(email)){msg.textContent='That email address does not look right.';return;}
+      if(!city){msg.textContent='Pick your town first.';return;}
+      btn.disabled=true;msg.textContent='Signing you up...';
+      var done=false;
+      var t=setTimeout(function(){if(done)return;done=true;btn.disabled=false;msg.textContent='That took too long. Try again in a moment.';},12000);
+      fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,city_id:city})})
+        .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j||{}};},function(){return {ok:r.ok,j:{}};});})
+        .then(function(res){
+          if(done)return;done=true;clearTimeout(t);
+          if(res.ok&&res.j.state==='already_subscribed'){f.style.display='none';msg.textContent='You are already on the list. We updated your town.';return;}
+          if(res.ok&&res.j.state==='check_email'){f.style.display='none';msg.textContent='Check your inbox and click the confirm link. Nothing else is sent until you do.';return;}
+          btn.disabled=false;
+          msg.textContent=res.j.error==='invalid email'?'That email address does not look right.':'Could not sign you up. Try again in a minute.';
+        })
+        .catch(function(){if(done)return;done=true;clearTimeout(t);btn.disabled=false;msg.textContent='Could not reach the server. Try again in a minute.';});
+    });
+  })(forms[i]);}
+})();
+</script>
+</section>`;
 
 function eventCard(e) {
   const color = CATEGORY[e.category] || GREEN;
@@ -460,6 +545,7 @@ ${g.items.map(eventCard).join('\n')}</section>`).join('\n')
 ${tagline ? `<div class="tag">${PIN_SVG}<span>${esc(tagline)}</span></div>` : ''}
 <a class="get" href="/open.html">Get the free app</a></section>
 ${body}
+${events.length ? DIGEST_FORM(id, name) : ''}
 ${FOOT}`;
     writeFileSync(join(OUT, `${id}.html`), html);
     // One indexable page per event (also the share + town-card-link target).
@@ -533,6 +619,18 @@ ${FOOT}`;
 
   // Towns with live content — the honest "100+ and growing" number, not the catalog.
   const activeCount = Object.values(counts).filter((n) => n > 0).length;
+  // Hub signup needs a town picker, since the page is not about one town. Only towns
+  // that actually have events: subscribing to a town with nothing on means the first
+  // digest is either empty or never arrives, which reads as us not working.
+  const digestOpts = '<option value="" disabled selected>Pick your town</option>'
+    + REGION_ORDER.map((region) => {
+      const opts = APP_CITIES
+        .filter((c) => (c.region || REGION_ORDER[0]) === region && (counts[c.id] || 0) > 0)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((c) => `<option value="${esc(c.id)}">${esc(c.name)}, OH</option>`)
+        .join('');
+      return opts ? `<optgroup label="${esc(region)}">${opts}</optgroup>` : '';
+    }).join('');
   const hubTitle = 'Local Events Across Ohio: Findlay, Toledo, Akron, Canton and more | Local Loop';
   const hubDesc = `Browse ${grandTotal} upcoming events across ${activeCount} Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app.`;
   const hub = `${HEAD(hubTitle, hubDesc, '/events/')}
@@ -541,6 +639,7 @@ ${FOOT}`;
 <div class="tag">${PIN_SVG}<span>${grandTotal} upcoming events across ${activeCount} Ohio towns</span></div>
 <a class="get" href="/open.html">Get the free app</a></section>
 ${regionSections}
+${DIGEST_FORM('', '', digestOpts)}
 ${FOOT}`;
   writeFileSync(join(OUT, 'index.html'), hub);
 

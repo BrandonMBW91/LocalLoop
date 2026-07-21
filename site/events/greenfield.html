@@ -61,6 +61,17 @@ nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;f
 footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 footer a{color:var(--green);text-decoration:none;}
 @media(max-width:480px){.town-hero h1{font-size:28px;}.ev{padding:12px;}}
+.digest{background:var(--green-l);border:1px solid var(--line);border-radius:20px;padding:22px 20px;margin:28px 0;}
+.digest h2{margin:0 0 6px;font-size:22px;}
+.digest p{margin:0 0 14px;color:var(--muted);}
+.digest-form{display:flex;flex-wrap:wrap;gap:10px;}
+.digest-form input[type=email],.digest-form select{flex:1 1 220px;min-width:0;font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);}
+.digest-form button{border:0;cursor:pointer;margin-top:0;}
+.digest-form input[name=company]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+.digest-msg{margin-top:10px;font-weight:600;color:var(--green);min-height:1.2em;}
+.digest-fine{margin-top:8px;color:var(--muted);font-size:12.5px;}
+.digest-fine a{color:var(--green);}
+@media(max-width:480px){.digest-form input[type=email],.digest-form select{flex:1 1 100%;}.digest-form button{width:100%;justify-content:center;}}
 /* Dark mode: mirror the app's dark palette. --green/--orange stay saturated
    (they carry white text on the hero/buttons and read on both grounds); only
    the page ground, surfaces, text, and borders invert. */
@@ -78,6 +89,7 @@ footer a{color:var(--green);text-decoration:none;}
 <div class="tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>On Paint Creek</span></div>
 <a class="get" href="/open.html">Get the free app</a></section>
 <div class="empty">No upcoming events listed yet. Check back soon, or add one free in the app.</div><div class="empty" id="noneLeft" style="display:none">That's a wrap for today. Check back tomorrow, or open the app for garage sales and food trucks too.</div>
+
 <div class="banner"><h2>Get the free app</h2>
 <p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Ohio, free.</p>
 <a class="get" href="/open.html">Download Local Loop</a></div>

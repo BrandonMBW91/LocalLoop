@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#FBF8F1" media="(prefers-color-scheme: light)"/>
 <meta name="theme-color" content="#0F1729" media="(prefers-color-scheme: dark)"/>
 <title>Local Events Across Ohio: Findlay, Toledo, Akron, Canton and more | Local Loop</title>
-<meta name="description" content="Browse 17505 upcoming events across 124 Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app."/>
+<meta name="description" content="Browse 17462 upcoming events across 125 Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app."/>
 <link rel="canonical" href="https://localloop.io/events/"/>
 <meta property="og:title" content="Local Events Across Ohio: Findlay, Toledo, Akron, Canton and more | Local Loop"/>
-<meta property="og:description" content="Browse 17505 upcoming events across 124 Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app."/>
+<meta property="og:description" content="Browse 17462 upcoming events across 125 Ohio towns. Concerts, markets, library programs, festivals and more, free with the Local Loop app."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://localloop.io/events/"/>
 <meta property="og:image" content="https://localloop.io/og-image.png"/>
@@ -60,6 +60,17 @@ nav a{color:var(--green);text-decoration:none;font-weight:600;margin-left:14px;f
 footer{border-top:1px solid var(--line);padding:22px 0;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 footer a{color:var(--green);text-decoration:none;}
 @media(max-width:480px){.town-hero h1{font-size:28px;}.ev{padding:12px;}}
+.digest{background:var(--green-l);border:1px solid var(--line);border-radius:20px;padding:22px 20px;margin:28px 0;}
+.digest h2{margin:0 0 6px;font-size:22px;}
+.digest p{margin:0 0 14px;color:var(--muted);}
+.digest-form{display:flex;flex-wrap:wrap;gap:10px;}
+.digest-form input[type=email],.digest-form select{flex:1 1 220px;min-width:0;font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);}
+.digest-form button{border:0;cursor:pointer;margin-top:0;}
+.digest-form input[name=company]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
+.digest-msg{margin-top:10px;font-weight:600;color:var(--green);min-height:1.2em;}
+.digest-fine{margin-top:8px;color:var(--muted);font-size:12.5px;}
+.digest-fine a{color:var(--green);}
+@media(max-width:480px){.digest-form input[type=email],.digest-form select{flex:1 1 100%;}.digest-form button{width:100%;justify-content:center;}}
 /* Dark mode: mirror the app's dark palette. --green/--orange stay saturated
    (they carry white text on the hero/buttons and read on both grounds); only
    the page ground, surfaces, text, and borders invert. */
@@ -73,148 +84,191 @@ footer a{color:var(--green);text-decoration:none;}
 <nav><a href="/events/">All towns</a><a href="/advertise.html">For businesses</a></nav></header>
 <section class="town-hero"><div class="kicker">Local events across</div>
 <h1>Local Events Across Ohio</h1>
-<div class="tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>17505 upcoming events across 124 Ohio towns</span></div>
+<div class="tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span>17462 upcoming events across 125 Ohio towns</span></div>
 <a class="get" href="/open.html">Get the free app</a></section>
-<div class="region-banner"><span class="rb-name">Northwest Ohio</span><span class="rb-sub">33 towns · 3,109 events</span></div>
-<a class="town" href="/events/ada.html"><span><b>Ada, OH</b><span class="tg">Home of Ohio Northern</span></span><span class="n">107 events</span></a>
+<div class="region-banner"><span class="rb-name">Northwest Ohio</span><span class="rb-sub">33 towns · 3,138 events</span></div>
+<a class="town" href="/events/ada.html"><span><b>Ada, OH</b><span class="tg">Home of Ohio Northern</span></span><span class="n">105 events</span></a>
 <a class="town" href="/events/arlington.html"><span><b>Arlington, OH</b><span class="tg">Flag Village, USA</span></span><span class="n">2 events</span></a>
-<a class="town" href="/events/bluffton.html"><span><b>Bluffton, OH</b><span class="tg">Home of Bluffton University</span></span><span class="n">132 events</span></a>
-<a class="town" href="/events/bowling-green.html"><span><b>Bowling Green, OH</b><span class="tg">Home of BGSU</span></span><span class="n">338 events</span></a>
-<a class="town" href="/events/bryan.html"><span><b>Bryan, OH</b><span class="tg">The Fountain City</span></span><span class="n">105 events</span></a>
-<a class="town" href="/events/carey.html"><span><b>Carey, OH</b><span class="tg">Home of the Basilica</span></span><span class="n">142 events</span></a>
-<a class="town" href="/events/catawba-island.html"><span><b>Catawba Island, OH</b><span class="tg">Gateway to the islands</span></span><span class="n">5 events</span></a>
+<a class="town" href="/events/bluffton.html"><span><b>Bluffton, OH</b><span class="tg">Home of Bluffton University</span></span><span class="n">129 events</span></a>
+<a class="town" href="/events/bowling-green.html"><span><b>Bowling Green, OH</b><span class="tg">Home of BGSU</span></span><span class="n">339 events</span></a>
+<a class="town" href="/events/bryan.html"><span><b>Bryan, OH</b><span class="tg">The Fountain City</span></span><span class="n">108 events</span></a>
+<a class="town" href="/events/carey.html"><span><b>Carey, OH</b><span class="tg">Home of the Basilica</span></span><span class="n">147 events</span></a>
+<a class="town" href="/events/catawba-island.html"><span><b>Catawba Island, OH</b><span class="tg">Gateway to the islands</span></span><span class="n">6 events</span></a>
 <a class="town" href="/events/celina.html"><span><b>Celina, OH</b><span class="tg">Grand Lake county seat</span></span><span class="n">3 events</span></a>
-<a class="town" href="/events/defiance.html"><span><b>Defiance, OH</b><span class="tg">At the confluence of three rivers</span></span><span class="n">24 events</span></a>
-<a class="town" href="/events/findlay.html"><span><b>Findlay, OH</b><span class="tg">Flag City, USA</span></span><span class="n">165 events</span></a>
-<a class="town" href="/events/fostoria.html"><span><b>Fostoria, OH</b><span class="tg">City of Industry</span></span><span class="n">95 events</span></a>
-<a class="town" href="/events/fremont.html"><span><b>Fremont, OH</b><span class="tg">Home of the Hayes Presidential Library</span></span><span class="n">227 events</span></a>
+<a class="town" href="/events/defiance.html"><span><b>Defiance, OH</b><span class="tg">At the confluence of three rivers</span></span><span class="n">26 events</span></a>
+<a class="town" href="/events/findlay.html"><span><b>Findlay, OH</b><span class="tg">Flag City, USA</span></span><span class="n">168 events</span></a>
+<a class="town" href="/events/fostoria.html"><span><b>Fostoria, OH</b><span class="tg">City of Industry</span></span><span class="n">96 events</span></a>
+<a class="town" href="/events/fremont.html"><span><b>Fremont, OH</b><span class="tg">Home of the Hayes Presidential Library</span></span><span class="n">225 events</span></a>
 <a class="town" href="/events/kelleys-island.html"><span><b>Kelleys Island, OH</b><span class="tg">Lake Erie&#39;s largest American island</span></span><span class="n">13 events</span></a>
-<a class="town" href="/events/leipsic.html"><span><b>Leipsic, OH</b><span class="tg">Named for Leipzig, Germany</span></span><span class="n">6 events</span></a>
-<a class="town" href="/events/lima.html"><span><b>Lima, OH</b><span class="tg">Heart of the Region</span></span><span class="n">158 events</span></a>
+<a class="town" href="/events/leipsic.html"><span><b>Leipsic, OH</b><span class="tg">Named for Leipzig, Germany</span></span><span class="n">7 events</span></a>
+<a class="town" href="/events/lima.html"><span><b>Lima, OH</b><span class="tg">Heart of the Region</span></span><span class="n">160 events</span></a>
 <a class="town" href="/events/napoleon.html"><span><b>Napoleon, OH</b><span class="tg">Henry County seat on the Maumee</span></span><span class="n">23 events</span></a>
-<a class="town" href="/events/north-baltimore.html"><span><b>North Baltimore, OH</b><span class="tg">Crossroads of the Heartland</span></span><span class="n">12 events</span></a>
-<a class="town" href="/events/norwalk.html"><span><b>Norwalk, OH</b><span class="tg">Huron County hub</span></span><span class="n">35 events</span></a>
-<a class="town" href="/events/pandora.html"><span><b>Pandora, OH</b><span class="tg">Swiss Mennonite Heritage</span></span><span class="n">35 events</span></a>
-<a class="town" href="/events/paulding.html"><span><b>Paulding, OH</b><span class="tg">Paulding County seat</span></span><span class="n">3 events</span></a>
-<a class="town" href="/events/perrysburg.html"><span><b>Perrysburg, OH</b><span class="tg">Historic riverfront town</span></span><span class="n">90 events</span></a>
-<a class="town" href="/events/port-clinton.html"><span><b>Port Clinton, OH</b><span class="tg">Walleye Capital of the World</span></span><span class="n">31 events</span></a>
+<a class="town" href="/events/north-baltimore.html"><span><b>North Baltimore, OH</b><span class="tg">Crossroads of the Heartland</span></span><span class="n">13 events</span></a>
+<a class="town" href="/events/norwalk.html"><span><b>Norwalk, OH</b><span class="tg">Huron County hub</span></span><span class="n">38 events</span></a>
+<a class="town" href="/events/pandora.html"><span><b>Pandora, OH</b><span class="tg">Swiss Mennonite Heritage</span></span><span class="n">38 events</span></a>
+<a class="town" href="/events/paulding.html"><span><b>Paulding, OH</b><span class="tg">Paulding County seat</span></span><span class="n">2 events</span></a>
+<a class="town" href="/events/perrysburg.html"><span><b>Perrysburg, OH</b><span class="tg">Historic riverfront town</span></span><span class="n">86 events</span></a>
+<a class="town" href="/events/port-clinton.html"><span><b>Port Clinton, OH</b><span class="tg">Walleye Capital of the World</span></span><span class="n">32 events</span></a>
 <a class="town" href="/events/put-in-bay.html"><span><b>Put-in-Bay, OH</b><span class="tg">Island life on Lake Erie</span></span><span class="n">24 events</span></a>
-<a class="town" href="/events/sandusky.html"><span><b>Sandusky, OH</b><span class="tg">On the shores of Lake Erie</span></span><span class="n">179 events</span></a>
-<a class="town" href="/events/st-marys.html"><span><b>St. Marys, OH</b><span class="tg">Grand Lake east shore</span></span><span class="n">65 events</span></a>
-<a class="town" href="/events/sylvania.html"><span><b>Sylvania, OH</b><span class="tg">Home of the Red Bird Arts District</span></span><span class="n">40 events</span></a>
+<a class="town" href="/events/sandusky.html"><span><b>Sandusky, OH</b><span class="tg">On the shores of Lake Erie</span></span><span class="n">173 events</span></a>
+<a class="town" href="/events/st-marys.html"><span><b>St. Marys, OH</b><span class="tg">Grand Lake east shore</span></span><span class="n">68 events</span></a>
+<a class="town" href="/events/sylvania.html"><span><b>Sylvania, OH</b><span class="tg">Home of the Red Bird Arts District</span></span><span class="n">44 events</span></a>
 <a class="town" href="/events/tiffin.html"><span><b>Tiffin, OH</b><span class="tg">The Heart of Seneca County</span></span><span class="n">33 events</span></a>
-<a class="town" href="/events/toledo.html"><span><b>Toledo, OH</b><span class="tg">The Glass City</span></span><span class="n">657 events</span></a>
+<a class="town" href="/events/toledo.html"><span><b>Toledo, OH</b><span class="tg">The Glass City</span></span><span class="n">675 events</span></a>
 <a class="town" href="/events/upper-sandusky.html"><span><b>Upper Sandusky, OH</b><span class="tg">Wyandot County Seat</span></span><span class="n">66 events</span></a>
 <a class="town" href="/events/van-wert.html"><span><b>Van Wert, OH</b><span class="tg">Peony Capital of Ohio</span></span><span class="n">86 events</span></a>
-<a class="town" href="/events/wapakoneta.html"><span><b>Wapakoneta, OH</b><span class="tg">Hometown of Neil Armstrong</span></span><span class="n">129 events</span></a>
-<a class="town" href="/events/waterville.html"><span><b>Waterville, OH</b><span class="tg">Along the Maumee River</span></span><span class="n">53 events</span></a>
-<a class="town" href="/events/wauseon.html"><span><b>Wauseon, OH</b><span class="tg">Home of the Fulton County Fair</span></span><span class="n">26 events</span></a>
-<div class="region-banner"><span class="rb-name">Central Ohio</span><span class="rb-sub">27 towns · 4,337 events</span></div>
-<a class="town" href="/events/ashland.html"><span><b>Ashland, OH</b><span class="tg">World Headquarters of Nice People</span></span><span class="n">215 events</span></a>
+<a class="town" href="/events/wapakoneta.html"><span><b>Wapakoneta, OH</b><span class="tg">Hometown of Neil Armstrong</span></span><span class="n">125 events</span></a>
+<a class="town" href="/events/waterville.html"><span><b>Waterville, OH</b><span class="tg">Along the Maumee River</span></span><span class="n">51 events</span></a>
+<a class="town" href="/events/wauseon.html"><span><b>Wauseon, OH</b><span class="tg">Home of the Fulton County Fair</span></span><span class="n">27 events</span></a>
+<div class="region-banner"><span class="rb-name">Central Ohio</span><span class="rb-sub">27 towns · 4,291 events</span></div>
+<a class="town" href="/events/ashland.html"><span><b>Ashland, OH</b><span class="tg">World Headquarters of Nice People</span></span><span class="n">218 events</span></a>
 <a class="town" href="/events/bellefontaine.html"><span><b>Bellefontaine, OH</b><span class="tg">Ohio&#39;s Highest Point</span></span><span class="n">71 events</span></a>
-<a class="town" href="/events/bucyrus.html"><span><b>Bucyrus, OH</b><span class="tg">Bratwurst Capital of America</span></span><span class="n">50 events</span></a>
-<a class="town" href="/events/columbus.html"><span><b>Columbus, OH</b><span class="tg">Ohio&#39;s capital city</span></span><span class="n">2768 events</span></a>
-<a class="town" href="/events/delaware.html"><span><b>Delaware, OH</b><span class="tg">Home of Ohio Wesleyan</span></span><span class="n">75 events</span></a>
-<a class="town" href="/events/fredericktown.html"><span><b>Fredericktown, OH</b><span class="tg">Home of the Tomato Show</span></span><span class="n">30 events</span></a>
+<a class="town" href="/events/bucyrus.html"><span><b>Bucyrus, OH</b><span class="tg">Bratwurst Capital of America</span></span><span class="n">48 events</span></a>
+<a class="town" href="/events/columbus.html"><span><b>Columbus, OH</b><span class="tg">Ohio&#39;s capital city</span></span><span class="n">2726 events</span></a>
+<a class="town" href="/events/delaware.html"><span><b>Delaware, OH</b><span class="tg">Home of Ohio Wesleyan</span></span><span class="n">71 events</span></a>
+<a class="town" href="/events/fredericktown.html"><span><b>Fredericktown, OH</b><span class="tg">Home of the Tomato Show</span></span><span class="n">31 events</span></a>
 <a class="town" href="/events/galion.html"><span><b>Galion, OH</b><span class="tg">Home of the historic Big Four Depot</span></span><span class="n">5 events</span></a>
 <a class="town" href="/events/green-camp.html"><span><b>Green Camp, OH</b><span class="tg">War of 1812 Camp Town</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/greenville.html"><span><b>Greenville, OH</b><span class="tg">Hometown of Annie Oakley</span></span><span class="n">3 events</span></a>
+<a class="town" href="/events/greenville.html"><span><b>Greenville, OH</b><span class="tg">Hometown of Annie Oakley</span></span><span class="n">5 events</span></a>
 <a class="town" href="/events/kenton.html"><span><b>Kenton, OH</b><span class="tg">Cast-Iron Toy Capital</span></span><span class="n">1 events</span></a>
 <a class="town" href="/events/lakeview.html"><span><b>Lakeview, OH</b><span class="tg">Indian Lake west shore</span></span><span class="n">9 events</span></a>
 <a class="town" href="/events/larue.html"><span><b>LaRue, OH</b><span class="tg">Smallest NFL Town Ever</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/mansfield.html"><span><b>Mansfield, OH</b><span class="tg">Home of the Ohio State Reformatory</span></span><span class="n">132 events</span></a>
-<a class="town" href="/events/marion.html"><span><b>Marion, OH</b><span class="tg">Home of the Popcorn Festival</span></span><span class="n">42 events</span></a>
-<a class="town" href="/events/marysville.html"><span><b>Marysville, OH</b><span class="tg">Home of Scotts Miracle-Gro</span></span><span class="n">187 events</span></a>
-<a class="town" href="/events/mount-vernon.html"><span><b>Mount Vernon, OH</b><span class="tg">Knox County&#39;s historic seat</span></span><span class="n">27 events</span></a>
-<a class="town" href="/events/new-albany.html"><span><b>New Albany, OH</b><span class="tg">Rocky Fork Metro Park and the Village Center</span></span><span class="n">89 events</span></a>
-<a class="town" href="/events/newark.html"><span><b>Newark, OH</b><span class="tg">Home of the Great Circle Earthworks</span></span><span class="n">270 events</span></a>
-<a class="town" href="/events/ontario.html"><span><b>Ontario, OH</b><span class="tg">A hub of Richland County</span></span><span class="n">8 events</span></a>
-<a class="town" href="/events/piqua.html"><span><b>Piqua, OH</b><span class="tg">On the Great Miami River</span></span><span class="n">108 events</span></a>
+<a class="town" href="/events/mansfield.html"><span><b>Mansfield, OH</b><span class="tg">Home of the Ohio State Reformatory</span></span><span class="n">123 events</span></a>
+<a class="town" href="/events/marion.html"><span><b>Marion, OH</b><span class="tg">Home of the Popcorn Festival</span></span><span class="n">43 events</span></a>
+<a class="town" href="/events/marysville.html"><span><b>Marysville, OH</b><span class="tg">Home of Scotts Miracle-Gro</span></span><span class="n">188 events</span></a>
+<a class="town" href="/events/mount-vernon.html"><span><b>Mount Vernon, OH</b><span class="tg">Knox County&#39;s historic seat</span></span><span class="n">45 events</span></a>
+<a class="town" href="/events/new-albany.html"><span><b>New Albany, OH</b><span class="tg">Rocky Fork Metro Park and the Village Center</span></span><span class="n">92 events</span></a>
+<a class="town" href="/events/newark.html"><span><b>Newark, OH</b><span class="tg">Home of the Great Circle Earthworks</span></span><span class="n">260 events</span></a>
+<a class="town" href="/events/ontario.html"><span><b>Ontario, OH</b><span class="tg">A hub of Richland County</span></span><span class="n">9 events</span></a>
+<a class="town" href="/events/piqua.html"><span><b>Piqua, OH</b><span class="tg">On the Great Miami River</span></span><span class="n">103 events</span></a>
 <a class="town" href="/events/prospect.html"><span><b>Prospect, OH</b><span class="tg">On the Scioto River</span></span><span class="n">0 events</span></a>
 <a class="town" href="/events/richwood.html"><span><b>Richwood, OH</b><span class="tg">Home of the Independent Fair</span></span><span class="n">15 events</span></a>
-<a class="town" href="/events/russells-point.html"><span><b>Russells Point, OH</b><span class="tg">Indian Lake south shore</span></span><span class="n">41 events</span></a>
+<a class="town" href="/events/russells-point.html"><span><b>Russells Point, OH</b><span class="tg">Indian Lake south shore</span></span><span class="n">43 events</span></a>
 <a class="town" href="/events/sidney.html"><span><b>Sidney, OH</b><span class="tg">Home of the historic Monumental Building</span></span><span class="n">35 events</span></a>
-<a class="town" href="/events/troy.html"><span><b>Troy, OH</b><span class="tg">Home of the Strawberry Festival</span></span><span class="n">116 events</span></a>
+<a class="town" href="/events/troy.html"><span><b>Troy, OH</b><span class="tg">Home of the Strawberry Festival</span></span><span class="n">112 events</span></a>
 <a class="town" href="/events/versailles.html"><span><b>Versailles, OH</b><span class="tg">Home of Poultry Days</span></span><span class="n">18 events</span></a>
-<a class="town" href="/events/willard.html"><span><b>Willard, OH</b><span class="tg">The Blossom City</span></span><span class="n">22 events</span></a>
-<div class="region-banner"><span class="rb-name">Northeast Ohio</span><span class="rb-sub">37 towns · 5,676 events</span></div>
-<a class="town" href="/events/akron.html"><span><b>Akron, OH</b><span class="tg">The Rubber City</span></span><span class="n">769 events</span></a>
-<a class="town" href="/events/alliance.html"><span><b>Alliance, OH</b><span class="tg">The Carnation City</span></span><span class="n">80 events</span></a>
-<a class="town" href="/events/ashtabula.html"><span><b>Ashtabula, OH</b><span class="tg">Harbor town of the covered-bridge county</span></span><span class="n">144 events</span></a>
+<a class="town" href="/events/willard.html"><span><b>Willard, OH</b><span class="tg">The Blossom City</span></span><span class="n">20 events</span></a>
+<div class="region-banner"><span class="rb-name">Northeast Ohio</span><span class="rb-sub">37 towns · 5,639 events</span></div>
+<a class="town" href="/events/akron.html"><span><b>Akron, OH</b><span class="tg">The Rubber City</span></span><span class="n">755 events</span></a>
+<a class="town" href="/events/alliance.html"><span><b>Alliance, OH</b><span class="tg">The Carnation City</span></span><span class="n">79 events</span></a>
+<a class="town" href="/events/ashtabula.html"><span><b>Ashtabula, OH</b><span class="tg">Harbor town of the covered-bridge county</span></span><span class="n">146 events</span></a>
 <a class="town" href="/events/austintown.html"><span><b>Austintown, OH</b><span class="tg">West of Youngstown</span></span><span class="n">96 events</span></a>
-<a class="town" href="/events/barberton.html"><span><b>Barberton, OH</b><span class="tg">The Magic City</span></span><span class="n">95 events</span></a>
+<a class="town" href="/events/barberton.html"><span><b>Barberton, OH</b><span class="tg">The Magic City</span></span><span class="n">94 events</span></a>
 <a class="town" href="/events/boardman.html"><span><b>Boardman, OH</b><span class="tg">Gateway to the Mahoning Valley</span></span><span class="n">44 events</span></a>
-<a class="town" href="/events/canfield.html"><span><b>Canfield, OH</b><span class="tg">Home of the Canfield Fair</span></span><span class="n">30 events</span></a>
-<a class="town" href="/events/canton.html"><span><b>Canton, OH</b><span class="tg">Home of the Pro Football Hall of Fame</span></span><span class="n">265 events</span></a>
+<a class="town" href="/events/canfield.html"><span><b>Canfield, OH</b><span class="tg">Home of the Canfield Fair</span></span><span class="n">33 events</span></a>
+<a class="town" href="/events/canton.html"><span><b>Canton, OH</b><span class="tg">Home of the Pro Football Hall of Fame</span></span><span class="n">261 events</span></a>
 <a class="town" href="/events/carrollton.html"><span><b>Carrollton, OH</b><span class="tg">Carroll County seat</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/cleveland.html"><span><b>Cleveland, OH</b><span class="tg">The Forest City</span></span><span class="n">1755 events</span></a>
-<a class="town" href="/events/columbiana.html"><span><b>Columbiana, OH</b><span class="tg">Historic small-town square</span></span><span class="n">66 events</span></a>
-<a class="town" href="/events/conneaut.html"><span><b>Conneaut, OH</b><span class="tg">Ohio&#39;s northeast corner on Lake Erie</span></span><span class="n">62 events</span></a>
-<a class="town" href="/events/cuyahoga-falls.html"><span><b>Cuyahoga Falls, OH</b><span class="tg">On the Cuyahoga River</span></span><span class="n">127 events</span></a>
+<a class="town" href="/events/cleveland.html"><span><b>Cleveland, OH</b><span class="tg">The Forest City</span></span><span class="n">1766 events</span></a>
+<a class="town" href="/events/columbiana.html"><span><b>Columbiana, OH</b><span class="tg">Historic small-town square</span></span><span class="n">62 events</span></a>
+<a class="town" href="/events/conneaut.html"><span><b>Conneaut, OH</b><span class="tg">Ohio&#39;s northeast corner on Lake Erie</span></span><span class="n">77 events</span></a>
+<a class="town" href="/events/cuyahoga-falls.html"><span><b>Cuyahoga Falls, OH</b><span class="tg">On the Cuyahoga River</span></span><span class="n">122 events</span></a>
 <a class="town" href="/events/dover.html"><span><b>Dover, OH</b><span class="tg">Home of the Warther Museum</span></span><span class="n">12 events</span></a>
-<a class="town" href="/events/geneva.html"><span><b>Geneva, OH</b><span class="tg">Gateway to Geneva-on-the-Lake</span></span><span class="n">161 events</span></a>
-<a class="town" href="/events/girard.html"><span><b>Girard, OH</b><span class="tg">On the Mahoning River</span></span><span class="n">71 events</span></a>
-<a class="town" href="/events/hartville.html"><span><b>Hartville, OH</b><span class="tg">Home of the MarketPlace</span></span><span class="n">53 events</span></a>
-<a class="town" href="/events/hudson.html"><span><b>Hudson, OH</b><span class="tg">Historic village green</span></span><span class="n">94 events</span></a>
-<a class="town" href="/events/kent.html"><span><b>Kent, OH</b><span class="tg">Home of Kent State</span></span><span class="n">187 events</span></a>
-<a class="town" href="/events/massillon.html"><span><b>Massillon, OH</b><span class="tg">Tiger Town</span></span><span class="n">55 events</span></a>
-<a class="town" href="/events/medina.html"><span><b>Medina, OH</b><span class="tg">Home of the historic town square</span></span><span class="n">233 events</span></a>
-<a class="town" href="/events/millersburg.html"><span><b>Millersburg, OH</b><span class="tg">Heart of Amish Country</span></span><span class="n">16 events</span></a>
-<a class="town" href="/events/new-philadelphia.html"><span><b>New Philadelphia, OH</b><span class="tg">Home of historic Schoenbrunn Village</span></span><span class="n">143 events</span></a>
+<a class="town" href="/events/geneva.html"><span><b>Geneva, OH</b><span class="tg">Gateway to Geneva-on-the-Lake</span></span><span class="n">174 events</span></a>
+<a class="town" href="/events/girard.html"><span><b>Girard, OH</b><span class="tg">On the Mahoning River</span></span><span class="n">70 events</span></a>
+<a class="town" href="/events/hartville.html"><span><b>Hartville, OH</b><span class="tg">Home of the MarketPlace</span></span><span class="n">55 events</span></a>
+<a class="town" href="/events/hudson.html"><span><b>Hudson, OH</b><span class="tg">Historic village green</span></span><span class="n">92 events</span></a>
+<a class="town" href="/events/kent.html"><span><b>Kent, OH</b><span class="tg">Home of Kent State</span></span><span class="n">184 events</span></a>
+<a class="town" href="/events/massillon.html"><span><b>Massillon, OH</b><span class="tg">Tiger Town</span></span><span class="n">51 events</span></a>
+<a class="town" href="/events/medina.html"><span><b>Medina, OH</b><span class="tg">Home of the historic town square</span></span><span class="n">226 events</span></a>
+<a class="town" href="/events/millersburg.html"><span><b>Millersburg, OH</b><span class="tg">Heart of Amish Country</span></span><span class="n">17 events</span></a>
+<a class="town" href="/events/new-philadelphia.html"><span><b>New Philadelphia, OH</b><span class="tg">Home of historic Schoenbrunn Village</span></span><span class="n">136 events</span></a>
 <a class="town" href="/events/niles.html"><span><b>Niles, OH</b><span class="tg">Birthplace of President McKinley</span></span><span class="n">21 events</span></a>
-<a class="town" href="/events/north-canton.html"><span><b>North Canton, OH</b><span class="tg">The Hoover City</span></span><span class="n">103 events</span></a>
-<a class="town" href="/events/orrville.html"><span><b>Orrville, OH</b><span class="tg">Home of Smucker&#39;s</span></span><span class="n">48 events</span></a>
-<a class="town" href="/events/portage-lakes.html"><span><b>Portage Lakes, OH</b><span class="tg">Lake country south of Akron</span></span><span class="n">40 events</span></a>
-<a class="town" href="/events/ravenna.html"><span><b>Ravenna, OH</b><span class="tg">Portage County seat</span></span><span class="n">89 events</span></a>
-<a class="town" href="/events/salem.html"><span><b>Salem, OH</b><span class="tg">Historic Quaker town</span></span><span class="n">98 events</span></a>
-<a class="town" href="/events/stow.html"><span><b>Stow, OH</b><span class="tg">Home of Silver Springs</span></span><span class="n">130 events</span></a>
-<a class="town" href="/events/streetsboro.html"><span><b>Streetsboro, OH</b><span class="tg">Crossroads of Portage County</span></span><span class="n">25 events</span></a>
-<a class="town" href="/events/struthers.html"><span><b>Struthers, OH</b><span class="tg">Steel Valley river town</span></span><span class="n">33 events</span></a>
+<a class="town" href="/events/north-canton.html"><span><b>North Canton, OH</b><span class="tg">The Hoover City</span></span><span class="n">99 events</span></a>
+<a class="town" href="/events/orrville.html"><span><b>Orrville, OH</b><span class="tg">Home of Smucker&#39;s</span></span><span class="n">43 events</span></a>
+<a class="town" href="/events/portage-lakes.html"><span><b>Portage Lakes, OH</b><span class="tg">Lake country south of Akron</span></span><span class="n">39 events</span></a>
+<a class="town" href="/events/ravenna.html"><span><b>Ravenna, OH</b><span class="tg">Portage County seat</span></span><span class="n">85 events</span></a>
+<a class="town" href="/events/salem.html"><span><b>Salem, OH</b><span class="tg">Historic Quaker town</span></span><span class="n">92 events</span></a>
+<a class="town" href="/events/stow.html"><span><b>Stow, OH</b><span class="tg">Home of Silver Springs</span></span><span class="n">126 events</span></a>
+<a class="town" href="/events/streetsboro.html"><span><b>Streetsboro, OH</b><span class="tg">Crossroads of Portage County</span></span><span class="n">24 events</span></a>
+<a class="town" href="/events/struthers.html"><span><b>Struthers, OH</b><span class="tg">Steel Valley river town</span></span><span class="n">32 events</span></a>
 <a class="town" href="/events/tallmadge.html"><span><b>Tallmadge, OH</b><span class="tg">The Circle City</span></span><span class="n">13 events</span></a>
-<a class="town" href="/events/wadsworth.html"><span><b>Wadsworth, OH</b><span class="tg">The Grizzly City</span></span><span class="n">20 events</span></a>
+<a class="town" href="/events/wadsworth.html"><span><b>Wadsworth, OH</b><span class="tg">The Grizzly City</span></span><span class="n">21 events</span></a>
 <a class="town" href="/events/warren.html"><span><b>Warren, OH</b><span class="tg">Birthplace of Packard</span></span><span class="n">42 events</span></a>
-<a class="town" href="/events/wooster.html"><span><b>Wooster, OH</b><span class="tg">Heart of Wayne County</span></span><span class="n">162 events</span></a>
-<a class="town" href="/events/youngstown.html"><span><b>Youngstown, OH</b><span class="tg">Heart of the Steel Valley</span></span><span class="n">294 events</span></a>
-<div class="region-banner"><span class="rb-name">Southeast Ohio</span><span class="rb-sub">24 towns · 1,545 events</span></div>
-<a class="town" href="/events/athens.html"><span><b>Athens, OH</b><span class="tg">Ohio University&#39;s hometown</span></span><span class="n">625 events</span></a>
+<a class="town" href="/events/wooster.html"><span><b>Wooster, OH</b><span class="tg">Heart of Wayne County</span></span><span class="n">161 events</span></a>
+<a class="town" href="/events/youngstown.html"><span><b>Youngstown, OH</b><span class="tg">Heart of the Steel Valley</span></span><span class="n">289 events</span></a>
+<div class="region-banner"><span class="rb-name">Southeast Ohio</span><span class="rb-sub">24 towns · 1,541 events</span></div>
+<a class="town" href="/events/athens.html"><span><b>Athens, OH</b><span class="tg">Ohio University&#39;s hometown</span></span><span class="n">629 events</span></a>
 <a class="town" href="/events/belpre.html"><span><b>Belpre, OH</b><span class="tg">Ohio River neighbor of Marietta</span></span><span class="n">2 events</span></a>
 <a class="town" href="/events/cadiz.html"><span><b>Cadiz, OH</b><span class="tg">Harrison County seat</span></span><span class="n">0 events</span></a>
 <a class="town" href="/events/caldwell.html"><span><b>Caldwell, OH</b><span class="tg">Noble County seat</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/cambridge.html"><span><b>Cambridge, OH</b><span class="tg">Guernsey County&#39;s Dickens town</span></span><span class="n">52 events</span></a>
-<a class="town" href="/events/chillicothe.html"><span><b>Chillicothe, OH</b><span class="tg">Ohio&#39;s first capital</span></span><span class="n">100 events</span></a>
-<a class="town" href="/events/coshocton.html"><span><b>Coshocton, OH</b><span class="tg">Historic Roscoe Village</span></span><span class="n">64 events</span></a>
-<a class="town" href="/events/gallipolis.html"><span><b>Gallipolis, OH</b><span class="tg">Old French City on the Ohio</span></span><span class="n">45 events</span></a>
-<a class="town" href="/events/ironton.html"><span><b>Ironton, OH</b><span class="tg">Lawrence County&#39;s river city</span></span><span class="n">35 events</span></a>
-<a class="town" href="/events/jackson.html"><span><b>Jackson, OH</b><span class="tg">Apple City of southern Ohio</span></span><span class="n">54 events</span></a>
-<a class="town" href="/events/logan.html"><span><b>Logan, OH</b><span class="tg">Heart of the Hocking Hills</span></span><span class="n">34 events</span></a>
-<a class="town" href="/events/marietta.html"><span><b>Marietta, OH</b><span class="tg">Ohio&#39;s first city</span></span><span class="n">56 events</span></a>
-<a class="town" href="/events/mcarthur.html"><span><b>McArthur, OH</b><span class="tg">Vinton County seat</span></span><span class="n">47 events</span></a>
+<a class="town" href="/events/cambridge.html"><span><b>Cambridge, OH</b><span class="tg">Guernsey County&#39;s Dickens town</span></span><span class="n">55 events</span></a>
+<a class="town" href="/events/chillicothe.html"><span><b>Chillicothe, OH</b><span class="tg">Ohio&#39;s first capital</span></span><span class="n">101 events</span></a>
+<a class="town" href="/events/coshocton.html"><span><b>Coshocton, OH</b><span class="tg">Historic Roscoe Village</span></span><span class="n">60 events</span></a>
+<a class="town" href="/events/gallipolis.html"><span><b>Gallipolis, OH</b><span class="tg">Old French City on the Ohio</span></span><span class="n">44 events</span></a>
+<a class="town" href="/events/ironton.html"><span><b>Ironton, OH</b><span class="tg">Lawrence County&#39;s river city</span></span><span class="n">33 events</span></a>
+<a class="town" href="/events/jackson.html"><span><b>Jackson, OH</b><span class="tg">Apple City of southern Ohio</span></span><span class="n">51 events</span></a>
+<a class="town" href="/events/logan.html"><span><b>Logan, OH</b><span class="tg">Heart of the Hocking Hills</span></span><span class="n">30 events</span></a>
+<a class="town" href="/events/marietta.html"><span><b>Marietta, OH</b><span class="tg">Ohio&#39;s first city</span></span><span class="n">57 events</span></a>
+<a class="town" href="/events/mcarthur.html"><span><b>McArthur, OH</b><span class="tg">Vinton County seat</span></span><span class="n">45 events</span></a>
 <a class="town" href="/events/mcconnelsville.html"><span><b>McConnelsville, OH</b><span class="tg">Morgan County&#39;s river village</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/nelsonville.html"><span><b>Nelsonville, OH</b><span class="tg">Gateway to the Hocking Valley</span></span><span class="n">26 events</span></a>
-<a class="town" href="/events/new-lexington.html"><span><b>New Lexington, OH</b><span class="tg">Perry County seat</span></span><span class="n">72 events</span></a>
-<a class="town" href="/events/pomeroy.html"><span><b>Pomeroy, OH</b><span class="tg">Meigs County&#39;s riverfront seat</span></span><span class="n">54 events</span></a>
+<a class="town" href="/events/nelsonville.html"><span><b>Nelsonville, OH</b><span class="tg">Gateway to the Hocking Valley</span></span><span class="n">27 events</span></a>
+<a class="town" href="/events/new-lexington.html"><span><b>New Lexington, OH</b><span class="tg">Perry County seat</span></span><span class="n">73 events</span></a>
+<a class="town" href="/events/pomeroy.html"><span><b>Pomeroy, OH</b><span class="tg">Meigs County&#39;s riverfront seat</span></span><span class="n">56 events</span></a>
 <a class="town" href="/events/portsmouth.html"><span><b>Portsmouth, OH</b><span class="tg">Ohio River murals city</span></span><span class="n">15 events</span></a>
 <a class="town" href="/events/st-clairsville.html"><span><b>St. Clairsville, OH</b><span class="tg">Belmont County seat</span></span><span class="n">2 events</span></a>
 <a class="town" href="/events/steubenville.html"><span><b>Steubenville, OH</b><span class="tg">City of Murals</span></span><span class="n">120 events</span></a>
 <a class="town" href="/events/waverly.html"><span><b>Waverly, OH</b><span class="tg">Pike County seat</span></span><span class="n">25 events</span></a>
-<a class="town" href="/events/wellston.html"><span><b>Wellston, OH</b><span class="tg">Jackson County&#39;s lake town</span></span><span class="n">10 events</span></a>
+<a class="town" href="/events/wellston.html"><span><b>Wellston, OH</b><span class="tg">Jackson County&#39;s lake town</span></span><span class="n">8 events</span></a>
 <a class="town" href="/events/woodsfield.html"><span><b>Woodsfield, OH</b><span class="tg">Monroe County seat</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/zanesville.html"><span><b>Zanesville, OH</b><span class="tg">Y-Bridge city on the Muskingum</span></span><span class="n">107 events</span></a>
-<div class="region-banner"><span class="rb-name">Southwest Ohio</span><span class="rb-sub">14 towns · 2,838 events</span></div>
-<a class="town" href="/events/beavercreek.html"><span><b>Beavercreek, OH</b><span class="tg">Greene County&#39;s largest city</span></span><span class="n">135 events</span></a>
-<a class="town" href="/events/cincinnati.html"><span><b>Cincinnati, OH</b><span class="tg">The Queen City</span></span><span class="n">1943 events</span></a>
-<a class="town" href="/events/eaton.html"><span><b>Eaton, OH</b><span class="tg">Preble County seat</span></span><span class="n">26 events</span></a>
-<a class="town" href="/events/georgetown.html"><span><b>Georgetown, OH</b><span class="tg">Boyhood home of U.S. Grant</span></span><span class="n">12 events</span></a>
+<a class="town" href="/events/zanesville.html"><span><b>Zanesville, OH</b><span class="tg">Y-Bridge city on the Muskingum</span></span><span class="n">108 events</span></a>
+<div class="region-banner"><span class="rb-name">Southwest Ohio</span><span class="rb-sub">14 towns · 2,853 events</span></div>
+<a class="town" href="/events/beavercreek.html"><span><b>Beavercreek, OH</b><span class="tg">Greene County&#39;s largest city</span></span><span class="n">137 events</span></a>
+<a class="town" href="/events/cincinnati.html"><span><b>Cincinnati, OH</b><span class="tg">The Queen City</span></span><span class="n">1928 events</span></a>
+<a class="town" href="/events/eaton.html"><span><b>Eaton, OH</b><span class="tg">Preble County seat</span></span><span class="n">25 events</span></a>
+<a class="town" href="/events/georgetown.html"><span><b>Georgetown, OH</b><span class="tg">Boyhood home of U.S. Grant</span></span><span class="n">13 events</span></a>
 <a class="town" href="/events/greenfield.html"><span><b>Greenfield, OH</b><span class="tg">On Paint Creek</span></span><span class="n">0 events</span></a>
 <a class="town" href="/events/hillsboro.html"><span><b>Hillsboro, OH</b><span class="tg">Highland County seat</span></span><span class="n">0 events</span></a>
 <a class="town" href="/events/peebles.html"><span><b>Peebles, OH</b><span class="tg">Gateway to Serpent Mound</span></span><span class="n">14 events</span></a>
-<a class="town" href="/events/ripley.html"><span><b>Ripley, OH</b><span class="tg">Freedom&#39;s landing on the Ohio</span></span><span class="n">0 events</span></a>
-<a class="town" href="/events/springfield.html"><span><b>Springfield, OH</b><span class="tg">Home of the Westcott House</span></span><span class="n">364 events</span></a>
-<a class="town" href="/events/urbana.html"><span><b>Urbana, OH</b><span class="tg">Champaign County seat</span></span><span class="n">132 events</span></a>
-<a class="town" href="/events/washington-court-house.html"><span><b>Washington Court House, OH</b><span class="tg">Fayette County seat</span></span><span class="n">29 events</span></a>
+<a class="town" href="/events/ripley.html"><span><b>Ripley, OH</b><span class="tg">Freedom&#39;s landing on the Ohio</span></span><span class="n">1 events</span></a>
+<a class="town" href="/events/springfield.html"><span><b>Springfield, OH</b><span class="tg">Home of the Westcott House</span></span><span class="n">374 events</span></a>
+<a class="town" href="/events/urbana.html"><span><b>Urbana, OH</b><span class="tg">Champaign County seat</span></span><span class="n">145 events</span></a>
+<a class="town" href="/events/washington-court-house.html"><span><b>Washington Court House, OH</b><span class="tg">Fayette County seat</span></span><span class="n">30 events</span></a>
 <a class="town" href="/events/west-union.html"><span><b>West Union, OH</b><span class="tg">Adams County seat</span></span><span class="n">8 events</span></a>
-<a class="town" href="/events/wilmington.html"><span><b>Wilmington, OH</b><span class="tg">Clinton County&#39;s college town</span></span><span class="n">44 events</span></a>
+<a class="town" href="/events/wilmington.html"><span><b>Wilmington, OH</b><span class="tg">Clinton County&#39;s college town</span></span><span class="n">47 events</span></a>
 <a class="town" href="/events/xenia.html"><span><b>Xenia, OH</b><span class="tg">Bike trail crossroads of Ohio</span></span><span class="n">131 events</span></a>
+<section class="digest">
+<h2>Get this weekend's plans by email</h2>
+<p>One email, Friday morning, with what is on in your town that weekend. Free, and you can stop any time.</p>
+<form class="digest-form" data-city="" novalidate>
+<select name="city_id" required aria-label="Your town"><option value="" disabled selected>Pick your town</option><optgroup label="Northwest Ohio"><option value="ada">Ada, OH</option><option value="arlington">Arlington, OH</option><option value="bluffton">Bluffton, OH</option><option value="bowling-green">Bowling Green, OH</option><option value="bryan">Bryan, OH</option><option value="carey">Carey, OH</option><option value="catawba-island">Catawba Island, OH</option><option value="celina">Celina, OH</option><option value="defiance">Defiance, OH</option><option value="findlay">Findlay, OH</option><option value="fostoria">Fostoria, OH</option><option value="fremont">Fremont, OH</option><option value="kelleys-island">Kelleys Island, OH</option><option value="leipsic">Leipsic, OH</option><option value="lima">Lima, OH</option><option value="napoleon">Napoleon, OH</option><option value="north-baltimore">North Baltimore, OH</option><option value="norwalk">Norwalk, OH</option><option value="pandora">Pandora, OH</option><option value="paulding">Paulding, OH</option><option value="perrysburg">Perrysburg, OH</option><option value="port-clinton">Port Clinton, OH</option><option value="put-in-bay">Put-in-Bay, OH</option><option value="sandusky">Sandusky, OH</option><option value="st-marys">St. Marys, OH</option><option value="sylvania">Sylvania, OH</option><option value="tiffin">Tiffin, OH</option><option value="toledo">Toledo, OH</option><option value="upper-sandusky">Upper Sandusky, OH</option><option value="van-wert">Van Wert, OH</option><option value="wapakoneta">Wapakoneta, OH</option><option value="waterville">Waterville, OH</option><option value="wauseon">Wauseon, OH</option></optgroup><optgroup label="Central Ohio"><option value="ashland">Ashland, OH</option><option value="bellefontaine">Bellefontaine, OH</option><option value="bucyrus">Bucyrus, OH</option><option value="columbus">Columbus, OH</option><option value="delaware">Delaware, OH</option><option value="fredericktown">Fredericktown, OH</option><option value="galion">Galion, OH</option><option value="greenville">Greenville, OH</option><option value="kenton">Kenton, OH</option><option value="lakeview">Lakeview, OH</option><option value="mansfield">Mansfield, OH</option><option value="marion">Marion, OH</option><option value="marysville">Marysville, OH</option><option value="mount-vernon">Mount Vernon, OH</option><option value="new-albany">New Albany, OH</option><option value="newark">Newark, OH</option><option value="ontario">Ontario, OH</option><option value="piqua">Piqua, OH</option><option value="richwood">Richwood, OH</option><option value="russells-point">Russells Point, OH</option><option value="sidney">Sidney, OH</option><option value="troy">Troy, OH</option><option value="versailles">Versailles, OH</option><option value="willard">Willard, OH</option></optgroup><optgroup label="Northeast Ohio"><option value="akron">Akron, OH</option><option value="alliance">Alliance, OH</option><option value="ashtabula">Ashtabula, OH</option><option value="austintown">Austintown, OH</option><option value="barberton">Barberton, OH</option><option value="boardman">Boardman, OH</option><option value="canfield">Canfield, OH</option><option value="canton">Canton, OH</option><option value="cleveland">Cleveland, OH</option><option value="columbiana">Columbiana, OH</option><option value="conneaut">Conneaut, OH</option><option value="cuyahoga-falls">Cuyahoga Falls, OH</option><option value="dover">Dover, OH</option><option value="geneva">Geneva, OH</option><option value="girard">Girard, OH</option><option value="hartville">Hartville, OH</option><option value="hudson">Hudson, OH</option><option value="kent">Kent, OH</option><option value="massillon">Massillon, OH</option><option value="medina">Medina, OH</option><option value="millersburg">Millersburg, OH</option><option value="new-philadelphia">New Philadelphia, OH</option><option value="niles">Niles, OH</option><option value="north-canton">North Canton, OH</option><option value="orrville">Orrville, OH</option><option value="portage-lakes">Portage Lakes, OH</option><option value="ravenna">Ravenna, OH</option><option value="salem">Salem, OH</option><option value="stow">Stow, OH</option><option value="streetsboro">Streetsboro, OH</option><option value="struthers">Struthers, OH</option><option value="tallmadge">Tallmadge, OH</option><option value="wadsworth">Wadsworth, OH</option><option value="warren">Warren, OH</option><option value="wooster">Wooster, OH</option><option value="youngstown">Youngstown, OH</option></optgroup><optgroup label="Southeast Ohio"><option value="athens">Athens, OH</option><option value="belpre">Belpre, OH</option><option value="cambridge">Cambridge, OH</option><option value="chillicothe">Chillicothe, OH</option><option value="coshocton">Coshocton, OH</option><option value="gallipolis">Gallipolis, OH</option><option value="ironton">Ironton, OH</option><option value="jackson">Jackson, OH</option><option value="logan">Logan, OH</option><option value="marietta">Marietta, OH</option><option value="mcarthur">McArthur, OH</option><option value="nelsonville">Nelsonville, OH</option><option value="new-lexington">New Lexington, OH</option><option value="pomeroy">Pomeroy, OH</option><option value="portsmouth">Portsmouth, OH</option><option value="st-clairsville">St. Clairsville, OH</option><option value="steubenville">Steubenville, OH</option><option value="waverly">Waverly, OH</option><option value="wellston">Wellston, OH</option><option value="zanesville">Zanesville, OH</option></optgroup><optgroup label="Southwest Ohio"><option value="beavercreek">Beavercreek, OH</option><option value="cincinnati">Cincinnati, OH</option><option value="eaton">Eaton, OH</option><option value="georgetown">Georgetown, OH</option><option value="peebles">Peebles, OH</option><option value="ripley">Ripley, OH</option><option value="springfield">Springfield, OH</option><option value="urbana">Urbana, OH</option><option value="washington-court-house">Washington Court House, OH</option><option value="west-union">West Union, OH</option><option value="wilmington">Wilmington, OH</option><option value="xenia">Xenia, OH</option></optgroup></select>
+<input type="email" name="email" required maxlength="254" inputmode="email" autocomplete="email" placeholder="you@example.com" aria-label="Your email address"/>
+<input type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true"/>
+<button type="submit" class="get">Email me Fridays</button>
+</form>
+<div class="digest-msg" role="status" aria-live="polite"></div>
+<div class="digest-fine">We send one confirmation email and nothing else until you click it. <a href="/privacy.html">Privacy</a></div>
+<script>
+(function(){
+  var EP="https://wtaefyspddadcrnovumk.supabase.co/functions/v1/digest-subscribe";
+  var RE=/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+  var forms=document.querySelectorAll('form.digest-form');
+  for(var i=0;i<forms.length;i++){(function(f){
+    var box=f.parentNode, msg=box.querySelector('.digest-msg'), btn=f.querySelector('button');
+    f.addEventListener('submit',function(ev){
+      ev.preventDefault();
+      if(f.company&&f.company.value)return;
+      var email=(f.email.value||'').trim();
+      var city=f.city_id?f.city_id.value:f.getAttribute('data-city');
+      if(!RE.test(email)){msg.textContent='That email address does not look right.';return;}
+      if(!city){msg.textContent='Pick your town first.';return;}
+      btn.disabled=true;msg.textContent='Signing you up...';
+      var done=false;
+      var t=setTimeout(function(){if(done)return;done=true;btn.disabled=false;msg.textContent='That took too long. Try again in a moment.';},12000);
+      fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,city_id:city})})
+        .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j||{}};},function(){return {ok:r.ok,j:{}};});})
+        .then(function(res){
+          if(done)return;done=true;clearTimeout(t);
+          if(res.ok&&res.j.state==='already_subscribed'){f.style.display='none';msg.textContent='You are already on the list. We updated your town.';return;}
+          if(res.ok&&res.j.state==='check_email'){f.style.display='none';msg.textContent='Check your inbox and click the confirm link. Nothing else is sent until you do.';return;}
+          btn.disabled=false;
+          msg.textContent=res.j.error==='invalid email'?'That email address does not look right.':'Could not sign you up. Try again in a minute.';
+        })
+        .catch(function(){if(done)return;done=true;clearTimeout(t);btn.disabled=false;msg.textContent='Could not reach the server. Try again in a minute.';});
+    });
+  })(forms[i]);}
+})();
+</script>
+</section>
 <div class="banner"><h2>Get the free app</h2>
 <p>Save events, get directions, add to your calendar, and see garage sales &amp; food trucks too. All across Ohio, free.</p>
 <a class="get" href="/open.html">Download Local Loop</a></div>
