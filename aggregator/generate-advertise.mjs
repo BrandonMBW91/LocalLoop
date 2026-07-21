@@ -186,9 +186,10 @@ const html = `<!DOCTYPE html><html lang="en"><head>
 
 <div class="steps"><h2>How it works</h2><ol>
   <li><strong>Pick your town</strong> above to see today's rate, then check out securely with Stripe (card or Apple/Google Pay). Prefer to talk first? Email us.</li>
-  <li><strong>Tell us about your ad</strong> at checkout: your business name, headline, and town.</li>
+  <li><strong>Tell us about your ad</strong> at checkout: your business name, headline, and town. That is all checkout asks for.</li>
+  <li><strong>Add your logo right after,</strong> on your own page. Your receipt links straight to it, and that is also where you set the link people tap and the words on the button.</li>
   <li><strong>You go live</strong> in the app, with simple monthly billing.</li>
-  <li><strong>Change it yourself, any time.</strong> Your receipt links to your own page, where you can set your logo, headline, link and the words on the button, and see how many neighbors saw your ad and tapped it.</li>
+  <li><strong>See how it is doing, any time.</strong> The same page shows how many neighbors saw your ad and how many tapped it, and you can change any of it whenever you like.</li>
 </ol></div>
 
 <p class="foot-note">Questions, or want to feature an event for a single weekend? Email <a href="mailto:localloop@localloop.io">localloop@localloop.io</a> and we'll set you up.</p>

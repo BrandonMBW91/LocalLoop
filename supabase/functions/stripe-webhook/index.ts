@@ -351,11 +351,23 @@ Deno.serve(async (req) => {
         await resendSend(
           buyerEmail,
           'Your Local Loop ad is live',
-          `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself. Set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${manageToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
-          // The body above tells a paying customer to "just reply to this email", and
-          // FROM is noreply@ — an address with no mailbox on the Zoho domain. Without
-          // this, taking us up on it bounces, on the one email a new advertiser is
-          // most likely to answer.
+          // The manage link IS the next step, so it leads. Stripe caps a payment link
+          // at 3 custom fields and all three are spent (business name, headline, town),
+          // so there is physically nowhere at checkout to collect a logo or a link —
+          // this email is the first chance the buyer gets. It used to open with thanks
+          // and bury the link in the third paragraph under "manage your ad", which
+          // reads as optional admin rather than "your ad is unfinished until you do
+          // this". A logo-less ad renders as initials, which is fine but plainly not
+          // what they pictured when they paid.
+          `Your ad is live in ${where}, and it shows between listings for neighbors browsing the app.\n\n`
+          + `ONE MORE STEP: add your logo.\nCheckout could not collect it, so finish your ad here (bookmark this link, it is yours):\n`
+          + `https://localloop.io/manage-ad.html?token=${manageToken}\n\n`
+          + `On that page you can set your logo, your headline, the link people tap, and the words on the button ("See menu", "Book now", "Get a quote"). `
+          + `You can also see how many neighbors saw your ad and how many tapped it, and change any of it whenever you like.\n\n`
+          + `Thanks for supporting Local Loop. Reply to this email if you would rather we set it up for you.\n\nLocal Loop\nlocalloop.io`,
+          // The body invites a reply and FROM is noreply@, an address with no mailbox
+          // on the Zoho domain. Without this, taking us up on it bounces — on the one
+          // email a new advertiser is most likely to answer.
           OWNER,
         );
       }
