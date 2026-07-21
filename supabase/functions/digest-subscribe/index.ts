@@ -21,10 +21,20 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND = 'https://api.resend.com/emails';
-// Deliberately NOT localloop@localloop.io. That address is a cold-B2B-outreach
-// identity being warmed at ~25/day on Zoho, and consumer digest volume on the same
-// address/provider would put both at risk. Opt-in consumer mail goes out separately.
-const FROM = 'Local Loop <events@localloop.io>';
+// Consumer bulk mail sends from the mail.localloop.io SUBDOMAIN, verified in Resend
+// 2026-07-21. This is a reputation firewall, not cosmetics.
+//
+// Gmail and Yahoo score the DMARC-aligned domain, not the local part and not the ESP.
+// Cold B2B outreach sends as Michael Williams <localloop@localloop.io> over Zoho and
+// authenticates d=localloop.io. If consumer digest volume also authenticated
+// d=localloop.io, then one annoyed subscriber hitting "spam" would degrade the
+// deliverability of the outreach that is actually producing revenue. A separate
+// subdomain gives the digest its own reputation to spend.
+//
+// If you change this address, send one test through Resend and confirm a 200 first:
+// an unverified From 403s SILENTLY, so signups would keep returning "check your
+// email" while no confirmation was ever sent.
+const FROM = 'Local Loop <events@mail.localloop.io>';
 // ...but replies still have to go somewhere a human reads. Measured 2026-07-21 by
 // mailing all three addresses: localloop@ delivered, events@ and noreply@ BOUNCED —
 // Zoho has no catch-all, so without this every reply to a digest email is lost.
