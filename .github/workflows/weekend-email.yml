@@ -1,0 +1,65 @@
+name: Weekend email digest
+
+# THE SCHEDULE IS DELIBERATELY COMMENTED OUT.
+#
+# This workflow mails real people. It stays manual-only until the list has actual
+# confirmed subscribers, for two reasons:
+#   1. The signup form only went live 2026-07-21, so the list is empty. Every Friday
+#      run against an empty list would exit 1 and send an ops alert, training the
+#      owner to ignore the alerts from the one routine whose alerts matter.
+#   2. The first send to strangers should be watched, not discovered on a Monday.
+#
+# TO GO LIVE: uncomment the two schedule lines below. 12:11 UTC = 8:11am EDT Friday.
+# Off the top of the hour because GitHub's cron drifts two to three hours under load
+# (see aggregate.yml). It lands ~6h after the 06:17 aggregate has refreshed the DB and
+# regenerated the /event/<id> pages this mail links to, and ~50 min before the push
+# digest at 13:00 UTC, so someone with both the app and the email is not hit twice in
+# one minute.
+on:
+  # schedule:
+  #   - cron: '11 12 * * 5'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry or send'
+        default: 'dry'
+        type: choice
+        options: [dry, send]
+
+concurrency:
+  group: weekend-email
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install deps
+        working-directory: aggregator
+        run: npm ci --omit=optional
+      - name: Send weekend email
+        working-directory: aggregator
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # outreach/ is gitignored in full, so mailing-address.txt does not exist on
+          # the runner. The script refuses to run without a postal address in EVERY
+          # mode, because CAN-SPAM applies to opt-in bulk mail too.
+          DIGEST_POSTAL: ${{ secrets.DIGEST_POSTAL }}
+          MODE: ${{ github.event_name == 'schedule' && 'send' || inputs.mode }}
+        # A shell `if`, never a ${{ cond && '' || '--send' }} expression. Actions
+        # expressions follow JS truthiness, so `true && ''` is falsy and falls through
+        # to the right-hand side — the "dry" choice would have appended --send anyway.
+        run: |
+          if [ "$MODE" = "send" ]; then
+            node weekend-email.mjs --send
+          else
+            node weekend-email.mjs
+          fi
+        # No continue-on-error: this script exits 1 on silence as well as on failure,
+        # and a red run is the point.

@@ -20,6 +20,7 @@
 // "comment and I'll add it" CTAs — content is self-serve.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { CITIES } from './src/data/cities.js';
+import { MARQUEE, FILLER, isShouty, isUnsafe, isImplausibleTime, scrubDashes } from './aggregator/content-safety.mjs';
 
 const DIR = new URL('.', import.meta.url);
 const read = (p) => { try { return readFileSync(new URL(p, DIR), 'utf8'); } catch { return ''; } };
@@ -84,26 +85,6 @@ function cleanVenue(v) {
 }
 
 // ---------- scoring + safety (copied from fb-routine.mjs; keep in sync) ----------
-const MARQUEE = /\b(festival|fest|fair|concert|live music|music|band|farmers?|market|cruise|car show|craft|vendor|parade|carnival|fireworks|tournament|expo|celebration|rodeo|brewery|winery|tasting|comedy|theat(er|re)|movie|food truck|art walk|block party|5k|derby)\b/i;
-const FILLER = /\b(playgroup|play ?date|pack and play|tot time|toddler|storytime|story time|open house|workshop|webinar|seminar|class(es)?|meeting|worship|service|mass|bible|support group|blood drive|bingo|office hours|orientation|info session)\b/i;
-const isShouty = (t) => { const L = (t.match(/[a-z]/gi) || []).length; const U = (t.match(/[A-Z]/g) || []).length; return L > 8 && U / L > 0.7; };
-const ADULT = /\b(bar crawl|pub ?crawl|ladies.?night|ladies'? night|white party|foam party|glow party|21\+|18\+|21 ?and ?(up|over)|casino|poker|slots?|gambl\w*|vape|vaping|hookah|cannabis|marijuana|weed|dispensar\w*|kratom|burlesque|drag (?:brunch|bingo|show)|strip(?:per|tease)?|lingerie|wet ?t.?shirt|beer ?olympics|booze|boozy|wine ?crawl|happy ?hour|after.?dark|adults?.?only|singles? (?:night|mixer)|speed dating|gentlemen'?s club|nightclub|rave)\b/i;
-const PROFANITY = /\b(f+u+c+k+\w*|sh[i1]t+\w*|b[i1]tch\w*|bastard|c+u+n+t+|d[i1]ck(?:head|wad)?|a+s+s+h+o+l+e+|jack ?ass|dumb ?ass|c[o0]ck(?:sucker)?|wh[o0]re|slut|f+a+g+\w*|n[i1]gg\w*|tw+a+t|goddamn\w*|g[o0]d ?damn|bull ?sh[i1]t)\b/i;
-const MASKED = /[a-z][*#@$]{2,}[a-z]?/i;
-const ENTITY = /&#?\w{1,8};/i;
-const isGarbage = (t) => {
-  const s = (t || '').replace(/…$/, '').trim();
-  if (s.length < 6) return true;
-  if (ENTITY.test(s)) return true;
-  if (/https?:\/\/|www\.|<\/?[a-z]|\{\{|\}\}|Ã.|â€|Â./.test(s)) return true;
-  if ((s.match(/[a-z]/gi) || []).length / s.length < 0.5) return true;
-  if (/^(test|untitled|tbd|tba|n\/?a|event|new event|sample)\b/i.test(s)) return true;
-  if (/(.)\1{4,}/.test(s)) return true;
-  return false;
-};
-const EVENING_TYPE = /\b(comedy|concert|live music|band|party|festival|fest|nightlife|dance|dj|karaoke|trivia|open mic|fireworks|celebration|carnival)\b/i;
-const isImplausibleTime = (title, h24) => EVENING_TYPE.test(title) && h24 >= 1 && h24 < 11;
-const isUnsafe = (t) => ADULT.test(t) || PROFANITY.test(t) || MASKED.test(t) || isGarbage(t);
 const scoreOf = (e) => {
   let s = 1;
   if (MARQUEE.test(e.title)) s += 6;
@@ -272,7 +253,7 @@ async function draftFor(gr) {
 
 // A post draft must never carry an em/en dash in the outward copy (bullets use a
 // plain " - " we insert ourselves; guard against a stray one from a title).
-const scrubDashes = (s) => (s || '').replace(/\s*[–—]\s*/g, ' - ');
+
 
 // ---------- log (record + cooldown) ----------
 function readLog() { try { const j = JSON.parse(read(LOG_FILE)); return Array.isArray(j) ? j : []; } catch { return []; } }
