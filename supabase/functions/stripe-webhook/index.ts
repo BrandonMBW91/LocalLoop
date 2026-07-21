@@ -109,14 +109,16 @@ function field(session: any, key: string): string {
 const FROM = 'Local Loop <noreply@localloop.io>';
 const OWNER = 'localloop@localloop.io';
 
-async function resendSend(to: string, subject: string, text: string) {
+// replyTo is opt-in per-send: FROM is a noreply@ address with no mailbox behind it,
+// so any mail we ASK the recipient to answer must carry one or the reply bounces.
+async function resendSend(to: string, subject: string, text: string, replyTo?: string) {
   const key = Deno.env.get('RESEND_API_KEY');
   if (!key) return; // email is best-effort; never fail the webhook over it
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: FROM, to: [to], subject, text }),
+      body: JSON.stringify({ from: FROM, to: [to], subject, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
   } catch (e) {
     console.error('resend send failed:', (e as Error).message);
@@ -239,6 +241,7 @@ Deno.serve(async (req) => {
             buyerEmail,
             'Your Local Loop featured listing is on its way',
             `Thanks for supporting Local Loop.\n\nWe got your Featured Listing for ${cityName(resolvedCity)} (30 days). We'll feature your listing in the app shortly. If we can't tell which listing is yours, we'll reply to this email to ask.\n\nQuestions? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
+            OWNER, // this one PROMISES we'll reply here to ask which listing is theirs
           );
         }
         return new Response(JSON.stringify({ received: true, fulfilled: 'featured_30 email sent' }), {
@@ -275,6 +278,7 @@ Deno.serve(async (req) => {
               dealBuyer,
               'Your Local Loop deal is live',
               `Thanks for supporting Local Loop.\n\nYour deal "${dealoffer || 'Local deal'}" is now showing in ${cityName(resolvedCity)} for neighbors browsing the app.\n\nWant to change the offer or add a link? Just reply to this email and we'll update it.\n\nLocal Loop\nlocalloop.io`,
+              OWNER, // "reply to this email and we'll update it" is the only way to edit a deal
             );
           }
         }
@@ -348,6 +352,11 @@ Deno.serve(async (req) => {
           buyerEmail,
           'Your Local Loop ad is live',
           `Thanks for supporting Local Loop.\n\nYour ad is now running in ${where}. It shows between listings for neighbors browsing the app.\n\nManage your ad yourself. Set the link people tap, your headline, or your business name (bookmark this):\nhttps://localloop.io/manage-ad.html?token=${manageToken}\n\nWant to add a logo too? Just reply to this email.\n\nLocal Loop\nlocalloop.io`,
+          // The body above tells a paying customer to "just reply to this email", and
+          // FROM is noreply@ — an address with no mailbox on the Zoho domain. Without
+          // this, taking us up on it bounces, on the one email a new advertiser is
+          // most likely to answer.
+          OWNER,
         );
       }
     } else if (event.type === 'customer.subscription.deleted') {
