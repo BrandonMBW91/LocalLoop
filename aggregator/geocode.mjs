@@ -31,6 +31,7 @@ const MAX_TOWN_MI = 35; // a real venue for a town sits within ~this far of its 
 // address". See the geocode() comment: conflating the two is what made a revoked token
 // or an exhausted quota look like a night of unresolvable addresses.
 let apiFailures = 0;
+let badQueries = 0;   // 400/422: the address itself is unusable (usually over Mapbox 256-char cap)
 let lastApiError = '';
 // Stop the run rather than grind through thousands of doomed lookups. Small enough to
 // catch a dead token on the first town, large enough that a couple of transient blips
@@ -74,6 +75,18 @@ async function geocode(query) {
   // events would just quietly stop getting map pins. Count these separately so the
   // caller can abort the run instead of writing off the whole night's addresses.
   if (!res.ok) {
+    // Two different things wear the same "not ok" hat, and conflating them is what
+    // makes this either blind or self-harming:
+    //   400 / 422 — THIS QUERY is bad (Mapbox caps the search string at 256 chars, and
+    //     some feed addresses are far longer). Address-specific and permanent, so it
+    //     counts as a miss and earns a strike. Otherwise these retry twice a day forever.
+    //   401 / 403 / 429 / 5xx — the API is refusing US. Global and usually temporary.
+    //     Never record these against an address, or one quota blip blacklists hundreds
+    //     of perfectly good addresses for a month.
+    if (res.status === 400 || res.status === 422) {
+      badQueries += 1;
+      return null; // treated as "no match" by the caller, so it gets a strike
+    }
     apiFailures += 1;
     lastApiError = `HTTP ${res.status}`;
     if (res.status === 401 || res.status === 403) lastApiError += ' (token rejected)';
@@ -94,6 +107,28 @@ async function geocode(query) {
   // Reject anything outside the anchor-derived footprint (visible, not silent).
   if (lat < BBOX.s || lat > BBOX.n || lng < BBOX.w || lng > BBOX.e) return null;
   return { lng, lat };
+}
+
+// Addresses Mapbox has already said it cannot find. Loaded once per run so the same
+// unanswerable question is not asked twice a day forever — see
+// supabase/geocode_failures.sql for the measured cost of not doing this.
+const MAX_ATTEMPTS = 3;       // give a shaky address three chances before backing off
+const RETRY_AFTER_DAYS = 30;  // then try once more monthly: feed data gets cleaned up
+
+async function loadFailures() {
+  const out = new Map();
+  let from = 0, page;
+  do {
+    const { data, error } = await supabase
+      .from('geocode_failures').select('query, attempts, last_attempt_at').range(from, from + 999);
+    // A read failure must NOT silently disable the skip — that would quietly restore
+    // the old 1,800-a-day behaviour with nothing to show for it.
+    if (error) { console.warn(`WARNING: could not read geocode_failures (${error.message}). Retrying every address this run.`); return new Map(); }
+    page = data || [];
+    for (const r of page) out.set(r.query, r);
+    from += 1000;
+  } while (page.length === 1000);
+  return out;
 }
 
 async function main() {
@@ -119,11 +154,31 @@ async function main() {
     groups.get(key).ids.push(e.id);
   }
 
+  // --all is an explicit "re-do everything", so it ignores the back-off.
+  const failures = ALL ? new Map() : await loadFailures();
+  const cutoff = Date.now() - RETRY_AFTER_DAYS * 86400e3;
+  const isBackedOff = (q) => {
+    const f = failures.get(q);
+    return !!f && f.attempts >= MAX_ATTEMPTS && Date.parse(f.last_attempt_at) > cutoff;
+  };
+
+  const all = [...groups.values()];
+  const todo = all.filter((g) => !isBackedOff(g.query));
+  const skipped = all.length - todo.length;
   console.log(`${rows.length} events across ${groups.size} distinct address+town combos.`);
+  if (skipped) console.log(`  skipping ${skipped} combo(s) that failed ${MAX_ATTEMPTS}+ times (retried after ${RETRY_AFTER_DAYS}d) — ${todo.length} to look up.`);
+
   let done = 0, updated = 0, missed = 0, farRejected = 0;
-  for (const { query, ids, cityId } of groups.values()) {
+  const newFailures = [];
+  const resolvedQueries = [];
+  for (const { query, ids, cityId } of todo) {
     let coords = null;
+    // Snapshot so we can tell "Mapbox has no match for this address" (worth
+    // remembering) from "Mapbox refused the request" (must NEVER be remembered, or a
+    // quota blip blacklists hundreds of good addresses for a month).
+    const apiBefore = apiFailures;
     try { coords = await geocode(query); } catch {}
+    const wasApiFailure = apiFailures > apiBefore;
     // Reject a geocode that landed too far from its assigned town (same-name
     // collision or a system-HQ address) so it falls back to no pin, not a wrong one.
     if (coords) {
@@ -133,20 +188,28 @@ async function main() {
     done += 1;
     if (!coords) {
       missed += 1;
+      // Remember genuine misses only. A far-rejected result counts: it DID resolve,
+      // just to the wrong place, and asking again returns the same wrong answer.
+      if (!wasApiFailure) newFailures.push(query);
       // Clear any stale/bad coords so a wrong pin doesn't linger.
       if (ALL && !DRY) {
         for (let i = 0; i < ids.length; i += 200) {
           await supabase.from('events').update({ lat: null, lng: null }).in('id', ids.slice(i, i + 200));
         }
       }
-    } else if (!DRY) {
-      for (let i = 0; i < ids.length; i += 200) {
-        const slice = ids.slice(i, i + 200);
-        const { error } = await supabase.from('events').update({ lat: coords.lat, lng: coords.lng }).in('id', slice);
-        if (!error) updated += slice.length;
+    } else {
+      // It resolved — drop any past failure so a fixed address is not still counted
+      // against its old strikes next month.
+      if (failures.has(query)) resolvedQueries.push(query);
+      if (!DRY) {
+        for (let i = 0; i < ids.length; i += 200) {
+          const slice = ids.slice(i, i + 200);
+          const { error } = await supabase.from('events').update({ lat: coords.lat, lng: coords.lng }).in('id', slice);
+          if (!error) updated += slice.length;
+        }
       }
     }
-    process.stdout.write(`\r  ${done}/${groups.size} combos · ${updated} events · ${missed} not found`);
+    process.stdout.write(`\r  ${done}/${todo.length} combos · ${updated} events · ${missed} not found`);
     if (apiFailures >= MAX_API_FAILURES) {
       process.stdout.write('\n');
       throw new Error(
@@ -158,10 +221,37 @@ async function main() {
     await new Promise((r) => setTimeout(r, 110)); // stay well under Mapbox rate limits
   }
   process.stdout.write('\n');
+
+  // Persist the back-off state. Done in bulk at the end rather than per-combo so a run
+  // costs two statements, not 900.
+  if (!DRY) {
+    if (newFailures.length) {
+      const now = new Date().toISOString();
+      const rowsUp = newFailures.map((q) => ({
+        query: q,
+        attempts: (failures.get(q)?.attempts || 0) + 1,
+        last_attempt_at: now,
+        last_reason: 'no match',
+      }));
+      for (let i = 0; i < rowsUp.length; i += 200) {
+        const { error } = await supabase.from('geocode_failures')
+          .upsert(rowsUp.slice(i, i + 200), { onConflict: 'query' });
+        if (error) console.error('geocode_failures write failed:', error.message);
+      }
+    }
+    if (resolvedQueries.length) {
+      for (let i = 0; i < resolvedQueries.length; i += 200) {
+        await supabase.from('geocode_failures').delete().in('query', resolvedQueries.slice(i, i + 200));
+      }
+      console.log(`  ${resolvedQueries.length} previously-failing address(es) resolved and cleared.`);
+    }
+  }
+
   console.log(DRY ? 'dry run — nothing written' : `Done. Geocoded ${updated} events.` + (farRejected ? ` (${farRejected} rejected as too far from town)` : ''));
   // Under the abort threshold but non-zero still means Mapbox turned us away some of
   // the time, which no amount of "not found" ever explains. Say so on its own line —
   // this used to be invisible.
+  if (badQueries) console.log(`  ${badQueries} address(es) rejected by Mapbox as unusable (too long or malformed) — recorded, so they stop being retried.`);
   if (apiFailures) console.warn(`WARNING: ${apiFailures} Mapbox API failure(s) (last: ${lastApiError}). Those addresses were skipped, not resolved.`);
 }
 
