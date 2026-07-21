@@ -26,7 +26,11 @@ const PLATFORM = (val('--platform') || 'ios').toLowerCase();
 // and "flip" a key that doesn't exist.
 if (!['ios', 'android'].includes(PLATFORM)) { console.error(`bad --platform "${PLATFORM}" (must be ios or android)`); process.exit(1); }
 if (!/^\d+(\.\d+)*$/.test(VERSION)) { console.error(`bad --version "${VERSION}"`); process.exit(1); }
-const DRY = process.argv.includes('--dry-run');
+// Accepts BOTH spellings on purpose. The repo had scripts taking --dry and others
+// taking --dry-run, so typing the wrong one at the wrong script ran it FOR REAL with no
+// warning. That happened on 2026-07-21: 'seatgeek.mjs --dry' was a live import.
+// Widening the match can only ever make a run more dry, never less.
+const DRY = process.argv.includes('--dry-run') || process.argv.includes('--dry');
 const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
 function jwt() {

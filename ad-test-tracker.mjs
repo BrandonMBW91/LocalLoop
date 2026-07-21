@@ -59,7 +59,11 @@ const KEY = g('SUPABASE_SERVICE_ROLE_KEY');
 const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
 
 const EMAIL = process.argv.includes('--email');
-const DRY = process.argv.includes('--dry');
+// Accepts BOTH spellings on purpose. The repo had scripts taking --dry and others
+// taking --dry-run, so typing the wrong one at the wrong script ran it FOR REAL with no
+// warning. That happened on 2026-07-21: 'seatgeek.mjs --dry' was a live import.
+// Widening the match can only ever make a run more dry, never less.
+const DRY = process.argv.includes('--dry-run') || process.argv.includes('--dry');
 
 // --reset deletes the state and EXITS (it does not re-baseline in the same run:
 // an evening reset would otherwise stamp startDate a day early and skew the

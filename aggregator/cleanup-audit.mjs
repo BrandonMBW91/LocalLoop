@@ -4,7 +4,11 @@
 import { readFileSync } from 'node:fs';
 const env = readFileSync(new URL('../.env', import.meta.url), 'utf8');
 const token = (env.match(/^SUPABASE_ACCESS_TOKEN=(.*)$/m) || [])[1].trim();
-const DRY = process.argv.includes('--dry-run');
+// Accepts BOTH spellings on purpose. The repo had scripts taking --dry and others
+// taking --dry-run, so typing the wrong one at the wrong script ran it FOR REAL with no
+// warning. That happened on 2026-07-21: 'seatgeek.mjs --dry' was a live import.
+// Widening the match can only ever make a run more dry, never less.
+const DRY = process.argv.includes('--dry-run') || process.argv.includes('--dry');
 const sql = (q) =>
   fetch('https://api.supabase.com/v1/projects/wtaefyspddadcrnovumk/database/query', {
     method: 'POST',

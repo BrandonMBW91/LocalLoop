@@ -13,7 +13,11 @@ import { joinAddressParts, cleanEventTitle } from './venue.mjs';
 import { ANCHORS } from './geo.mjs';
 
 loadDotEnv();
-const DRY = process.argv.includes('--dry-run');
+// Accepts BOTH spellings on purpose. The repo had scripts taking --dry and others
+// taking --dry-run, so typing the wrong one at the wrong script ran it FOR REAL with no
+// warning. That happened on 2026-07-21: 'seatgeek.mjs --dry' was a live import.
+// Widening the match can only ever make a run more dry, never less.
+const DRY = process.argv.includes('--dry-run') || process.argv.includes('--dry');
 const CID = process.env.SEATGEEK_CLIENT_ID;
 const HORIZON_DAYS = 90;
 
