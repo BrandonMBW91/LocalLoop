@@ -25,6 +25,12 @@ const RESEND = 'https://api.resend.com/emails';
 // identity being warmed at ~25/day on Zoho, and consumer digest volume on the same
 // address/provider would put both at risk. Opt-in consumer mail goes out separately.
 const FROM = 'Local Loop <events@localloop.io>';
+// ...but replies still have to go somewhere a human reads. Measured 2026-07-21 by
+// mailing all three addresses: localloop@ delivered, events@ and noreply@ BOUNCED —
+// Zoho has no catch-all, so without this every reply to a digest email is lost.
+// This does NOT undo the FROM rule above: that rule is about SENDING reputation, and
+// Reply-To only affects inbound mail, which costs the outreach identity nothing.
+const REPLY_TO = 'localloop@localloop.io';
 const SITE = 'https://localloop.io';
 // Resend confirmations no more than once per this window, so re-submitting the form
 // cannot be used to repeatedly mail an address.
@@ -75,6 +81,7 @@ async function sendConfirm(email: string, town: string, token: string) {
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: FROM, to: [email],
+      reply_to: REPLY_TO,
       subject: `Confirm your ${town} events email`,
       text,
       html: `<p>Thanks for signing up for the Local Loop weekly email.</p>
