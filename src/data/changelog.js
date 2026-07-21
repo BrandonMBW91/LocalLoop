@@ -4,8 +4,41 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 94 revs, newest first.
+// secret. 96 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 122,
+    "date": "2026-07-21",
+    "whatsNew": null,
+    "changes": []
+  },
+  {
+    "rev": 121,
+    "date": "2026-07-21",
+    "whatsNew": "",
+    "changes": [
+      "rev 121: all-towns total views on the Metrics screen",
+      "Build the weekly digest sender",
+      "Move consumer digest mail onto the mail.localloop.io subdomain",
+      "Add the weekly-email signup form to every town page and the hub",
+      "Keep bots and the owner's own devices out of every active-user number",
+      "Fix a stray CR that made EVERY purchase 500 (payments were dead)",
+      "Stop the web build from discarding every custom redirect rule",
+      "Move the last four senders off findlayevents.com, and guard fb-routine's key",
+      "Digest confirmation: add a Reply-To that actually receives mail",
+      "Give the buyer emails a Reply-To, so replies we invite don't bounce",
+      "Move senders to localloop.io now that it is verified in Resend",
+      "Trucks: expand recurring stops (reported by a truck owner)",
+      "Digest signup backend + fix the alert that could never email",
+      "Add the outreach send task wrapper that never existed",
+      "Remove dead Zoho-drafts scripts",
+      "Outreach: send from a personal name, not the brand",
+      "local-refresh: dedupe after the 7am re-pull",
+      "Communico: an empty library is not a dead feed",
+      "Wire up feed-health alerting, and unit-test the title quality gate",
+      "rev 120: regenerate the release log"
+    ]
+  },
   {
     "rev": 120,
     "date": "2026-07-19",

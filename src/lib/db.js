@@ -1027,6 +1027,26 @@ export async function fetchUsersByCity() {
   }
 }
 
+// Per-town views, for the Metrics screen's expandable views tile. One call rather
+// than 135 (city_reach() answers a single town at a time).
+//
+// Same three tables and status filter as total_views(), deliberately — if they
+// diverged, the rows would not add up to the number on the tile above them, which
+// reads as the metrics being broken.
+//
+// Returns [] on failure, NOT null like fetchTotalViews. For a scalar, null-means-
+// unknown is the useful distinction; for a list it would make the caller's .length
+// guard throw and take the whole screen down.
+export async function fetchViewsByCity() {
+  try {
+    const { data, error } = await supabase.rpc('views_by_city');
+    if (error) throw error;
+    return (data || []).map((r) => ({ cityId: r.city_id, views: r.views || 0 }));
+  } catch (e) {
+    return [];
+  }
+}
+
 // Total views across EVERY approved listing, in every town, always.
 //
 // Deliberately ignores the Metrics screen's town scope. Every other card there is a

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ThemedText from '../src/components/ThemedText';
 import { useApp } from '../src/context/AppContext';
-import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity, fetchRevSplit, fetchTotalViews } from '../src/lib/db';
+import { fetchMetrics, fetchCityUsers, fetchPlatformSplit, fetchUsersByCity, fetchRevSplit, fetchTotalViews, fetchViewsByCity } from '../src/lib/db';
 import { CITIES } from '../src/data/cities';
 import { BUILD, APP_VERSION } from '../src/version';
 import { colors, spacing, radius } from '../src/theme/theme';
@@ -59,6 +59,7 @@ export default function MetricsScreen() {
   const [usersByCity, setUsersByCity] = useState([]); // [{cityId, users}] every town, desc
   const [revSplit, setRevSplit] = useState([]); // [{rev, runtime, embedded, users}]
   const [totalViews, setTotalViews] = useState(null); // always all towns; null = unknown
+  const [viewsByCity, setViewsByCity] = useState([]); // [{cityId, views}] desc; [] not null so .length is safe pre-load
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null); // 'featured' | 'ads' | null
   const toggle = (key) => setExpanded((cur) => (cur === key ? null : key));
@@ -67,7 +68,7 @@ export default function MetricsScreen() {
     setLoading(true);
     try {
       const target = scope === 'all' ? null : cityId; // null => every town
-      const [m, u, p, byCity, revs, views] = await Promise.all([
+      const [m, u, p, byCity, revs, views, viewsCity] = await Promise.all([
         fetchMetrics(target),
         fetchCityUsers(target),
         fetchPlatformSplit(target),
@@ -79,6 +80,8 @@ export default function MetricsScreen() {
         // Same again: total views is a product number, not a town number. Scoped to
         // Findlay this card read 436 while the product had served 1,101.
         fetchTotalViews(),
+        // And its breakdown is every town too, for the same reason.
+        fetchViewsByCity(),
       ]);
       setData(m);
       setUsers(u);
@@ -86,6 +89,7 @@ export default function MetricsScreen() {
       setUsersByCity(byCity);
       setRevSplit(revs);
       setTotalViews(views);
+      setViewsByCity(viewsCity);
     } catch (e) {
       Alert.alert('Could not load', e?.message || 'Please try again.');
     } finally {
@@ -117,6 +121,13 @@ export default function MetricsScreen() {
   }
 
   const m = data || { counts: {}, views: {}, top: [] };
+  // Summed from the rows actually on screen, so the shares always total 100 even if
+  // the headline number falls back to its scoped value.
+  const viewsTotal = viewsByCity.reduce((n, r) => n + r.views, 0);
+  // Same for users, and this one was a live bug: the share below divided by `users`,
+  // which is SCOPED to the chip, while this list is always every town. With the chip
+  // on one city the percentages added up to far more than 100.
+  const usersTotal = usersByCity.reduce((n, r) => n + r.users, 0);
 
   return (
     <ScrollView
@@ -170,6 +181,11 @@ export default function MetricsScreen() {
           value={totalViews ?? m.totalViews ?? 0}
           label="Total views (all towns)"
           color={colors.primary}
+          // Guard on the BREAKDOWN having rows, not on the total being > 0. The two
+          // fetches fail independently, and a chevron that opens an empty panel is
+          // worse than no chevron.
+          onPress={viewsByCity.length ? () => toggle('views') : undefined}
+          expanded={expanded === 'views'}
         />
         <StatCard icon="list" value={m.totalListings ?? 0} label="Live listings" color={colors.text} />
         <StatCard
@@ -196,7 +212,7 @@ export default function MetricsScreen() {
         <View style={[styles.card, { marginTop: spacing.sm }]}>
           {usersByCity.map((row, i) => {
             const town = CITIES.find((c) => c.id === row.cityId);
-            const share = users > 0 ? Math.round((row.users / users) * 100) : 0;
+            const share = usersTotal > 0 ? Math.round((row.users / usersTotal) * 100) : 0;
             return (
               <Pressable
                 key={`u-${row.cityId}`}
@@ -220,6 +236,45 @@ export default function MetricsScreen() {
           })}
           <ThemedText size="tiny" color={colors.textMuted} style={styles.byCityFoot}>
             {usersByCity.length} towns with activity in the last 30 days. Towns with none are not listed.
+          </ThemedText>
+        </View>
+      ) : null}
+
+      {/* Total views, per town. Always every town, like the tile it opens from — a
+          product number's breakdown cannot be a per-town number. The .length check is
+          repeated here on purpose: a refresh can empty the list while the panel is
+          open, and without it that renders an empty bordered card with only a footer. */}
+      {expanded === 'views' && viewsByCity.length ? (
+        <View style={[styles.card, { marginTop: spacing.sm }]}>
+          {viewsByCity.map((row, i) => {
+            // Denominator is the sum of the rows on screen, NOT totalViews. Identical
+            // today, but if the global total fetch fails the tile falls back to the
+            // SCOPED number, which would make every share here silently wrong.
+            const share = viewsTotal > 0 ? Math.round((row.views / viewsTotal) * 100) : 0;
+            const name = CITY_NAME[row.cityId] || row.cityId;
+            return (
+              <Pressable
+                key={`v-${row.cityId}`}
+                style={[styles.detailRow, i > 0 && styles.rowBorder]}
+                onPress={() => router.push({ pathname: '/city', params: { from: 'metrics' } })}
+                accessibilityRole="button"
+                accessibilityLabel={`${name}, ${row.views} views, ${share} percent of the total`}
+              >
+                <Ionicons name="eye" size={16} color={colors.primary} style={{ marginRight: spacing.sm }} />
+                <ThemedText size="body" style={{ flex: 1 }} numberOfLines={1}>
+                  {name}
+                </ThemedText>
+                <ThemedText size="small" color={colors.textMuted} style={{ marginRight: spacing.sm }}>
+                  {share}%
+                </ThemedText>
+                <ThemedText size="body" weight="bold" style={styles.viewsCount}>
+                  {row.views}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+          <ThemedText size="tiny" color={colors.textMuted} style={styles.byCityFoot}>
+            {viewsByCity.length} towns with views so far. Towns with none are not listed.
           </ThemedText>
         </View>
       ) : null}
@@ -473,6 +528,10 @@ export default function MetricsScreen() {
 const styles = StyleSheet.create({
   // tabular-nums so the counts line up in a column instead of jittering by digit width
   userCount: { minWidth: 34, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  // Wider than userCount: view counts are already 3 digits for Findlay and the product
+  // total is past 1,000, so a 4-digit town is close. minWidth is a floor, so an
+  // over-wide row only pushes its own % label left rather than breaking the column.
+  viewsCount: { minWidth: 44, textAlign: 'right', fontVariant: ['tabular-nums'] },
   byCityFoot: { padding: spacing.sm, paddingTop: spacing.xs },
   screen: { flex: 1, backgroundColor: colors.background },
   center: {
