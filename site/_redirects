@@ -22,3 +22,11 @@
 /event/*         /open.html  200
 /garage-sale/*   /open.html  200
 /food-truck/*    /open.html  200
+
+# Weekly digest confirm / unsubscribe. The links inside the consumer digest email
+# stay on localloop.io (a raw supabase.co URL in email reads as phishing) and 302
+# to the digest-subscribe function, which flips the row by its token and renders a
+# small confirmation page. Splat form, matching the proven /for/* tracker above —
+# the token is the last path segment.
+/digest/confirm/*      https://wtaefyspddadcrnovumk.supabase.co/functions/v1/digest-subscribe?confirm=:splat      302
+/digest/unsubscribe/*  https://wtaefyspddadcrnovumk.supabase.co/functions/v1/digest-subscribe?unsubscribe=:splat  302

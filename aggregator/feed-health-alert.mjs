@@ -74,7 +74,15 @@ if (critical.length && !DRY) {
       `\n\nFix: repair or add a feed for these towns (see aggregator/feed-health.mjs, add-city runbook).`;
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'Local Loop <localloop@localloop.io>', to: [ALERT_TO], subject: `⚠ Feed-health: ${critical.length} Ohio town(s) about to empty`, text: body }),
+      // MUST be @findlayevents.com, NOT localloop.io. Resend's free plan allows ONE
+      // verified domain and that slot holds findlayevents.com (the pre-rebrand name),
+      // which moderation-alert and stripe-webhook also send from. localloop.io is
+      // unverified, so a send from it 403s — this alert was silently failing that way
+      // until 2026-07-21. It only ever mails Michael, so the domain is cosmetic here.
+      // Do NOT "fix" this to localloop.io without verifying that domain in Resend
+      // first, and do NOT free the slot by deleting findlayevents.com: that would
+      // break Stripe receipt + moderation emails.
+      body: JSON.stringify({ from: 'Local Loop <noreply@findlayevents.com>', to: [ALERT_TO], subject: `⚠ Feed-health: ${critical.length} Ohio town(s) about to empty`, text: body }),
     });
     console.log(r.ok ? `Alert emailed to ${ALERT_TO}.` : `Alert email failed: ${r.status} ${(await r.text()).slice(0, 120)}`);
   }
