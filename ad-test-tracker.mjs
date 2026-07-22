@@ -116,12 +116,28 @@ async function rows(path) {
 // undercount MAU exactly when the test succeeds and the towns grow.
 const da = [];
 for (let from = 0; ; from += 1000) {
-  const page = await rows(`human_activity?select=city_id,last_seen&city_id=in.(${ALL.join(',')})&last_seen=gte.${since30}&order=device_id.asc&limit=1000&offset=${from}`);
+  const page = await rows(`human_activity?select=city_id,platform,last_seen&city_id=in.(${ALL.join(',')})&last_seen=gte.${since30}&order=device_id.asc&limit=1000&offset=${from}`);
   da.push(...page);
   if (page.length < 1000) break;
 }
-const mau = Object.fromEntries(ALL.map((id) => [id, 0]));
-for (const r of da) if (mau[r.city_id] != null) mau[r.city_id] += 1;
+// TWO numbers, because only one of them is a person you acquired.
+//
+// These campaigns optimise for LANDING PAGE VIEWS, and a web visitor lands in
+// device_activity exactly like an app user — so blended "MAU" in an ad town is mostly
+// the ad click itself, and the metric partly measures the spend paying for it.
+// Measured 2026-07-21: the three ad towns were 97-99% web (Canton 172/176, Sandusky
+// 144/146, New Philadelphia 205/208) against 9 installs total, while un-advertised
+// Findlay was a real mix (63 iOS, 11 Android). The blended figure read "$0.16 per
+// user" and passed the "$3 = scale" bar; the same spend was ~$9 per install, which
+// fails the "$5 = do not scale" ceiling. Reporting one number would have bought a
+// scale-up decision on cost-per-click wearing the label cost-per-user.
+const mau = Object.fromEntries(ALL.map((id) => [id, 0]));      // everyone, web included
+const mauApp = Object.fromEntries(ALL.map((id) => [id, 0]));   // installs only
+for (const r of da) {
+  if (mau[r.city_id] == null) continue;
+  mau[r.city_id] += 1;
+  if (r.platform === 'ios' || r.platform === 'android') mauApp[r.city_id] += 1;
+}
 
 // --- Load / init state -------------------------------------------------------
 const todayKey = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
@@ -138,7 +154,9 @@ if (existsSync(join(DIR, STATE_FILE))) {
 let firstRun = false;
 if (!state.startDate) {
   firstRun = true;
-  state = { startDate: todayKey, baseline: { ...mau }, history: [] };
+  // baselineApp matters for the NEXT test: without it the install lift is measured
+  // from zero rather than from where the town actually started.
+  state = { startDate: todayKey, baseline: { ...mau }, baselineApp: { ...mauApp }, history: [] };
 }
 
 const dayOf = (key) => Math.round((new Date(key + 'T00:00:00').getTime() - new Date(state.startDate + 'T00:00:00').getTime()) / 86400000);
@@ -150,22 +168,40 @@ const testGain = TEST.reduce((s, id) => s + gain[id], 0);
 const controlGain = CONTROL.reduce((s, id) => s + gain[id], 0);
 const netLift = testGain - controlGain;
 const spend = DAILY_BUDGET * TEST.length * Math.min(Math.max(day, 0), RUN_DAYS);
-const costPerUser = netLift > 0 ? spend / netLift : null;
+const costPerUser = netLift > 0 ? spend / netLift : null;   // per WEB VISIT, kept for history continuity
+
+// App-only lift. baselineApp is absent on a test that started before this split
+// existed; treating it as 0 is safe here because this test began with 0 MAU on both
+// sides (the New Philadelphia swap above was made precisely to get 0/0), so the worst
+// case is a handful of units.
+const baseApp = state.baselineApp || {};
+const gainApp = Object.fromEntries(ALL.map((id) => [id, (mauApp[id] || 0) - (baseApp[id] || 0)]));
+const testGainApp = TEST.reduce((s, id) => s + gainApp[id], 0);
+const controlGainApp = CONTROL.reduce((s, id) => s + gainApp[id], 0);
+const netLiftApp = testGainApp - controlGainApp;
+const costPerInstall = netLiftApp > 0 ? spend / netLiftApp : null;
 const done = day > RUN_DAYS + SETTLE_DAYS;
+const sign = (n) => (n >= 0 ? '+' + n : String(n));
 
 // The labels are an ABSOLUTE cost-per-user bar. They must never claim anything about
 // free posting: no town in this test got a post, so any "free posting wins" verdict
 // would be a conclusion about an experiment that does not exist. That is what these
 // said until 2026-07-16, inherited from the abandoned original design.
+// Judged on INSTALLS, never on blended MAU. Grading these campaigns on the blended
+// number grades them on their own clicks: they buy landing page views, and a landing
+// page view IS a row in the table the verdict reads.
 function verdict() {
   if (day < RUN_DAYS) return { label: 'In progress', detail: `Day ${day} of ${RUN_DAYS}, provisional.` };
-  if (netLift <= 0) return { label: 'DO NOT scale paid', detail: 'The ads produced no measurable lift over the untouched control towns.' };
-  if (costPerUser < 3) return { label: 'SCALE paid acquisition', detail: `about $${costPerUser.toFixed(2)} per user, under the $3 bar.` };
-  if (costPerUser <= 5) return { label: 'One more round', detail: `about $${costPerUser.toFixed(2)} per user, in the $3 to $5 grey zone.` };
-  return { label: 'DO NOT scale paid', detail: `about $${costPerUser.toFixed(2)} per user, over the $5 ceiling.` };
+  if (netLiftApp <= 0) {
+    return netLift > 0
+      ? { label: 'DO NOT scale paid', detail: `${sign(netLift)} web visits but no app installs. The ads bought traffic, not users.` }
+      : { label: 'DO NOT scale paid', detail: 'No measurable lift over the untouched control towns.' };
+  }
+  if (costPerInstall < 3) return { label: 'SCALE paid acquisition', detail: `about $${costPerInstall.toFixed(2)} per install, under the $3 bar.` };
+  if (costPerInstall <= 5) return { label: 'One more round', detail: `about $${costPerInstall.toFixed(2)} per install, in the $3 to $5 grey zone.` };
+  return { label: 'DO NOT scale paid', detail: `about $${costPerInstall.toFixed(2)} per install, over the $5 ceiling.` };
 }
 const v = verdict();
-const sign = (n) => (n >= 0 ? '+' + n : String(n));
 
 // --- Console report ----------------------------------------------------------
 const REPORT = [];
@@ -183,8 +219,12 @@ for (const p of PAIRS) {
 log('');
 log(`  Test towns gain:     ${sign(testGain)}`);
 log(`  Control towns gain:  ${sign(controlGain)}`);
-log(`  NET AD LIFT:         ${sign(netLift)}   (test minus control)`);
-log(`  Cost per net user:   ${costPerUser != null ? '$' + costPerUser.toFixed(2) : 'n/a (no positive lift yet)'}`);
+log(`  NET LIFT, web visits: ${sign(netLift)}  ->  ${costPerUser != null ? '$' + costPerUser.toFixed(2) : 'n/a'} per visit`);
+log(`  NET LIFT, INSTALLS:   ${sign(netLiftApp)}  ->  ${costPerInstall != null ? '$' + costPerInstall.toFixed(2) : 'n/a'} per install   <- the decision number`);
+if (netLift > 0 && netLiftApp <= 0) {
+  log('  NOTE: these ads bought website traffic, not app users. They optimise for landing');
+  log('        page views, and a web visit counts here exactly like an install.');
+}
 log(`  VERDICT: ${v.label} - ${v.detail}`);
 log(`  STATUS: ${done ? 'COMPLETE (safe to disable ll-ad-test)' : `RUNNING (day ${day}/${RUN_DAYS})`}`);
 log(`  Note: gains show +change (current MAU). Numbers exclude bot and owner devices.`);
@@ -244,6 +284,6 @@ if (shouldEmail) {
 // --- Persist state -----------------------------------------------------------
 if (!DRY) {
   state.history = (state.history || []).filter((h) => h.day !== day);
-  state.history.push({ day, date: todayKey, mau: { ...mau }, testGain, controlGain, netLift, spend, costPerUser });
+  state.history.push({ day, date: todayKey, mau: { ...mau }, mauApp: { ...mauApp }, testGain, controlGain, netLift, spend, costPerUser, netLiftApp, costPerInstall });
   writeFileSync(join(DIR, STATE_FILE), JSON.stringify(state, null, 2));
 }
