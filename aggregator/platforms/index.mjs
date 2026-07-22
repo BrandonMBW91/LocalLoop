@@ -9,12 +9,15 @@
 //
 // Raw event shape every connector returns:
 //   { summary, description, location, url, image, start: Date, end: Date|null, allDay?: bool }
+// `price` is optional: supply it only when the platform states one (DICE does),
+// otherwise makeRow infers it from the title and description.
 import * as librarymarket from './librarymarket.mjs';
 import * as bibliocommons from './bibliocommons.mjs';
 import * as communico from './communico.mjs';
 import * as simpleview from './simpleview.mjs';
 import * as baselocal from './baselocal.mjs';
 import * as explorelc from './explorelc.mjs';
+import * as dice from './dice.mjs';
 
 export const PLATFORMS = {
   librarymarket,
@@ -23,4 +26,5 @@ export const PLATFORMS = {
   simpleview,
   baselocal,
   explorelc,
+  dice,
 };

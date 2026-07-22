@@ -26,7 +26,12 @@ const existingUrls = new Set(existing.map((s) => norm(s.url)));
 // Valid town ids (guard against an agent inventing a city_id).
 const { CITIES } = await import('../src/data/cities.js');
 const validCity = new Set(CITIES.map((c) => c.id));
-const okType = new Set(['ical', 'jsonld', 'communico', 'simpleview', 'librarymarket', 'bibliocommons', 'revize']);
+// Derived, not listed: this set had already drifted behind the connector registry
+// (it was missing baselocal and explorelc), so a real feed on a working connector
+// was rejected here as a "bad type". 'ical', 'jsonld' and 'revize' are handled
+// inside aggregate.mjs itself rather than by a platform module.
+const { PLATFORMS } = await import('./platforms/index.mjs');
+const okType = new Set(['ical', 'jsonld', 'revize', ...Object.keys(PLATFORMS)]);
 const okCat = new Set(['Community', 'Arts', 'Music', 'Family', 'Education', 'Market', 'Sports', 'Food']);
 
 const toAdd = [];

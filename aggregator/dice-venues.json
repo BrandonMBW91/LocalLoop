@@ -1,0 +1,173 @@
+[
+  {
+    "city_id": "akron",
+    "name": "Musica",
+    "type": "dice",
+    "url": "https://dice.fm/venue/musica-8qw5",
+    "category": "Music",
+    "futureEvents": 23,
+    "evidence": "DICE venue 11682, 51 East Market St Akron. Asked to be listed by email 2026-07-22 (Rikki, booking@theofficialmusica.com). 23 upcoming shows against the 4 we had from Ticketmaster/SeatGeek."
+  },
+  {
+    "city_id": "columbus",
+    "name": "Ace of Cups",
+    "type": "dice",
+    "url": "https://dice.fm/venue/ace-of-cups-2vlm?ids=11803",
+    "category": "Music",
+    "futureEvents": 45,
+    "evidence": "DICE venue 11803, 2619 N High St Columbus. Second-largest DICE calendar in Ohio and books further out than Ticketmaster does."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "The Foundry",
+    "type": "dice",
+    "url": "https://dice.fm/venue/the-foundry-ar97?ids=14492,11725",
+    "category": "Music",
+    "futureEvents": 12,
+    "evidence": "DICE holds this venue under TWO ids at the same Cleveland address (14492 with 10 shows, 11725 with 2); only 11725 has a public venue page, so both are pinned on one row."
+  },
+  {
+    "city_id": "columbus",
+    "name": "The Summit Music Hall",
+    "type": "dice",
+    "url": "https://dice.fm/venue/the-summit-pnew?ids=11733",
+    "category": "Music",
+    "futureEvents": 5,
+    "evidence": "DICE venue 11733, 2210 Summit St Columbus."
+  },
+  {
+    "city_id": "columbus",
+    "name": "Woodlands Tavern",
+    "type": "dice",
+    "url": "https://dice.fm/venue/woodlands-tavern-7w2b?ids=11731",
+    "category": "Music",
+    "futureEvents": 5,
+    "evidence": "DICE venue 11731, 1200 W Third Ave Columbus."
+  },
+  {
+    "city_id": "columbus",
+    "name": "The King of Clubs",
+    "type": "dice",
+    "url": "https://dice.fm/venue/the-king-of-clubs-g3ya?ids=11729",
+    "category": "Music",
+    "futureEvents": 4,
+    "evidence": "DICE venue 11729, 6252 Busch Blvd Columbus."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "Beachland Tavern",
+    "type": "dice",
+    "url": "https://dice.fm/venue/beachland-tavern-3bbx?ids=13219",
+    "category": "Music",
+    "futureEvents": 3,
+    "evidence": "DICE venue 13219, 15711 Waterloo Rd Cleveland. The small room next to the Ballroom."
+  },
+  {
+    "city_id": "columbus",
+    "name": "Donato's Basement",
+    "type": "dice",
+    "url": "https://dice.fm/venue/donatos-basement-n58l?ids=11808",
+    "category": "Music",
+    "futureEvents": 3,
+    "evidence": "DICE venue 11808, Columbus."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "The Grog Shop",
+    "type": "dice",
+    "url": "https://dice.fm/venue/grog-shop?ids=7565",
+    "category": "Music",
+    "futureEvents": 2,
+    "evidence": "DICE venue 7565, 2785 Euclid Heights Blvd Cleveland Heights. No public DICE venue page, so the id is pinned."
+  },
+  {
+    "city_id": "columbus",
+    "name": "Skully's Music-Diner",
+    "type": "dice",
+    "url": "https://dice.fm/venue/skullys?ids=11732",
+    "category": "Music",
+    "futureEvents": 2,
+    "evidence": "DICE venue 11732, 1151 N High St Columbus. DICE spells it with a curly apostrophe, so the id is pinned."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "House of Blues Cleveland",
+    "type": "dice",
+    "url": "https://dice.fm/venue/house-of-blues-cleveland?ids=13217",
+    "category": "Music",
+    "futureEvents": 2,
+    "evidence": "DICE venue 13217, 308 Euclid Ave Cleveland."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "Beachland Ballroom",
+    "type": "dice",
+    "url": "https://dice.fm/venue/beachland-ballroom-klq9?ids=11728",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 11728, 15711 Waterloo Rd Cleveland."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "The Agora",
+    "type": "dice",
+    "url": "https://dice.fm/venue/the-agora?ids=11804",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 11804, 5000 Euclid Ave Cleveland."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "Globe Iron",
+    "type": "dice",
+    "url": "https://dice.fm/venue/globe-iron?ids=17544",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 17544, Cleveland. Recent DICE signup."
+  },
+  {
+    "city_id": "cleveland",
+    "name": "Near West Theatre",
+    "type": "dice",
+    "url": "https://dice.fm/venue/near-west-theatre-mxqnv?ids=18939",
+    "category": "Arts",
+    "futureEvents": 1,
+    "evidence": "DICE venue 18939, 6702 Detroit Ave Cleveland."
+  },
+  {
+    "city_id": "columbus",
+    "name": "Dirty Dungarees",
+    "type": "dice",
+    "url": "https://dice.fm/venue/dirty-dungarees-dkl3e?ids=15344",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 15344, 2529 Summit St Columbus. Laundromat and music venue."
+  },
+  {
+    "city_id": "columbus",
+    "name": "Sahara Lux Restaurant and Lounge",
+    "type": "dice",
+    "url": "https://dice.fm/venue/sahara-lux-restaurant-and-lounge-k6vmp?ids=19152",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 19152, Columbus. Recent DICE signup."
+  },
+  {
+    "city_id": "cincinnati",
+    "name": "Rhinegeist Brewery",
+    "type": "dice",
+    "url": "https://dice.fm/venue/rhinegheist-brewery-ry5x5?ids=19185",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 19185, 1910 Elm St Cincinnati. DICE misspells it 'Rhinegheist', so the id is pinned and the row carries the real name."
+  },
+  {
+    "city_id": "toledo",
+    "name": "Frankie's Inner City",
+    "type": "dice",
+    "url": "https://dice.fm/venue/frankies?ids=12367",
+    "category": "Music",
+    "futureEvents": 1,
+    "evidence": "DICE venue 12367, 308 Main St Toledo. No public DICE venue page, so the id is pinned."
+  }
+]

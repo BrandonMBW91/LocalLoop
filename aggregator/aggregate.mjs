@@ -373,7 +373,10 @@ function makeRow(ev, source, start, end) {
     end_at: end ? end.toISOString() : null,
     venue,
     address,
-    price: priceFor(title, description),
+    // A connector may KNOW the price (DICE publishes ticket totals); only guess
+    // from the text when it doesn't, since a gig with no "$" in its blurb reads
+    // as Free to priceFor.
+    price: ev.price || priceFor(title, description),
     host: source.name,
     description,
     source_uid,

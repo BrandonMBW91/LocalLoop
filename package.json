@@ -39,7 +39,7 @@
     "web": "expo start --web",
     "build:web": "node scripts/build-web.mjs",
     "deploy:web": "npm run seo:towns && node scripts/build-web.mjs && npx --no-install netlify deploy --prod --dir dist --no-build --site ecb90ea6-5f53-4846-ad52-31cb726b5f52",
-    "test": "node tests/logic.test.mjs && node tests/guards.test.mjs && node tests/aggregator.test.mjs",
+    "test": "node tests/logic.test.mjs && node tests/guards.test.mjs && node tests/aggregator.test.mjs && node tests/dice.test.mjs",
     "seo:towns":"cd aggregator && node generate-events.mjs"
   },
   "private": true,
