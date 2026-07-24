@@ -116,6 +116,9 @@ begin
      or content ~ '(\+?\d[ .\-]?){10,}'                                              -- phone numbers
      or content ~* '\m(fuck|shit|bitch|asshole|cunt|nigger|faggot|slut|whore|retard)\M'  -- profanity
      or content ~* '(make money|free money|work from home|crypto|bitcoin|viagra|casino|click here|get rich|buy now|limited offer)' -- spam
+     -- A logged-out submitter (public anon key, only ever here via a submit_* definer)
+     -- always goes to review rather than auto-publishing app-wide (2026-07-23).
+     or (auth.uid() is null and coalesce(auth.role(), '') <> 'service_role')
   then
     NEW.status := 'pending';
   else

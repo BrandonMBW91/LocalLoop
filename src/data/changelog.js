@@ -4,14 +4,30 @@
 // Derived from git: each entry is a BUILD bump in src/version.js, and its `changes`
 // are the commit subjects since the previous bump. Read by app/changelog.js, which is
 // admin-gated in the UI but ships in the public bundle — it is a convenience, not a
-// secret. 100 revs, newest first.
+// secret. 101 revs, newest first.
 export const CHANGELOG = [
+  {
+    "rev": 127,
+    "date": "2026-07-23",
+    "whatsNew": "You can now post your own events, food trucks, and garage sales right from the app.",
+    "changes": [
+      "rev 127: let logged-out users post events, trucks, and garage sales",
+      "RLS audit tidy-ups: revoke stray anon grants, tighten human_activity view",
+      "Add DICE: 19 independent music venues no other feed carries",
+      "Ad test: report cost per INSTALL, not just cost per web visit",
+      "Facebook store line follows ANDROID_LIVE instead of needing to be remembered",
+      "A flaky third-party API must never block the website deploy",
+      "Tell advertisers where the logo actually goes",
+      "Grant anon SELECT on sponsors.cta — without it NO ad rendered anywhere",
+      "All-region ads keep their logo, and the advertise page stops underselling itself"
+    ]
+  },
   {
     "rev": 126,
     "date": "2026-07-21",
     "whatsNew": null,
     "changes": [
-      "rev 126 wip"
+      "rev 126: coloured initials instead of a grey glyph when a sponsor sends no logo"
     ]
   },
   {

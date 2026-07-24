@@ -4,17 +4,14 @@
 // update or new binary). The store version (app.json `version`) only changes on
 // a full rebuild.
 export const APP_VERSION = '1.0.4';
-export const BUILD = 126;
+export const BUILD = 127;
 
 // One-line "what's new" shown once in a dismissible banner after an update (see
 // WhatsNewBanner). Update it alongside BUILD each release so returning users get a
 // gentle heads-up about what changed. Keep it short and user-facing.
 //
-// EMPTY ON PURPOSE for revs 121-126. WhatsNewBanner fires whenever the stored rev is
-// behind BUILD *and* this string is truthy, so leaving rev 120's text here would
-// re-show a message people already dismissed — advertising "twice as many events" a
-// second time for a release that changed nothing they can see. Revs 121-122 are the
-// admin-only Metrics screen (all-towns total views, then its per-town breakdown), so the rev advances for
-// update-adoption tracking and the banner stays quiet. Put a line back the moment a
-// release actually changes something for users.
-export const WHATS_NEW = '';
+// Empty for revs 121-126 (admin-only Metrics + advertiser-facing changes — nothing a
+// reader would notice, so the banner stayed quiet). Rev 127 puts a line back: posting
+// your own event/truck/sale from the app now actually reaches the backend (it used to
+// fail silently for anyone not signed in), so returning users get the heads-up.
+export const WHATS_NEW = 'You can now post your own events, food trucks, and garage sales right from the app.';

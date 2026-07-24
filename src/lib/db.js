@@ -396,14 +396,30 @@ export async function fetchFoodTrucks(cityId) {
 
 // ---- Writes (RLS forces status='pending' and stamps created_by) ----
 
-export async function insertEvent(event) {
-  const { data, error } = await supabase
-    .from('events')
-    .insert(eventToRow(event))
-    .select()
-    .single();
+// A signed-in user (admin/reviewer) inserts directly — RLS stamps created_by so
+// they can edit their own row later. A logged-out user is the anon role, which
+// cannot INSERT into these tables at all in this project; their post goes through
+// a SECURITY DEFINER submit_* RPC that lands it pending for review (same pattern
+// as submit_event_source). See supabase/user_submissions_fix_jul23.sql.
+async function insertOrSubmit(table, row, rpcName, rpcArgs, mapRow) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    const { data, error } = await supabase.from(table).insert(row).select().single();
+    if (error) throw error;
+    return mapRow(data);
+  }
+  const { data, error } = await supabase.rpc(rpcName, rpcArgs);
   if (error) throw error;
-  return rowToEvent(data);
+  return mapRow(data);
+}
+
+export async function insertEvent(event) {
+  const row = eventToRow(event);
+  return insertOrSubmit('events', row, 'submit_event', {
+    p_city_id: row.city_id, p_title: row.title, p_category: row.category, p_emoji: row.emoji,
+    p_start_at: row.start_at, p_end_at: row.end_at, p_venue: row.venue, p_address: row.address,
+    p_price: row.price, p_host: row.host, p_description: row.description, p_image_url: row.image_url,
+  }, rowToEvent);
 }
 
 // Admin-only field edit (RLS: the events_update policy is is_admin(), so the
@@ -494,13 +510,14 @@ export async function updateEvent(id, patch) {
 }
 
 export async function insertGarageSale(sale) {
-  const { data, error } = await supabase
-    .from('garage_sales')
-    .insert(saleToRow(sale))
-    .select()
-    .single();
-  if (error) throw error;
-  return rowToSale(data);
+  const row = saleToRow(sale);
+  return insertOrSubmit('garage_sales', row, 'submit_garage_sale', {
+    p_city_id: row.city_id, p_title: row.title, p_type: row.type,
+    p_start_date: row.start_date, p_end_date: row.end_date,
+    p_daily_start: row.daily_start, p_daily_end: row.daily_end,
+    p_address: row.address, p_neighborhood: row.neighborhood,
+    p_items: row.items, p_images: row.images, p_host: row.host, p_note: row.note,
+  }, rowToSale);
 }
 
 // Self-serve calendar intake: a truck owner registers their Google Calendar /
@@ -547,13 +564,13 @@ export async function setCalendarStatus(id, approve) {
 }
 
 export async function insertFoodTruck(truck) {
-  const { data, error } = await supabase
-    .from('food_trucks')
-    .insert(truckToRow(truck))
-    .select()
-    .single();
-  if (error) throw error;
-  return rowToTruck(data);
+  const row = truckToRow(truck);
+  return insertOrSubmit('food_trucks', row, 'submit_food_truck', {
+    p_city_id: row.city_id, p_name: row.name, p_cuisine: row.cuisine, p_date: row.date,
+    p_start_time: row.start_time, p_end_time: row.end_time,
+    p_location_name: row.location_name, p_address: row.address,
+    p_host: row.host, p_note: row.note, p_image_url: row.image_url,
+  }, rowToTruck);
 }
 
 // Fetch specific events by id (for the Saved list — saved events can be in any city).
